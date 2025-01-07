@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "46669496533",
+    "project_id": "eco-closet-f0942",
+    "storage_bucket": "eco-closet-f0942.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46669496533:android:76f045c2c9f95c6fa2625c",
+        "android_client_info": {
+          "package_name": "com.example.eco_closet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

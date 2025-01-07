@@ -1,0 +1,40 @@
+name: eco_closet
+version: 1.0.0+1
+description: A fun and user-friendly marketplace app to connect buyers and sellers.
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+
+  # State management
+  provider: ^6.0.5
+
+  # Animations
+  flutter_animate: ^4.5.2
+
+  # Image upload and handling
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.4.0
+
+  # Networking
+  dio: ^5.1.0
+
+  # Firebase (if needed for authentication or analytics)
+  firebase_core: ^3.9.0
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  firebase_storage: ^12.3.7
+  firebase_ui_auth: ^1.16.0
+  google_generative_ai: ^0.4.6
+  firebase_vertexai: ^1.0.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
