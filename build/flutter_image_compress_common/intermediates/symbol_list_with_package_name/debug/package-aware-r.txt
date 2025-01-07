@@ -1,0 +1,1 @@
+com.fluttercandies.flutter_image_compress

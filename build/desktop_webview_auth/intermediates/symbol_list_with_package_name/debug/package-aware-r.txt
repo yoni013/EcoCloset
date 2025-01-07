@@ -1,0 +1,1 @@
+io.invertase.desktop_webview_auth
