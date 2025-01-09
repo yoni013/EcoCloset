@@ -1,4 +1,3 @@
-/// upload_item_page.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -6,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
-
+import 'dart:convert';
 
 class UploadItemPage extends StatefulWidget {
   @override
@@ -20,6 +19,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
   List<String> _colors = [];
   List<String> _conditions = [];
   List<String> _sizes = [];
+  List<String> _types = [];
 
   Future<void> _fetchDropdownData() async {
     try {
@@ -27,17 +27,61 @@ class _UploadItemPageState extends State<UploadItemPage> {
       final colorsSnapshot = await FirebaseFirestore.instance.collection('Colors').get();
       final conditionsSnapshot = await FirebaseFirestore.instance.collection('Condition').get();
       final sizesSnapshot = await FirebaseFirestore.instance.collection('Clothes_Sizes').get();
+      final typesSnapshot = await FirebaseFirestore.instance.collection('item_types').get();
 
       setState(() {
-        _brands = brandsSnapshot.docs.map((doc) => doc['name'] as String).toList();
-        _colors = colorsSnapshot.docs.map((doc) => doc['name'] as String).toList();
-        _conditions = conditionsSnapshot.docs.map((doc) => doc['name'] as String).toList();
-        _sizes = sizesSnapshot.docs.map((doc) => doc['Symbol'] as String).toList();
+        _brands = brandsSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
+        _colors = colorsSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
+        _conditions = conditionsSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
+        _sizes = sizesSnapshot.docs.map((doc) => doc['Symbol'].toString().toLowerCase()).toList();
+        _types = typesSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to fetch dropdown data: $e')),
       );
+    }
+  }
+
+  Future<Map<String, dynamic>> _callGemini() async {
+    final jsonSchema = Schema.object(
+      properties: {
+        "Brand": Schema.string(description: "Brand of the item, or null if unknown"),
+        "Color": Schema.string(description: "Color of the item"),
+        "Condition": Schema.string(description: "Condition of the item: new, almost new, used, etc."),
+        "Size": Schema.string(description: "Size of the item, or 'Medium' if uncertain"),
+        "Type": Schema.string(description: "Type of the item: T-shirt, pants, coat, etc."),
+      },
+    );
+
+    final model = FirebaseVertexAI.instance.generativeModel(
+      model: 'gemini-1.5-flash',
+      generationConfig: GenerationConfig(
+        responseMimeType: 'application/json',
+        responseSchema: jsonSchema,
+      ),
+    );
+
+    List<InlineDataPart> imageParts = [];
+    for (var image in _images) {
+      final bytes = await File(image.path).readAsBytes();
+      imageParts.add(InlineDataPart('image/jpeg', bytes));
+    }
+
+    final prompt = TextPart(
+      'Analyze the provided images and extract metadata including brand, color, condition, size, and type.',
+    );
+
+    final content = [Content.multi([...imageParts, prompt])];
+
+    final response = await model.generateContent(content);
+
+    try {
+      var decoded = jsonDecode(response.text!.toLowerCase()) as Map<String, dynamic>;
+      print(decoded);
+      return decoded;
+    } catch (e) {
+      throw Exception('Failed to parse response from Gemini: ${response.text}');
     }
   }
 
@@ -48,10 +92,34 @@ class _UploadItemPageState extends State<UploadItemPage> {
   }
 
   Future<void> _pickImages() async {
-    final pickedImages = await _picker.pickMultiImage();
+    final pickedImages = await _picker.pickMultiImage(limit: 6, imageQuality: 75);
     setState(() {
-        _images = pickedImages;
+      _images = pickedImages;
     });
+  }
+
+  Future<void> _processImagesWithGemini() async {
+    try {
+      final metadata = await _callGemini();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => _StepTwoForm(
+            images: _images,
+            brands: _brands,
+            colors: _colors,
+            conditions: _conditions,
+            sizes: _sizes,
+            types: _types,
+            prefilledData: metadata,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error processing images with Gemini: $e')),
+      );
+    }
   }
 
   @override
@@ -95,35 +163,9 @@ class _UploadItemPageState extends State<UploadItemPage> {
             ),
             SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _images.isNotEmpty
-                  ? () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => _StepTwoForm(
-                            images: _images,
-                            brands: _brands,
-                            colors: _colors,
-                            conditions: _conditions,
-                            sizes: _sizes,
-                          ),
-                        ),
-                      )
-                  : null,
-              child: Text('Continue to Step 2'),
+              onPressed: _images.isNotEmpty ? _processImagesWithGemini : null,
+              child: Text('Analyze Images with Gemini'),
             ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () async {
-                    final model = FirebaseVertexAI.instance.generativeModel(model: 'gemini-1.5-flash');
-                    // Provide a prompt that contains text
-                    final prompt = [Content.text('Write a story about a magic backpack. using 5 words')];
-
-                    // To generate text output, call generateContent with the text input
-                    final response = await model.generateContent(prompt);
-                    print(response.text);
-                  },
-              child: Text('generate short story'),
-              ),
           ],
         ),
       ),
@@ -137,6 +179,8 @@ class _StepTwoForm extends StatelessWidget {
   final List<String> colors;
   final List<String> conditions;
   final List<String> sizes;
+  final List<String> types;
+  final Map<String, dynamic> prefilledData;
 
   _StepTwoForm({
     required this.images,
@@ -144,6 +188,8 @@ class _StepTwoForm extends StatelessWidget {
     required this.colors,
     required this.conditions,
     required this.sizes,
+    required this.types,
+    required this.prefilledData,
   });
 
   Future<void> _uploadItemToFirebase(Map<String, dynamic> formData) async {
@@ -171,13 +217,16 @@ class _StepTwoForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _formKey = GlobalKey<FormState>();
+    print(colors);
+    print(prefilledData);
     final Map<String, dynamic> formData = {
-      'Brand': null,
-      'Color': null,
-      'Condition': null,
-      'Size': null,
-      'Description': '',
-      'Price': '',
+      'Brand': brands.contains(prefilledData['brand']) ? prefilledData['brand'] : null,
+      'Color': colors.contains(prefilledData['color']) ? prefilledData['color'] : null,
+      'Condition': conditions.contains(prefilledData['condition']) ? prefilledData['condition'] : null,
+      'Size': sizes.contains(prefilledData['size']) ? prefilledData['size'] : null,
+      'Type': types.contains(prefilledData['type']) ? prefilledData['type'] : null,
+      'Description': prefilledData['description'] ?? '',
+      'Price': prefilledData['price'] ?? 20,
     };
 
     return Scaffold(
@@ -200,6 +249,7 @@ class _StepTwoForm extends StatelessWidget {
                             child: Text(brand),
                           ))
                       .toList(),
+                  value: formData['Brand'],
                   onChanged: (value) => formData['Brand'] = value,
                   decoration: InputDecoration(labelText: 'Brand'),
                   validator: (value) => value == null ? 'Brand is required' : null,
@@ -212,6 +262,7 @@ class _StepTwoForm extends StatelessWidget {
                             child: Text(color),
                           ))
                       .toList(),
+                  value: formData['Color'],
                   onChanged: (value) => formData['Color'] = value,
                   decoration: InputDecoration(labelText: 'Color'),
                   validator: (value) => value == null ? 'Color is required' : null,
@@ -224,6 +275,7 @@ class _StepTwoForm extends StatelessWidget {
                             child: Text(condition),
                           ))
                       .toList(),
+                  value: formData['Condition'],
                   onChanged: (value) => formData['Condition'] = value,
                   decoration: InputDecoration(labelText: 'Condition'),
                   validator: (value) => value == null ? 'Condition is required' : null,
@@ -236,17 +288,29 @@ class _StepTwoForm extends StatelessWidget {
                             child: Text(size),
                           ))
                       .toList(),
+                  value: formData['Size'],
                   onChanged: (value) => formData['Size'] = value,
                   decoration: InputDecoration(labelText: 'Size'),
                   validator: (value) => value == null ? 'Size is required' : null,
+                ),
+                SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  items: types
+                      .map((type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type),
+                          ))
+                      .toList(),
+                  value: formData['Type'],
+                  onChanged: (value) => formData['Type'] = value,
+                  decoration: InputDecoration(labelText: 'Type'),
+                  validator: (value) => value == null ? 'Type is required' : null,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Description'),
                   maxLines: 3,
                   onChanged: (value) => formData['Description'] = value,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Description is required' : null,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
