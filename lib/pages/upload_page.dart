@@ -1,3 +1,4 @@
+import 'package:eco_closet/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -23,18 +24,18 @@ class _UploadItemPageState extends State<UploadItemPage> {
 
   Future<void> _fetchDropdownData() async {
     try {
-      final brandsSnapshot = await FirebaseFirestore.instance.collection('Clothes_Brands').get();
-      final colorsSnapshot = await FirebaseFirestore.instance.collection('Colors').get();
-      final conditionsSnapshot = await FirebaseFirestore.instance.collection('Condition').get();
-      final sizesSnapshot = await FirebaseFirestore.instance.collection('Clothes_Sizes').get();
-      final typesSnapshot = await FirebaseFirestore.instance.collection('item_types').get();
+      final brandsSnapshot = await Utils.brands;
+      final colorsSnapshot = await Utils.colors;
+      final conditionsSnapshot = await Utils.conditions;
+      final sizesSnapshot = await Utils.sizes;
+      final typesSnapshot = await Utils.types;
 
       setState(() {
-        _brands = brandsSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
-        _colors = colorsSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
-        _conditions = conditionsSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
-        _sizes = sizesSnapshot.docs.map((doc) => doc['Symbol'].toString().toLowerCase()).toList();
-        _types = typesSnapshot.docs.map((doc) => doc['name'].toString().toLowerCase()).toList();
+        _brands = brandsSnapshot;
+        _colors = colorsSnapshot;
+        _conditions = conditionsSnapshot;
+        _sizes = sizesSnapshot;
+        _types = typesSnapshot;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -47,10 +48,10 @@ class _UploadItemPageState extends State<UploadItemPage> {
     final jsonSchema = Schema.object(
       properties: {
         "Brand": Schema.string(description: "Brand of the item, or null if unknown"),
-        "Color": Schema.string(description: "Color of the item"),
-        "Condition": Schema.string(description: "Condition of the item: new, almost new, used, etc."),
-        "Size": Schema.string(description: "Size of the item, or 'Medium' if uncertain"),
-        "Type": Schema.string(description: "Type of the item: T-shirt, pants, coat, etc."),
+        "Color": Schema.string(description: "Color of the item: White, Black, Multicolor"),
+        "Condition": Schema.string(description: "Condition of the item: Never Used, New, Gently Used, etc."),
+        "Size": Schema.string(description: "Size of the item, null if uncertain"),
+        "Type": Schema.string(description: "Type of the item in plural: T-shirts, pants, coats, etc."),
       },
     );
 
@@ -69,7 +70,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
     }
 
     final prompt = TextPart(
-      'Analyze the provided images and extract metadata including brand, color, condition, size, and type.',
+      """Analyze the provided images and extract metadata including brand, color, condition, size, and type."""
     );
 
     final content = [Content.multi([...imageParts, prompt])];
@@ -77,7 +78,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
     final response = await model.generateContent(content);
 
     try {
-      var decoded = jsonDecode(response.text!.toLowerCase()) as Map<String, dynamic>;
+      var decoded = jsonDecode(response.text!) as Map<String, dynamic>;
       print(decoded);
       return decoded;
     } catch (e) {
@@ -200,10 +201,10 @@ class _StepTwoForm extends StatelessWidget {
 
     List<String> imageUrls = [];
     for (var image in images) {
-      final ref = FirebaseStorage.instance.ref().child('items/${image.name}');
+      var image_name = 'items/${image.name}';
+      final ref = FirebaseStorage.instance.ref().child(image_name);
       await ref.putFile(File(image.path));
-      final url = await ref.getDownloadURL();
-      imageUrls.add(url);
+      imageUrls.add(image_name);
     }
 
     await FirebaseFirestore.instance.collection('Items').add({
@@ -218,13 +219,16 @@ class _StepTwoForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final _formKey = GlobalKey<FormState>();
     print(colors);
+    print(conditions);
+    print(sizes);
+    print(types);
     print(prefilledData);
     final Map<String, dynamic> formData = {
-      'Brand': brands.contains(prefilledData['brand']) ? prefilledData['brand'] : null,
-      'Color': colors.contains(prefilledData['color']) ? prefilledData['color'] : null,
-      'Condition': conditions.contains(prefilledData['condition']) ? prefilledData['condition'] : null,
-      'Size': sizes.contains(prefilledData['size']) ? prefilledData['size'] : null,
-      'Type': types.contains(prefilledData['type']) ? prefilledData['type'] : null,
+      'Brand': brands.contains(prefilledData['Brand']) ? prefilledData['Brand'] : null,
+      'Color': colors.contains(prefilledData['Color']) ? prefilledData['Color'] : null,
+      'Condition': conditions.contains(prefilledData['Condition']) ? prefilledData['Condition'] : null,
+      'Size': sizes.contains(prefilledData['Size']) ? prefilledData['Size'] : null,
+      'Type': types.contains(prefilledData['Type']) ? prefilledData['Type'] : null,
       'Description': prefilledData['description'] ?? '',
       'Price': prefilledData['price'] ?? 20,
     };
@@ -242,30 +246,50 @@ class _StepTwoForm extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DropdownButtonFormField<String>(
-                  items: brands
-                      .map((brand) => DropdownMenuItem(
-                            value: brand,
-                            child: Text(brand),
-                          ))
-                      .toList(),
-                  value: formData['Brand'],
-                  onChanged: (value) => formData['Brand'] = value,
-                  decoration: InputDecoration(labelText: 'Brand'),
-                  validator: (value) => value == null ? 'Brand is required' : null,
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<String>.empty();
+                    }
+                    return brands.where((String option) {
+                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  onSelected: (String selection) {
+                    formData['Brand'] = selection;
+                  },
+                  initialValue: TextEditingValue(text: formData['Brand'] ?? ''),
+                  fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(labelText: 'Brand'),
+                      validator: (value) => value == null || value.isEmpty ? 'Brand is required' : null,
+                    );
+                  },
                 ),
                 SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  items: colors
-                      .map((color) => DropdownMenuItem(
-                            value: color,
-                            child: Text(color),
-                          ))
-                      .toList(),
-                  value: formData['Color'],
-                  onChanged: (value) => formData['Color'] = value,
-                  decoration: InputDecoration(labelText: 'Color'),
-                  validator: (value) => value == null ? 'Color is required' : null,
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<String>.empty();
+                    }
+                    return colors.where((String option) {
+                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  onSelected: (String selection) {
+                    formData['Color'] = selection;
+                  },
+                  initialValue: TextEditingValue(text: formData['Color'] ?? ''),
+                  fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(labelText: 'Color'),
+                      validator: (value) => value == null || value.isEmpty ? 'Color is required' : null,
+                    );
+                  },
                 ),
                 SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -294,18 +318,27 @@ class _StepTwoForm extends StatelessWidget {
                   validator: (value) => value == null ? 'Size is required' : null,
                 ),
                 SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  items: types
-                      .map((type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type),
-                          ))
-                      .toList(),
-                  value: formData['Type'],
-                  onChanged: (value) => formData['Type'] = value,
-                  decoration: InputDecoration(labelText: 'Type'),
-                  validator: (value) => value == null ? 'Type is required' : null,
-                ),
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<String>.empty();
+                    }
+                    return types.where((String option) {
+                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  onSelected: (String selection) {
+                    formData['Type'] = selection;
+                  },
+                  initialValue: TextEditingValue(text: formData['Type'] ?? ''),
+                  fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(labelText: 'Type'),
+                      validator: (value) => value == null || value.isEmpty ? 'Type is required' : null,
+                    );
+                  },                ),
                 SizedBox(height: 16),
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Description'),

@@ -1,4 +1,5 @@
 import 'package:eco_closet/pages/upload_page.dart';
+import 'package:eco_closet/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/pages/homepage.dart';
 import 'package:eco_closet/pages/explore_page.dart';
@@ -12,6 +13,7 @@ import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
+  Utils.loadMetadata();
   runApp(MyApp());
 }
 

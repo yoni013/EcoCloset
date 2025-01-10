@@ -1,4 +1,5 @@
 /// explore_page.dart
+import 'package:eco_closet/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -18,10 +19,15 @@ class _ExplorePageState extends State<ExplorePage> {
     'brand': null,
     'color': null,
     'condition': null,
-    'priceRange': RangeValues(0, 1000),
+    'priceRange': RangeValues(0, 300),
   };
 
+  bool isLoading = true;
+
   Future<void> fetchFilteredItems() async {
+    setState(() {
+      isLoading = true;
+    });
     var query = FirebaseFirestore.instance.collection('Items').where('status', isEqualTo: 'Available');
 
     if (filters['type'] != null) {
@@ -56,6 +62,7 @@ class _ExplorePageState extends State<ExplorePage> {
     setState(() {
       items = fetchedItems;
       applySorting();
+      isLoading = false;
     });
   }
 
@@ -78,7 +85,13 @@ class _ExplorePageState extends State<ExplorePage> {
     });
   }
 
-  void openFiltersPopup() {
+  void openFiltersPopup() async {
+    final sizes = await Utils.sizes;
+    final brands = await Utils.brands;
+    final types = await Utils.types;
+    final colors = await Utils.colors;
+    final conditions = await Utils.conditions;
+
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -90,6 +103,11 @@ class _ExplorePageState extends State<ExplorePage> {
               fetchFilteredItems();
             });
           },
+          sizes: sizes,
+          brands: brands,
+          types: types,
+          colors: colors,
+          conditions: conditions,
         );
       },
     );
@@ -149,8 +167,15 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
         ],
       ),
-      body: items.isEmpty
+      body: isLoading
           ? Center(child: CircularProgressIndicator())
+          : items.isEmpty
+              ? Center(
+                  child: Text(
+                    'No items match your filters.',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
+                )
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: GridView.builder(
@@ -237,8 +262,21 @@ class _ExplorePageState extends State<ExplorePage> {
 class FilterPopup extends StatelessWidget {
   final Map<String, dynamic> currentFilters;
   final Function(Map<String, dynamic>) onApply;
+  final List<String> sizes;
+  final List<String> brands;
+  final List<String> types;
+  final List<String> colors;
+  final List<String> conditions;
 
-  FilterPopup({required this.currentFilters, required this.onApply});
+  FilterPopup({
+    required this.currentFilters, 
+    required this.onApply,
+    required this.sizes,
+    required this.brands,
+    required this.types,
+    required this.colors,
+    required this.conditions,
+    });
 
   @override
   Widget build(BuildContext context) {
@@ -256,69 +294,104 @@ class FilterPopup extends StatelessWidget {
         children: [
           Text('Filters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: selectedType,
-            decoration: InputDecoration(labelText: 'Type'),
-            items: ['Tops', 'Bottoms', 'Accessories', 'Shoes', 'Outerwear'].map((type) {
-              return DropdownMenuItem(
-                value: type,
-                child: Text(type),
+          Autocomplete<String>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return types;
+              }
+              return types.where((type) =>
+                  type.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+            },
+            initialValue: TextEditingValue(text: selectedType ?? ''),
+            onSelected: (String selection) {
+              currentFilters['type'] = selection;
+            },
+            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+              return TextFormField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(labelText: 'Type'),
               );
-            }).toList(),
-            onChanged: (value) {
-              currentFilters['type'] = value;
             },
           ),
-          DropdownButtonFormField<String>(
-            value: selectedSize,
-            decoration: InputDecoration(labelText: 'Size'),
-            items: ['XS', 'S', 'M', 'L', 'XL'].map((size) {
-              return DropdownMenuItem(
-                value: size,
-                child: Text(size),
+          Autocomplete<String>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return sizes;
+              }
+              return sizes.where((size) =>
+                  size.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+            },
+            initialValue: TextEditingValue(text: selectedSize ?? ''),
+            onSelected: (String selection) {
+              currentFilters['size'] = selection;
+            },
+            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+              return TextFormField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(labelText: 'Size'),
               );
-            }).toList(),
-            onChanged: (value) {
-              currentFilters['size'] = value;
             },
           ),
-          DropdownButtonFormField<String>(
-            value: selectedBrand,
-            decoration: InputDecoration(labelText: 'Brand'),
-            items: ['Nike', 'Adidas', 'Zara', 'H&M', 'Other'].map((brand) {
-              return DropdownMenuItem(
-                value: brand,
-                child: Text(brand),
+          Autocomplete<String>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return brands;
+              }
+              return brands.where((brand) =>
+                  brand.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+            },
+            initialValue: TextEditingValue(text: selectedBrand ?? ''),
+            onSelected: (String selection) {
+              currentFilters['brand'] = selection;
+            },
+            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+              return TextFormField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(labelText: 'Brand'),
               );
-            }).toList(),
-            onChanged: (value) {
-              currentFilters['brand'] = value;
             },
           ),
-          DropdownButtonFormField<String>(
-            value: selectedColor,
-            decoration: InputDecoration(labelText: 'Color'),
-            items: ['Red', 'Blue', 'Green', 'Black', 'White', 'Other'].map((color) {
-              return DropdownMenuItem(
-                value: color,
-                child: Text(color),
+          Autocomplete<String>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return colors;
+              }
+              return colors.where((color) =>
+                  color.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+            },
+            initialValue: TextEditingValue(text: selectedColor ?? ''),
+            onSelected: (String selection) {
+              currentFilters['color'] = selection;
+            },
+            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+              return TextFormField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(labelText: 'Color'),
               );
-            }).toList(),
-            onChanged: (value) {
-              currentFilters['color'] = value;
             },
           ),
-          DropdownButtonFormField<String>(
-            value: selectedCondition,
-            decoration: InputDecoration(labelText: 'Condition'),
-            items: ['New', 'Like New', 'Used', 'Fair'].map((condition) {
-              return DropdownMenuItem(
-                value: condition,
-                child: Text(condition),
+          Autocomplete<String>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return conditions;
+              }
+              return conditions.where((condition) =>
+                  condition.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+            },
+            initialValue: TextEditingValue(text: selectedCondition ?? ''),
+            onSelected: (String selection) {
+              currentFilters['condition'] = selection;
+            },
+            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+              return TextFormField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(labelText: 'Condition'),
               );
-            }).toList(),
-            onChanged: (value) {
-              currentFilters['condition'] = value;
             },
           ),
           RangeSlider(
