@@ -13,8 +13,13 @@ dependencies:
   # State management
   provider: ^6.0.5
 
-  # Animations
+  # Animations & Theme
   flutter_animate: ^4.5.2
+  flex_color_scheme: ^7.0.0
+
+
+  # Table viewer
+  data_table_2: ^2.5.18
 
   # Image upload and handling
   image_picker: ^1.1.2

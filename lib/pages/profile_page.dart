@@ -1,4 +1,7 @@
 /// profile_page.dart
+import 'package:eco_closet/main.dart';
+import 'package:eco_closet/pages/homepage.dart';
+import 'package:eco_closet/pages/my_shop_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -107,10 +110,20 @@ class _ProfilePageState extends State<ProfilePage> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: Icon(Icons.shop),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => MyShopPage(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => AuthGate()));
             },
           ),
         ],
