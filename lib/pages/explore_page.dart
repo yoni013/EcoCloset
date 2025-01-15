@@ -1,9 +1,12 @@
 /// explore_page.dart
-import 'package:eco_closet/utils.dart';
+import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'item_page.dart';
+import 'package:provider/provider.dart';
+import 'package:eco_closet/utils/firestore_cache_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ExplorePage extends StatefulWidget {
   @override
@@ -22,12 +25,7 @@ class _ExplorePageState extends State<ExplorePage> {
     'priceRange': RangeValues(0, 300),
   };
 
-  bool isLoading = true;
-
-  Future<void> fetchFilteredItems() async {
-    setState(() {
-      isLoading = true;
-    });
+  Future<void> fetchFilteredItems(FirestoreCacheProvider cacheProvider) async {
     var query = FirebaseFirestore.instance.collection('Items').where('status', isEqualTo: 'Available');
 
     if (filters['type'] != null) {
@@ -46,11 +44,10 @@ class _ExplorePageState extends State<ExplorePage> {
       query = query.where('Condition', isEqualTo: filters['condition']);
     }
 
-    var querySnapshot = await query.get();
+    final cacheKey = 'filtered_items_${filters.toString()}';
+    var fetchedItems = await cacheProvider.fetchCollection(cacheKey, query);
 
-    var fetchedItems = await Future.wait(querySnapshot.docs.map((doc) async {
-      var data = doc.data();
-      data['id'] = doc.id;
+    fetchedItems = await Future.wait(fetchedItems.map((data) async {
       if (data['images'] is List && data['images'].isNotEmpty) {
         data['imageUrl'] = await fetchImageUrl(data['images'][0]);
       } else {
@@ -59,11 +56,12 @@ class _ExplorePageState extends State<ExplorePage> {
       return data;
     }).toList());
 
-    setState(() {
-      items = fetchedItems;
-      applySorting();
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        items = fetchedItems;
+        applySorting();
+      });
+    }
   }
 
   Future<String> fetchImageUrl(dynamic imagePath) async {
@@ -85,7 +83,7 @@ class _ExplorePageState extends State<ExplorePage> {
     });
   }
 
-  void openFiltersPopup() async {
+  void openFiltersPopup(FirestoreCacheProvider cacheProvider) async {
     final sizes = await Utils.sizes;
     final brands = await Utils.brands;
     final types = await Utils.types;
@@ -100,7 +98,7 @@ class _ExplorePageState extends State<ExplorePage> {
           onApply: (newFilters) {
             setState(() {
               filters = newFilters;
-              fetchFilteredItems();
+              fetchFilteredItems(cacheProvider);
             });
           },
           sizes: sizes,
@@ -114,13 +112,9 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    fetchFilteredItems();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final cacheProvider = Provider.of<FirestoreCacheProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Explore'),
@@ -128,7 +122,7 @@ class _ExplorePageState extends State<ExplorePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.filter_alt),
-            onPressed: openFiltersPopup,
+            onPressed: () => openFiltersPopup(cacheProvider),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -167,15 +161,24 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
         ],
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : items.isEmpty
-              ? Center(
-                  child: Text(
-                    'No items match your filters.',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                  ),
-                )
+      body: items.isEmpty
+          ? FutureBuilder(
+              future: fetchFilteredItems(cacheProvider),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                } else if (items.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No items match your filters.',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                    ),
+                  );
+                } else {
+                  return SizedBox.shrink();
+                }
+              },
+            )
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: GridView.builder(
@@ -208,14 +211,11 @@ class _ExplorePageState extends State<ExplorePage> {
                         children: [
                           Expanded(
                             child: item['imageUrl'] != null && item['imageUrl'].isNotEmpty
-                                ? Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                      image: DecorationImage(
-                                        image: NetworkImage(item['imageUrl']),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
+                                ? CachedNetworkImage(
+                                    imageUrl: item['imageUrl'],
+                                    placeholder: (context, url) => CircularProgressIndicator(),
+                                    errorWidget: (context, url, error) => Icon(Icons.broken_image),
+                                    fit: BoxFit.cover,
                                   )
                                 : Container(
                                     decoration: BoxDecoration(

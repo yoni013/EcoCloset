@@ -1,11 +1,9 @@
 /// profile_page.dart
-import 'package:eco_closet/main.dart';
-import 'package:eco_closet/pages/homepage.dart';
-import 'package:eco_closet/pages/my_shop_page.dart';
+import 'package:eco_closet/pages/personal_sizes_preferences.dart';
+import 'package:eco_closet/utils/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:eco_closet/pages/item_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -110,20 +108,23 @@ class _ProfilePageState extends State<ProfilePage> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.shop),
+            icon: Icon(Icons.settings),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => MyShopPage(),
+                  builder: (context) => SettingsPage(),
                 ),
               );
             },
           ),
           IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => AuthGate()));
+            icon: Icon(Icons.room_preferences),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => PersonalSizesPreferences(),
+                ),
+              );
             },
           ),
         ],

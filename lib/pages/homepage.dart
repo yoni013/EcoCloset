@@ -1,144 +1,182 @@
-/// homepage.dart
-import 'package:eco_closet/pages/profile_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'item_page.dart';
 
-class HomePage extends StatelessWidget {
+
+class Homepage extends StatefulWidget {
+  const Homepage({Key? key}) : super(key: key);
+
+  @override
+  _HomepageState createState() => _HomepageState();
+}
+
+class _HomepageState extends State<Homepage> {
+  final Map<String, Set<String>> userSizes = {
+    "Coats": {}, "Pants": {}, "Shirts": {}, "Shoes": {}, "Sweaters": {}
+  };
+
+  List<Map<String, dynamic>> filteredItems = [];
+  List<Map<String, dynamic>> trendingItems = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserSizesAndItems();
+    fetchTrendingItems();
+  }
+
+  Future<void> fetchUserSizesAndItems() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+
+    if (userDoc.exists && userDoc.data()?.containsKey('Sizes') == true) {
+      final sizes = (userDoc.data()?['Sizes'] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(
+          key,
+          value is List<dynamic> ? Set<String>.from(value.map((e) => e.toString())) : <String>{},
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          userSizes.addAll(sizes);
+        });
+      }
+
+      final querySnapshot = await FirebaseFirestore.instance.collection('Items')
+          .where('status', isEqualTo: 'Available')
+          .get();
+
+      final allItems = querySnapshot.docs.map((doc) => doc.data()).toList();
+      if (mounted) {
+        setState(() {
+          filteredItems = allItems.where((item) {
+            final itemType = item['Type'] as String?;
+            final itemSize = item['Size'] as String?;
+            if (itemType != null && itemSize != null) {
+              return userSizes[itemType]?.contains(itemSize) ?? false;
+            }
+            return false;
+          }).toList();
+        });
+      }
+    }
+  }
+
+  Future<void> fetchTrendingItems() async {
+    final querySnapshot = await FirebaseFirestore.instance.collection('Items')
+        // .orderBy('views', descending: true)
+        .limit(5)
+        .get();
+
+    if (mounted) {
+      setState(() {
+        trendingItems = querySnapshot.docs.map((doc) => doc.data()).toList();
+        isLoading = false;
+      });
+    }
+  }
+  Future<String> fetchImageUrl(dynamic imagePath) async {
+    if (imagePath is String) {
+      return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
+    } else {
+      throw TypeError();
+    }
+  }
+
+  Widget buildItemCard(Map<String, dynamic> item) {
+    final imageUrl = item['images'] != null && (item['images'] as List).isNotEmpty
+        ? fetchImageUrl(item['images'][0])
+        : null;
+
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.4,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: FutureBuilder<String>(
+                future: imageUrl,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return Image.network(snapshot.data!, fit: BoxFit.cover);
+                },
+                )
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                item['Brand'] ?? 'Unknown',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                '\$${item['Price'] ?? 'N/A'}',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ProfilePage(viewedUserId: FirebaseAuth.instance.currentUser?.uid ?? ""),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome to the Marketplace!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Featured Categories',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('Items').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  var items = snapshot.data!.docs;
-                  return Container(
-                    height: 100,
+      appBar: AppBar(title: const Text("Home")),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      "Recommended for You",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 300,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        var item = items[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Chip(
-                            label: Text(item['Type'] ?? 'Unknown'),
-                            backgroundColor: Colors.blue.shade100,
-                          ),
-                        );
-                      },
+                      itemCount: filteredItems.length,
+                      itemBuilder: (context, index) => buildItemCard(filteredItems[index]),
                     ),
-                  );
-                },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      "Trending Now",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 300,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: trendingItems.length,
+                      itemBuilder: (context, index) => buildItemCard(trendingItems[index]),
+                    ),
+                  ),
+                ],
               ),
-              Divider(height: 32, thickness: 1),
-              Text(
-                'Recommended for You',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('Items').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  var items = snapshot.data!.docs;
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      var item = items[index];
-                      var images = item['images'] as List<dynamic>?;
-                      var imageUrl = images != null && images.isNotEmpty ? images[0] : '';
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ItemPage(itemId: item.id),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          elevation: 2,
-                          margin: EdgeInsets.symmetric(vertical: 8.0),
-                          child: ListTile(
-                            leading: FutureBuilder<String>(
-                              future: FirebaseStorage.instance.ref(imageUrl).getDownloadURL(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else if (snapshot.hasError || !snapshot.hasData) {
-                                  return Icon(Icons.image_not_supported);
-                                } else {
-                                  return CircleAvatar(
-                                    backgroundImage: NetworkImage(snapshot.data!),
-                                  );
-                                }
-                              },
-                            ),
-                            title: Text(item['Brand'] ?? 'Unknown'),
-                            subtitle: Text(item['Description'] ?? 'No description'),
-                            trailing: Text('\₪${item['Price'] ?? 'N/A'}'),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

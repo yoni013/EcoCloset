@@ -1,4 +1,4 @@
-import 'package:eco_closet/utils.dart';
+import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';

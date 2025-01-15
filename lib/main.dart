@@ -1,31 +1,67 @@
 /// main.dart
 import 'package:eco_closet/firebase_options.dart';
+import 'package:eco_closet/utils/firestore_cache_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/pages/homepage.dart';
 import 'package:eco_closet/pages/explore_page.dart';
 import 'package:eco_closet/pages/my_shop_page.dart';
 import 'package:eco_closet/pages/profile_page.dart';
 import 'package:eco_closet/pages/upload_page.dart';
+import 'package:eco_closet/providers/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
-  runApp(MyApp());
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => FirestoreCacheProvider()),
+      ChangeNotifierProvider(create: (_) => ThemeProvider()..loadUserTheme()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Marketplace',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        brightness: Brightness.light,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      title: 'Eco Closet',
+      theme: FlexColorScheme.light(
+        scheme: FlexScheme.espresso,
+        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
+        blendLevel: 15,
+        appBarStyle: FlexAppBarStyle.background,
+        appBarOpacity: 0.95,
+        subThemesData: const FlexSubThemesData(
+          blendOnLevel: 20,
+          cardElevation: 1,
+          thinBorderWidth: 1.0,
+        ),
+        visualDensity: FlexColorScheme.comfortablePlatformDensity,
+        fontFamily: 'Roboto',
+      ).toTheme,
+      darkTheme: FlexColorScheme.dark(
+        scheme: FlexScheme.espresso,
+        surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
+        blendLevel: 20,
+        appBarStyle: FlexAppBarStyle.material,
+        appBarOpacity: 0.90,
+        subThemesData: const FlexSubThemesData(
+          blendOnLevel: 25,
+          cardElevation: 2,
+          thinBorderWidth: 1.0,
+        ),
+        visualDensity: FlexColorScheme.comfortablePlatformDensity,
+        fontFamily: 'Roboto',
+      ).toTheme,
+      themeMode: context.watch<ThemeProvider>().themeMode,
       home: AuthGate(),
     );
   }
@@ -64,7 +100,7 @@ class PersistentBottomNavPage extends StatelessWidget {
     return PersistentBottomBarScaffold(
       items: [
         PersistentTabItem(
-          tab: HomePage(),
+          tab: Homepage(),
           icon: Icons.home,
           title: 'Home',
           navigatorkey: _homeNavigatorKey,
@@ -136,9 +172,6 @@ class _PersistentBottomBarScaffoldState extends State<PersistentBottomBarScaffol
               _selectedTab = index;
             });
           },
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.white,
           items: widget.items.map((item) => BottomNavigationBarItem(
               icon: Icon(item.icon), label: item.title)).toList(),
         ),

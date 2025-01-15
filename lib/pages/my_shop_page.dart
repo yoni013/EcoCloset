@@ -71,10 +71,11 @@ Future<String?> fetchItemImage(String itemId) async {
           "actions": doc.id,
         });
       }
-
-      setState(() {
-        orders = fetchedOrders;
-      });
+      if (mounted) {
+        setState(() {
+          orders = fetchedOrders;
+        });
+      }
     } catch (e) {
       print("Error fetching orders: $e");
     }
@@ -96,9 +97,7 @@ Future<String?> fetchItemImage(String itemId) async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("My Shop"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text("My Shop")
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
