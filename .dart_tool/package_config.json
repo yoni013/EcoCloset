@@ -255,19 +255,19 @@
     },
     {
       "name": "firebase_ui_auth",
-      "rootUri": "file:///Users/yonatan/.pub-cache/hosted/pub.dev/firebase_ui_auth-1.16.0",
+      "rootUri": "file:///Users/yonatan/.pub-cache/hosted/pub.dev/firebase_ui_auth-1.16.1",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
     {
       "name": "firebase_ui_localizations",
-      "rootUri": "file:///Users/yonatan/.pub-cache/hosted/pub.dev/firebase_ui_localizations-1.13.0",
+      "rootUri": "file:///Users/yonatan/.pub-cache/hosted/pub.dev/firebase_ui_localizations-1.13.1",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
     {
       "name": "firebase_ui_oauth",
-      "rootUri": "file:///Users/yonatan/.pub-cache/hosted/pub.dev/firebase_ui_oauth-1.6.0",
+      "rootUri": "file:///Users/yonatan/.pub-cache/hosted/pub.dev/firebase_ui_oauth-1.6.1",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
@@ -746,7 +746,7 @@
       "languageVersion": "2.17"
     }
   ],
-  "generated": "2025-01-19T16:49:04.844542Z",
+  "generated": "2025-01-20T08:21:07.295144Z",
   "generator": "pub",
   "generatorVersion": "3.6.0",
   "flutterRoot": "file:///Users/yonatan/Desktop/flutter/flutter",
