@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'dart:convert';
 
+import '../generated/l10n.dart';
+
 class UploadItemPage extends StatefulWidget {
   @override
   _UploadItemPageState createState() => _UploadItemPageState();
@@ -47,11 +49,18 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Future<Map<String, dynamic>> _callGemini() async {
     final jsonSchema = Schema.object(
       properties: {
-        "Brand": Schema.string(description: "Brand of the item, or null if unknown"),
-        "Color": Schema.string(description: "Color of the item: White, Black, Multicolor"),
-        "Condition": Schema.string(description: "Condition of the item: Never Used, New, Gently Used, etc."),
-        "Size": Schema.string(description: "Size of the item, null if uncertain"),
-        "Type": Schema.string(description: "Type of the item in plural: T-shirts, pants, coats, etc."),
+        AppLocalizations.of(context).brand:
+            Schema.string(description: "Brand of the item, or null if unknown"),
+        AppLocalizations.of(context).color: Schema.string(
+            description: "Color of the item: White, Black, Multicolor"),
+        AppLocalizations.of(context).condition: Schema.string(
+            description:
+                "Condition of the item: Never Used, New, Gently Used, etc."),
+        AppLocalizations.of(context).size:
+            Schema.string(description: "Size of the item, null if uncertain"),
+        AppLocalizations.of(context).type: Schema.string(
+            description:
+                "Type of the item in plural: T-shirts, pants, coats, etc."),
       },
     );
 
@@ -70,10 +79,11 @@ class _UploadItemPageState extends State<UploadItemPage> {
     }
 
     final prompt = TextPart(
-      """Analyze the provided images and extract metadata including brand, color, condition, size, and type."""
-    );
+        """Analyze the provided images and extract metadata including brand, color, condition, size, and type.""");
 
-    final content = [Content.multi([...imageParts, prompt])];
+    final content = [
+      Content.multi([...imageParts, prompt])
+    ];
 
     final response = await model.generateContent(content);
 
@@ -93,7 +103,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
   }
 
   Future<void> _pickImages() async {
-    final pickedImages = await _picker.pickMultiImage(limit: 6, imageQuality: 75);
+    final pickedImages =
+        await _picker.pickMultiImage(limit: 6, imageQuality: 75);
     setState(() {
       _images = pickedImages;
     });
@@ -127,7 +138,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Upload Item - Step 1'),
+        title: Text(AppLocalizations.of(context).uploadItemStep1),
         centerTitle: true,
       ),
       body: Padding(
@@ -135,7 +146,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Upload Images (up to 6):'),
+            Text(AppLocalizations.of(context).uploadImages),
             SizedBox(height: 8),
             Wrap(
               spacing: 8.0,
@@ -151,7 +162,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
                           ),
                           IconButton(
                             icon: Icon(Icons.close, color: Colors.red),
-                            onPressed: () => setState(() => _images.remove(image)),
+                            onPressed: () =>
+                                setState(() => _images.remove(image)),
                           ),
                         ],
                       ))
@@ -160,12 +172,12 @@ class _UploadItemPageState extends State<UploadItemPage> {
             SizedBox(height: 8),
             ElevatedButton(
               onPressed: _pickImages,
-              child: Text('Pick Images'),
+              child: Text(AppLocalizations.of(context).pickImages),
             ),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: _images.isNotEmpty ? _processImagesWithGemini : null,
-              child: Text('Analyze Images with Gemini'),
+              child: Text(AppLocalizations.of(context).analyzeImages),
             ),
           ],
         ),
@@ -224,18 +236,30 @@ class _StepTwoForm extends StatelessWidget {
     print(types);
     print(prefilledData);
     final Map<String, dynamic> formData = {
-      'Brand': brands.contains(prefilledData['Brand']) ? prefilledData['Brand'] : null,
-      'Color': colors.contains(prefilledData['Color']) ? prefilledData['Color'] : null,
-      'Condition': conditions.contains(prefilledData['Condition']) ? prefilledData['Condition'] : null,
-      'Size': sizes.contains(prefilledData['Size']) ? prefilledData['Size'] : null,
-      'Type': types.contains(prefilledData['Type']) ? prefilledData['Type'] : null,
-      'Description': prefilledData['description'] ?? '',
-      'Price': prefilledData['price'] ?? 20,
+      AppLocalizations.of(context).brand:
+          brands.contains(prefilledData['Brand'])
+              ? prefilledData['Brand']
+              : null,
+      AppLocalizations.of(context).color:
+          colors.contains(prefilledData['Color'])
+              ? prefilledData['Color']
+              : null,
+      AppLocalizations.of(context).condition:
+          conditions.contains(prefilledData['Condition'])
+              ? prefilledData['Condition']
+              : null,
+      AppLocalizations.of(context).size:
+          sizes.contains(prefilledData['Size']) ? prefilledData['Size'] : null,
+      AppLocalizations.of(context).type:
+          types.contains(prefilledData['Type']) ? prefilledData['Type'] : null,
+      AppLocalizations.of(context).description:
+          prefilledData['description'] ?? '',
+      AppLocalizations.of(context).price: prefilledData['price'] ?? 20,
     };
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Upload Item - Step 2'),
+        title: Text(AppLocalizations.of(context).uploadItemStep2),
         centerTitle: true,
       ),
       body: Padding(
@@ -252,19 +276,27 @@ class _StepTwoForm extends StatelessWidget {
                       return const Iterable<String>.empty();
                     }
                     return brands.where((String option) {
-                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                      return option
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase());
                     });
                   },
                   onSelected: (String selection) {
                     formData['Brand'] = selection;
                   },
                   initialValue: TextEditingValue(text: formData['Brand'] ?? ''),
-                  fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                  fieldViewBuilder: (BuildContext context,
+                      TextEditingController textEditingController,
+                      FocusNode focusNode,
+                      VoidCallback onFieldSubmitted) {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      decoration: InputDecoration(labelText: 'Brand'),
-                      validator: (value) => value == null || value.isEmpty ? 'Brand is required' : null,
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context).brand),
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context).brandRequired
+                          : null,
                     );
                   },
                 ),
@@ -275,19 +307,26 @@ class _StepTwoForm extends StatelessWidget {
                       return const Iterable<String>.empty();
                     }
                     return colors.where((String option) {
-                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                      return option
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase());
                     });
                   },
                   onSelected: (String selection) {
                     formData['Color'] = selection;
                   },
                   initialValue: TextEditingValue(text: formData['Color'] ?? ''),
-                  fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                  fieldViewBuilder: (BuildContext context,
+                      TextEditingController textEditingController,
+                      FocusNode focusNode,
+                      VoidCallback onFieldSubmitted) {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
                       decoration: InputDecoration(labelText: 'Color'),
-                      validator: (value) => value == null || value.isEmpty ? 'Color is required' : null,
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context).colorRequired
+                          : null,
                     );
                   },
                 ),
@@ -301,8 +340,11 @@ class _StepTwoForm extends StatelessWidget {
                       .toList(),
                   value: formData['Condition'],
                   onChanged: (value) => formData['Condition'] = value,
-                  decoration: InputDecoration(labelText: 'Condition'),
-                  validator: (value) => value == null ? 'Condition is required' : null,
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).condition),
+                  validator: (value) => value == null
+                      ? AppLocalizations.of(context).conditionRequired
+                      : null,
                 ),
                 SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -315,7 +357,9 @@ class _StepTwoForm extends StatelessWidget {
                   value: formData['Size'],
                   onChanged: (value) => formData['Size'] = value,
                   decoration: InputDecoration(labelText: 'Size'),
-                  validator: (value) => value == null ? 'Size is required' : null,
+                  validator: (value) => value == null
+                      ? AppLocalizations.of(context).sizeRequired
+                      : null,
                 ),
                 SizedBox(height: 16),
                 Autocomplete<String>(
@@ -324,21 +368,29 @@ class _StepTwoForm extends StatelessWidget {
                       return const Iterable<String>.empty();
                     }
                     return types.where((String option) {
-                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                      return option
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase());
                     });
                   },
                   onSelected: (String selection) {
                     formData['Type'] = selection;
                   },
                   initialValue: TextEditingValue(text: formData['Type'] ?? ''),
-                  fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                  fieldViewBuilder: (BuildContext context,
+                      TextEditingController textEditingController,
+                      FocusNode focusNode,
+                      VoidCallback onFieldSubmitted) {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
                       decoration: InputDecoration(labelText: 'Type'),
-                      validator: (value) => value == null || value.isEmpty ? 'Type is required' : null,
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context).typeRequired
+                          : null,
                     );
-                  },                ),
+                  },
+                ),
                 SizedBox(height: 16),
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Description'),
@@ -352,7 +404,7 @@ class _StepTwoForm extends StatelessWidget {
                   onChanged: (value) => formData['Price'] = value,
                   validator: (value) =>
                       value == null || double.tryParse(value) == null
-                          ? 'Valid price is required'
+                          ? AppLocalizations.of(context).validPrice
                           : null,
                 ),
                 SizedBox(height: 16),
@@ -362,7 +414,9 @@ class _StepTwoForm extends StatelessWidget {
                       try {
                         await _uploadItemToFirebase(formData);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Item uploaded successfully!')),
+                          SnackBar(
+                              content: Text(AppLocalizations.of(context)
+                                  .itemUploadSuccess)),
                         );
                         Navigator.popUntil(context, (route) => route.isFirst);
                       } catch (e) {

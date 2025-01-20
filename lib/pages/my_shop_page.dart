@@ -3,8 +3,8 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../generated/l10n.dart';
 import 'item_page.dart';
-
 
 class MyShopPage extends StatefulWidget {
   @override
@@ -22,29 +22,35 @@ class _MyShopPageState extends State<MyShopPage> {
 
   Future<String> fetchBuyerName(String buyerId) async {
     try {
-      final buyerDoc = await FirebaseFirestore.instance.collection('Users').doc(buyerId).get();
-      return buyerDoc.data()?['Name'] ?? 'Unknown Buyer';
+      final buyerDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(buyerId)
+          .get();
+      return buyerDoc.data()?['Name'] ??
+          AppLocalizations.of(context).unknownBuyer;
     } catch (e) {
-      print('Error fetching buyer name: $e');
-      return 'Unknown Buyer';
+      print(AppLocalizations.of(context).errorFetchingBuyer + e.toString());
+      return AppLocalizations.of(context).unknownBuyer;
     }
   }
 
-Future<String?> fetchItemImage(String itemId) async {
-  try {
-    final itemDoc = await FirebaseFirestore.instance.collection('Items').doc(itemId).get();
-    final List<dynamic>? images = itemDoc.data()?['images'];
-    if (images != null && images.isNotEmpty) {
-      final String imagePath = images[0];
-      return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
+  Future<String?> fetchItemImage(String itemId) async {
+    try {
+      final itemDoc = await FirebaseFirestore.instance
+          .collection('Items')
+          .doc(itemId)
+          .get();
+      final List<dynamic>? images = itemDoc.data()?['images'];
+      if (images != null && images.isNotEmpty) {
+        final String imagePath = images[0];
+        return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
+      }
+      return null;
+    } catch (e) {
+      print(AppLocalizations.of(context).errorFetchingImage + e.toString());
+      return null;
     }
-    return null;
-  } catch (e) {
-    print('Error fetching item image: $e');
-    return null;
   }
-}
-
 
   Future<void> fetchOrders() async {
     final sellerId = FirebaseAuth.instance.currentUser?.uid;
@@ -64,8 +70,8 @@ Future<String?> fetchItemImage(String itemId) async {
         final itemImage = await fetchItemImage(data['ItemID'] ?? '');
         fetchedOrders.add({
           "BuyerName": buyerName,
-          "FinalPrice": "\$${(data['FinalPrice'] ?? 0).toStringAsFixed(2)}",
-          "Status": data['Status'] ?? "Pending",
+          "FinalPrice": "\₪${(data['FinalPrice'] ?? 0).toStringAsFixed(2)}",
+          "Status": data['Status'] ?? AppLocalizations.of(context).pending,
           "ItemImage": itemImage,
           "ItemID": data['ItemID'],
           "actions": doc.id,
@@ -77,7 +83,7 @@ Future<String?> fetchItemImage(String itemId) async {
         });
       }
     } catch (e) {
-      print("Error fetching orders: $e");
+      print(AppLocalizations.of(context).errorFetchingOrders + e.toString());
     }
   }
 
@@ -86,44 +92,45 @@ Future<String?> fetchItemImage(String itemId) async {
       await FirebaseFirestore.instance
           .collection('Orders')
           .doc(orderId)
-          .update({'Status': status});
+          .update({
+        'Status': status,
+      });
       fetchOrders();
     } catch (e) {
-      print("Error updating order status: $e");
+      print(AppLocalizations.of(context).errorUpdatingStatus + e.toString());
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("My Shop")
-      ),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).myShop)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: DataTable2(
           columnSpacing: 12,
           horizontalMargin: 12,
-          minWidth: MediaQuery.of(context).size.width, // Make table full width
+          minWidth: MediaQuery.of(context).size.width,
           columns: [
-            DataColumn(label: Text("Item")),
-            DataColumn(label: Text("Buyer")),
-            DataColumn(label: Text("Price")),
-            DataColumn(label: Text("Status")),
-            DataColumn(label: Text("Actions")),
+            DataColumn(label: Text(AppLocalizations.of(context).item)),
+            DataColumn(label: Text(AppLocalizations.of(context).buyer)),
+            DataColumn(label: Text(AppLocalizations.of(context).price)),
+            DataColumn(label: Text(AppLocalizations.of(context).status)),
+            DataColumn(label: Text(AppLocalizations.of(context).actions)),
           ],
           rows: orders.map((order) {
             return DataRow(cells: [
               DataCell(order["ItemImage"] != null
                   ? GestureDetector(
                       onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ItemPage(itemId: order['ItemID']),
-                        ),
-                      );
-                    },
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ItemPage(itemId: order['ItemID']),
+                          ),
+                        );
+                      },
                       child: Image.network(
                         order["ItemImage"],
                         width: 50,
@@ -132,26 +139,39 @@ Future<String?> fetchItemImage(String itemId) async {
                       ),
                     )
                   : Icon(Icons.image_not_supported)),
-              DataCell(Text(order["BuyerName"] ?? "Unknown Buyer")),
-              DataCell(Text(order["FinalPrice"] ?? "\$0.00")),
-              DataCell(Text(order["Status"] ?? "Unknown")),
+              DataCell(Text(order["BuyerName"] ??
+                  AppLocalizations.of(context).unknownBuyer)),
+              DataCell(Text(order["FinalPrice"] ?? "₪0.00")),
+              DataCell(Text(
+                  order["Status"] ?? AppLocalizations.of(context).unknown)),
               DataCell(PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'approve') {
-                    updateOrderStatus(order["actions"], "Approved");
+                    updateOrderStatus(order["actions"],
+                        AppLocalizations.of(context).approved);
                   } else if (value == 'decline') {
-                    updateOrderStatus(order["actions"], "Declined");
+                    updateOrderStatus(order["actions"],
+                        AppLocalizations.of(context).declined);
                   } else if (value == 'shipped') {
-                    updateOrderStatus(order["actions"], "Shipped");
+                    updateOrderStatus(
+                        order["actions"], AppLocalizations.of(context).shipped);
                   }
                 },
                 itemBuilder: (context) {
                   final List<PopupMenuEntry<String>> options = [];
-                  if (order["Status"] == "Pending") {
-                    options.add(PopupMenuItem(value: "approve", child: Text("Approve")));
-                    options.add(PopupMenuItem(value: "decline", child: Text("Decline")));
-                  } else if (order["Status"] == "Approved") {
-                    options.add(PopupMenuItem(value: "shipped", child: Text("Mark as Shipped")));
+                  if (order["Status"] == AppLocalizations.of(context).pending) {
+                    options.add(PopupMenuItem(
+                        value: "approve",
+                        child: Text(AppLocalizations.of(context).approve)));
+                    options.add(PopupMenuItem(
+                        value: "decline",
+                        child: Text(AppLocalizations.of(context).decline)));
+                  } else if (order["Status"] ==
+                      AppLocalizations.of(context).approved) {
+                    options.add(PopupMenuItem(
+                        value: "shipped",
+                        child:
+                            Text(AppLocalizations.of(context).markAsShipped)));
                   }
                   return options;
                 },

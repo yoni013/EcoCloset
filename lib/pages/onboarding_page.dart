@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/main.dart';
 import 'package:flutter/material.dart';
 
+import '../generated/l10n.dart';
+
 class OnboardingForm extends StatefulWidget {
   final String userId;
 
@@ -35,11 +37,12 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
       if (docSnapshot.exists) {
         setState(() {
-          userName = docSnapshot.data()?['name'] ?? 'User';
+          userName = docSnapshot.data()?['name'] ??
+              AppLocalizations.of(context).defaultUser;
         });
       }
     } catch (e) {
-      print('Error fetching user data: $e');
+      print(AppLocalizations.of(context).errorFetchingUserData + e.toString());
     }
   }
 
@@ -58,7 +61,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
       'isNewUser': false, // Mark as no longer a new user
     });
 
-    print('OnboardingForm: Profile submitted successfully.');
+    print(AppLocalizations.of(context).profileSubmitted);
     _navigateToHomePage();
   }
 
@@ -73,8 +76,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     return Dialog(
       insetPadding: EdgeInsets.all(20),
       child: Container(
-        width: MediaQuery.of(context).size.width *
-            0.9, // Make the popup almost as wide as the screen
+        width: MediaQuery.of(context).size.width * 0.9,
         padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -84,7 +86,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
           child: Column(
             children: [
               Text(
-                'Get better recommendations by updating your profile!',
+                AppLocalizations.of(context).onboardingTitle,
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -97,24 +99,24 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 child: Column(
                   children: [
                     _buildTextField(
-                      label: 'Age',
+                      label: AppLocalizations.of(context).age,
                       keyboardType: TextInputType.number,
                       onSaved: (value) => age = value,
                     ),
                     _buildTextField(
-                      label: 'Preferred Shirt Size',
+                      label: AppLocalizations.of(context).preferredShirtSize,
                       onSaved: (value) => preferredShirtSize = value,
                     ),
                     _buildTextField(
-                      label: 'Pants Size',
+                      label: AppLocalizations.of(context).pantsSize,
                       onSaved: (value) => pantsSize = value,
                     ),
                     _buildTextField(
-                      label: 'Shoe Size',
+                      label: AppLocalizations.of(context).shoeSize,
                       onSaved: (value) => shoeSize = value,
                     ),
                     _buildTextField(
-                      label: 'Preferred Brands',
+                      label: AppLocalizations.of(context).preferredBrands,
                       onSaved: (value) => preferredBrands = value,
                     ),
                   ],
@@ -131,7 +133,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   ),
                 ),
                 child: Text(
-                  'Submit',
+                  AppLocalizations.of(context).submit,
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -142,7 +144,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
               TextButton(
                 onPressed: _navigateToHomePage,
                 child: Text(
-                  'Skip',
+                  AppLocalizations.of(context).skip,
                   style: TextStyle(color: Colors.blue, fontSize: 16),
                 ),
               ),

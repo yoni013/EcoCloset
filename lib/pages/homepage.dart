@@ -1,3 +1,4 @@
+import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -156,10 +157,10 @@ class _HomepageState extends State<Homepage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
-                      "Recommended for You",
+                      AppLocalizations.of(context).recommendedForYou,
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
@@ -173,10 +174,10 @@ class _HomepageState extends State<Homepage> {
                           buildItemCard(filteredItems[index]),
                     ),
                   ),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
-                      "Trending Now",
+                      AppLocalizations.of(context).trendingNow,
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),

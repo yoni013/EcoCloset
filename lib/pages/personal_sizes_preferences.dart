@@ -3,19 +3,30 @@ import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../generated/l10n.dart';
+
 class PersonalSizesPreferences extends StatefulWidget {
   const PersonalSizesPreferences({Key? key}) : super(key: key);
 
   @override
-  _PersonalSizesPreferencesState createState() => _PersonalSizesPreferencesState();
+  _PersonalSizesPreferencesState createState() =>
+      _PersonalSizesPreferencesState();
 }
 
 class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   final Map<String, Set<String>> userSizes = {
-    "Coats": {}, "Sweaters": {}, "T-Shirts": {}, "Pants": {}, "Shoes": {}
+    "Coats": {},
+    "Sweaters": {},
+    "T-Shirts": {},
+    "Pants": {},
+    "Shoes": {}
   };
   Map<String, List<String>> availableSizes = {
-    "Coats": [], "Sweaters": [], "T-Shirts": [], "Pants": [], "Shoes": []
+    "Coats": [],
+    "Sweaters": [],
+    "T-Shirts": [],
+    "Pants": [],
+    "Shoes": []
   };
   bool isLoading = true;
 
@@ -30,7 +41,8 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
 
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final userDoc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
     setState(() {
       availableSizes = {
         "Coats": Utils.general_sizes,
@@ -42,7 +54,8 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
       if (userDoc.exists && userDoc.data()?.containsKey('Sizes') == true) {
         userSizes.addAll(
           (userDoc.data()?['Sizes'] as Map<String, dynamic>).map(
-            (key, value) => MapEntry(key, value is List ? Set<String>.from(value) : {}),
+            (key, value) =>
+                MapEntry(key, value is List ? Set<String>.from(value) : {}),
           ),
         );
       }
@@ -53,8 +66,15 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   Future<void> updateUserSizes() async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
     if (userId.isNotEmpty) {
-      final sizesToSave = userSizes.map((key, value) => MapEntry(key, value.toList()));
-      await FirebaseFirestore.instance.collection('Users').doc(userId).update({'Sizes': sizesToSave});
+      final sizesToSave =
+          userSizes.map((key, value) => MapEntry(key, value.toList()));
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .update({'Sizes': sizesToSave});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).preferencesSaved)),
+      );
     }
   }
 
@@ -67,9 +87,9 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Size Preferences")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).sizePreferences)),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 Expanded(
@@ -82,29 +102,43 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(category, style: Theme.of(context).textTheme.titleLarge),
+                              Text(category,
+                                  style:
+                                      Theme.of(context).textTheme.titleLarge),
                               Wrap(
                                 spacing: 6.0,
                                 children: userSizes[category]!
                                     .map((size) => Chip(
-                                          label: Text(size, style: Theme.of(context).textTheme.bodySmall),
-                                          deleteIcon: const Icon(Icons.close, size: 16),
-                                          onDeleted: () => modifySize(category, size, add: false),
+                                          label: Text(size,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall),
+                                          deleteIcon:
+                                              const Icon(Icons.close, size: 16),
+                                          onDeleted: () => modifySize(
+                                              category, size,
+                                              add: false),
                                         ))
                                     .toList(),
                               ),
                               const SizedBox(height: 6.0),
                               DropdownButtonFormField<String>(
                                 decoration: InputDecoration(
-                                  labelText: "Add Size",
-                                  labelStyle: Theme.of(context).textTheme.bodySmall,
+                                  labelText:
+                                      AppLocalizations.of(context).addSize,
+                                  labelStyle:
+                                      Theme.of(context).textTheme.bodySmall,
                                   border: const OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 20),
                                 ),
                                 items: availableSizes[category]!
                                     .map((size) => DropdownMenuItem(
                                           value: size,
-                                          child: Text(size, style: Theme.of(context).textTheme.bodySmall),
+                                          child: Text(size,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall),
                                         ))
                                     .toList(),
                                 onChanged: (value) => value != null
@@ -125,7 +159,7 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                       textStyle: Theme.of(context).textTheme.bodyMedium,
                     ),
                     onPressed: updateUserSizes,
-                    child: const Text("Save Preferences"),
+                    child: Text(AppLocalizations.of(context).savePreferences),
                   ),
                 )
               ],

@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:eco_closet/pages/item_page.dart';
 
+import '../generated/l10n.dart';
+
 class ProfilePage extends StatefulWidget {
   final String viewedUserId;
 
@@ -72,8 +74,9 @@ class _ProfilePageState extends State<ProfilePage> {
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           child: ListTile(
             leading: Icon(Icons.star, color: Colors.yellow),
-            title: Text(review['title'] ?? 'Review'),
-            subtitle: Text(review['content'] ?? 'No content'),
+            title: Text(review['title'] ?? AppLocalizations.of(context).review),
+            subtitle: Text(
+                review['content'] ?? AppLocalizations.of(context).noContent),
           ),
         );
       },
@@ -86,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('User Reviews'),
+        title: Text(AppLocalizations.of(context).userReviews),
         content: SizedBox(
           width: double.maxFinite,
           child: _buildReviewsList(reviews),
@@ -94,7 +97,7 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close'),
+            child: Text(AppLocalizations.of(context).close),
           ),
         ],
       ),
@@ -105,7 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile Page'),
+        title: Text(AppLocalizations.of(context).profilePage),
         centerTitle: true,
         actions: [
           IconButton(
@@ -138,7 +141,8 @@ class _ProfilePageState extends State<ProfilePage> {
           } else if (snapshot.hasError ||
               !snapshot.hasData ||
               snapshot.data!.isEmpty) {
-            return Center(child: Text('Failed to load user data'));
+            return Center(
+                child: Text(AppLocalizations.of(context).failedToLoadUser));
           }
 
           var userData = snapshot.data!;
@@ -180,7 +184,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      userData['Name'] ?? 'Unknown User',
+                      userData['Name'] ??
+                          AppLocalizations.of(context).unknownUser,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -211,7 +216,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
                   decoration: InputDecoration(
-                    labelText: 'Search Items',
+                    labelText: AppLocalizations.of(context).searchItems,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.search),
                   ),
@@ -228,7 +233,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(child: CircularProgressIndicator());
                     } else if (snapshot.hasError) {
-                      return Center(child: Text('Error loading data'));
+                      return Center(
+                          child: Text(
+                              AppLocalizations.of(context).errorLoadingData));
                     }
                     return snapshot.data!;
                   },
@@ -253,11 +260,6 @@ class _ProfilePageState extends State<ProfilePage> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         var item = items[index];
-        var images = item['images'] as List<dynamic>?;
-        var imageUrlFuture = images != null && images.isNotEmpty
-            ? fetchImageUrl(images[0])
-            : Future.value('');
-
         return GestureDetector(
           onTap: () {
             Navigator.push(
@@ -270,28 +272,17 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
+                borderRadius: BorderRadius.circular(8.0)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: FutureBuilder<String>(
-                    future: imageUrlFuture,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                      return Image.network(snapshot.data!, fit: BoxFit.cover);
-                    },
-                  ),
+                  child: Image.network(item['images'][0], fit: BoxFit.cover),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    item['Brand'] ?? 'Unknown',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  child: Text(item['Brand'] ??
+                      AppLocalizations.of(context).unknownBrand),
                 ),
               ],
             ),
