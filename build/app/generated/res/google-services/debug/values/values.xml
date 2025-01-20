@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gcm_defaultSenderId" translatable="false">46669496533</string>
-    <string name="google_api_key" translatable="false">AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ</string>
-    <string name="google_app_id" translatable="false">1:46669496533:android:76f045c2c9f95c6fa2625c</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ</string>
-    <string name="google_storage_bucket" translatable="false">eco-closet-f0942.firebasestorage.app</string>
-    <string name="project_id" translatable="false">eco-closet-f0942</string>
-</resources>
