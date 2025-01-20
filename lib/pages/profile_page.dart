@@ -19,7 +19,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget? _itemsWidget;
 
   Future<Map<String, dynamic>> fetchUserData(String userId) async {
-    var documentSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    var documentSnapshot =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
     return documentSnapshot.data() ?? {};
   }
 
@@ -134,7 +135,9 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          } else if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data!.isEmpty) {
             return Center(child: Text('Failed to load user data'));
           }
 
@@ -153,13 +156,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     FutureBuilder<String>(
                       future: imageUrlFuture,
                       builder: (context, imageSnapshot) {
-                        if (imageSnapshot.connectionState == ConnectionState.waiting) {
+                        if (imageSnapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey[200],
                             child: CircularProgressIndicator(),
                           );
-                        } else if (imageSnapshot.hasError || !imageSnapshot.hasData) {
+                        } else if (imageSnapshot.hasError ||
+                            !imageSnapshot.hasData) {
                           return CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey[200],

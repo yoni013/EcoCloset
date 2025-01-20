@@ -25,27 +25,231 @@ class _ExplorePageState extends State<ExplorePage> {
     'priceRange': RangeValues(0, 300),
   };
 
+  int getActiveFiltersCount() {
+    return filters.values.where((value) => value != null).length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cacheProvider = Provider.of<FirestoreCacheProvider>(context);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Explore',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 28,
+            color: Colors.black,
+            letterSpacing: 1.2,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Filter and Sort Buttons
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      // Handle filter action
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.filter_alt, size: 20, color: Colors.black),
+                        SizedBox(
+                            width: 4), // Reduced space between icon and text
+                        Text(
+                          'Filter',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        if (getActiveFiltersCount() > 0)
+                          CircleAvatar(
+                            backgroundColor: Colors.black,
+                            radius: 10,
+                            child: Text(
+                              '${getActiveFiltersCount()}',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Vertical divider
+                Container(
+                  height: 20,
+                  width: 1,
+                  color: Colors.black.withOpacity(0.5),
+                ),
+
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      // Handle sort action
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.swap_vert, size: 20, color: Colors.black),
+                        SizedBox(width: 4),
+                        Text(
+                          'Sort',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: items.isEmpty
+                ? FutureBuilder(
+                    future: fetchFilteredItems(cacheProvider),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (items.isEmpty) {
+                        return Center(
+                          child: Text('No items found.',
+                              style: TextStyle(fontSize: 18)),
+                        );
+                      } else {
+                        return SizedBox.shrink();
+                      }
+                    },
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: GridView.builder(
+                      itemCount: items.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2, // 2 images in a row
+                        crossAxisSpacing: 0, // Minimal spacing between columns
+                        mainAxisSpacing: 0, // Minimal spacing between rows
+                        childAspectRatio:
+                            12 / 16, // Adjust aspect ratio for better alignment
+                      ),
+                      itemBuilder: (context, index) {
+                        var item = items[index];
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ItemPage(itemId: item['id']),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(12.0)),
+                                    child: CachedNetworkImage(
+                                      imageUrl: item['imageUrl'] ?? '',
+                                      placeholder: (context, url) => Center(
+                                          child: CircularProgressIndicator()),
+                                      errorWidget: (context, url, error) =>
+                                          Icon(Icons.broken_image, size: 80),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 4),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item['Brand'] ?? 'Unknown',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color:
+                                                  Colors.black.withOpacity(0.8),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Text(
+                                          '\₪${item['Price'] ?? 'N/A'}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                Colors.black.withOpacity(0.8),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> fetchFilteredItems(FirestoreCacheProvider cacheProvider) async {
-    var query = FirebaseFirestore.instance.collection('Items').where('status', isEqualTo: 'Available');
-
-    if (filters['type'] != null) {
-      query = query.where('Type', isEqualTo: filters['type']);
-    }
-    if (filters['size'] != null) {
-      query = query.where('Size', isEqualTo: filters['size']);
-    }
-    if (filters['brand'] != null) {
-      query = query.where('Brand', isEqualTo: filters['brand']);
-    }
-    if (filters['color'] != null) {
-      query = query.where('Color', isEqualTo: filters['color']);
-    }
-    if (filters['condition'] != null) {
-      query = query.where('Condition', isEqualTo: filters['condition']);
-    }
-
-    final cacheKey = 'filtered_items_${filters.toString()}';
-    var fetchedItems = await cacheProvider.fetchCollection(cacheKey, query);
+    var query = FirebaseFirestore.instance
+        .collection('Items')
+        .where('status', isEqualTo: 'Available');
+    var fetchedItems =
+        await cacheProvider.fetchCollection('items_cache', query);
 
     fetchedItems = await Future.wait(fetchedItems.map((data) async {
       if (data['images'] is List && data['images'].isNotEmpty) {
@@ -59,7 +263,6 @@ class _ExplorePageState extends State<ExplorePage> {
     if (mounted) {
       setState(() {
         items = fetchedItems;
-        applySorting();
       });
     }
   }
@@ -69,354 +272,5 @@ class _ExplorePageState extends State<ExplorePage> {
       return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
     }
     return '';
-  }
-
-  void applySorting() {
-    setState(() {
-      if (sortBy == 'Price (Low to High)') {
-        items.sort((a, b) => (a['Price'] ?? 0).compareTo(b['Price'] ?? 0));
-      } else if (sortBy == 'Price (High to Low)') {
-        items.sort((a, b) => (b['Price'] ?? 0).compareTo(a['Price'] ?? 0));
-      } else if (sortBy == 'Most Viewed') {
-        items.sort((a, b) => (b['views'] ?? 0).compareTo(a['views'] ?? 0));
-      }
-    });
-  }
-
-  void openFiltersPopup(FirestoreCacheProvider cacheProvider) async {
-    final sizes = await Utils.sizes;
-    final brands = await Utils.brands;
-    final types = await Utils.types;
-    final colors = await Utils.colors;
-    final conditions = await Utils.conditions;
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return FilterPopup(
-          currentFilters: filters,
-          onApply: (newFilters) {
-            setState(() {
-              filters = newFilters;
-              fetchFilteredItems(cacheProvider);
-            });
-          },
-          sizes: sizes,
-          brands: brands,
-          types: types,
-          colors: colors,
-          conditions: conditions,
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cacheProvider = Provider.of<FirestoreCacheProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Explore'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.filter_alt),
-            onPressed: () => openFiltersPopup(cacheProvider),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                sortBy = value;
-                applySorting();
-              });
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'Price (Low to High)',
-                child: Text('Price (Low to High)',
-                    style: TextStyle(
-                        fontWeight: sortBy == 'Price (Low to High)'
-                            ? FontWeight.bold
-                            : FontWeight.normal)),
-              ),
-              PopupMenuItem(
-                value: 'Price (High to Low)',
-                child: Text('Price (High to Low)',
-                    style: TextStyle(
-                        fontWeight: sortBy == 'Price (High to Low)'
-                            ? FontWeight.bold
-                            : FontWeight.normal)),
-              ),
-              PopupMenuItem(
-                value: 'Most Viewed',
-                child: Text('Most Viewed',
-                    style: TextStyle(
-                        fontWeight: sortBy == 'Most Viewed'
-                            ? FontWeight.bold
-                            : FontWeight.normal)),
-              ),
-            ],
-            icon: Icon(Icons.sort),
-          ),
-        ],
-      ),
-      body: items.isEmpty
-          ? FutureBuilder(
-              future: fetchFilteredItems(cacheProvider),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (items.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No items match your filters.',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                    ),
-                  );
-                } else {
-                  return SizedBox.shrink();
-                }
-              },
-            )
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 3 / 4,
-                ),
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  var item = items[index];
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ItemPage(itemId: item['id']),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: item['imageUrl'] != null && item['imageUrl'].isNotEmpty
-                                ? CachedNetworkImage(
-                                    imageUrl: item['imageUrl'],
-                                    placeholder: (context, url) => CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) => Icon(Icons.broken_image),
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                      color: Colors.grey[200],
-                                    ),
-                                    child: Icon(Icons.broken_image),
-                                  ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['Brand'] ?? 'Unknown',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  '\₪${item['Price'] ?? 'N/A'}',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-    );
-  }
-}
-
-class FilterPopup extends StatelessWidget {
-  final Map<String, dynamic> currentFilters;
-  final Function(Map<String, dynamic>) onApply;
-  final List<String> sizes;
-  final List<String> brands;
-  final List<String> types;
-  final List<String> colors;
-  final List<String> conditions;
-
-  FilterPopup({
-    required this.currentFilters, 
-    required this.onApply,
-    required this.sizes,
-    required this.brands,
-    required this.types,
-    required this.colors,
-    required this.conditions,
-    });
-
-  @override
-  Widget build(BuildContext context) {
-    String? selectedType = currentFilters['type'];
-    String? selectedSize = currentFilters['size'];
-    String? selectedBrand = currentFilters['brand'];
-    String? selectedColor = currentFilters['color'];
-    String? selectedCondition = currentFilters['condition'];
-    RangeValues priceRange = currentFilters['priceRange'] ?? RangeValues(0, 1000);
-
-    return Container(
-      padding: EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Filters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SizedBox(height: 16),
-          Autocomplete<String>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return types;
-              }
-              return types.where((type) =>
-                  type.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-            },
-            initialValue: TextEditingValue(text: selectedType ?? ''),
-            onSelected: (String selection) {
-              currentFilters['type'] = selection;
-            },
-            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-              return TextFormField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(labelText: 'Type'),
-              );
-            },
-          ),
-          Autocomplete<String>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return sizes;
-              }
-              return sizes.where((size) =>
-                  size.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-            },
-            initialValue: TextEditingValue(text: selectedSize ?? ''),
-            onSelected: (String selection) {
-              currentFilters['size'] = selection;
-            },
-            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-              return TextFormField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(labelText: 'Size'),
-              );
-            },
-          ),
-          Autocomplete<String>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return brands;
-              }
-              return brands.where((brand) =>
-                  brand.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-            },
-            initialValue: TextEditingValue(text: selectedBrand ?? ''),
-            onSelected: (String selection) {
-              currentFilters['brand'] = selection;
-            },
-            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-              return TextFormField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(labelText: 'Brand'),
-              );
-            },
-          ),
-          Autocomplete<String>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return colors;
-              }
-              return colors.where((color) =>
-                  color.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-            },
-            initialValue: TextEditingValue(text: selectedColor ?? ''),
-            onSelected: (String selection) {
-              currentFilters['color'] = selection;
-            },
-            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-              return TextFormField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(labelText: 'Color'),
-              );
-            },
-          ),
-          Autocomplete<String>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return conditions;
-              }
-              return conditions.where((condition) =>
-                  condition.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-            },
-            initialValue: TextEditingValue(text: selectedCondition ?? ''),
-            onSelected: (String selection) {
-              currentFilters['condition'] = selection;
-            },
-            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-              return TextFormField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(labelText: 'Condition'),
-              );
-            },
-          ),
-          RangeSlider(
-            values: priceRange,
-            min: 0,
-            max: 1000,
-            divisions: 100,
-            labels: RangeLabels(
-              '₪${priceRange.start.round()}',
-              '₪${priceRange.end.round()}',
-            ),
-            onChanged: (range) {
-              currentFilters['priceRange'] = range;
-            },
-          ),
-          Spacer(),
-          ElevatedButton(
-            onPressed: () {
-              onApply(currentFilters);
-              Navigator.pop(context);
-            },
-            child: Text('Apply'),
-          ),
-        ],
-      ),
-    );
   }
 }

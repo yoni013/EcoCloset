@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
 
@@ -13,7 +12,11 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final Map<String, Set<String>> userSizes = {
-    "Coats": {}, "Pants": {}, "Shirts": {}, "Shoes": {}, "Sweaters": {}
+    "Coats": {},
+    "Pants": {},
+    "Shirts": {},
+    "Shoes": {},
+    "Sweaters": {}
   };
 
   List<Map<String, dynamic>> filteredItems = [];
@@ -31,13 +34,16 @@ class _HomepageState extends State<Homepage> {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
 
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final userDoc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
 
     if (userDoc.exists && userDoc.data()?.containsKey('Sizes') == true) {
       final sizes = (userDoc.data()?['Sizes'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(
           key,
-          value is List<dynamic> ? Set<String>.from(value.map((e) => e.toString())) : <String>{},
+          value is List<dynamic>
+              ? Set<String>.from(value.map((e) => e.toString()))
+              : <String>{},
         ),
       );
 
@@ -47,7 +53,8 @@ class _HomepageState extends State<Homepage> {
         });
       }
 
-      final querySnapshot = await FirebaseFirestore.instance.collection('Items')
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Items')
           .where('status', isEqualTo: 'Available')
           .get();
 
@@ -68,7 +75,8 @@ class _HomepageState extends State<Homepage> {
   }
 
   Future<void> fetchTrendingItems() async {
-    final querySnapshot = await FirebaseFirestore.instance.collection('Items')
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('Items')
         // .orderBy('views', descending: true)
         .limit(5)
         .get();
@@ -80,6 +88,7 @@ class _HomepageState extends State<Homepage> {
       });
     }
   }
+
   Future<String> fetchImageUrl(dynamic imagePath) async {
     if (imagePath is String) {
       return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
@@ -89,9 +98,10 @@ class _HomepageState extends State<Homepage> {
   }
 
   Widget buildItemCard(Map<String, dynamic> item) {
-    final imageUrl = item['images'] != null && (item['images'] as List).isNotEmpty
-        ? fetchImageUrl(item['images'][0])
-        : null;
+    final imageUrl =
+        item['images'] != null && (item['images'] as List).isNotEmpty
+            ? fetchImageUrl(item['images'][0])
+            : null;
 
     return Card(
       margin: const EdgeInsets.all(8.0),
@@ -101,16 +111,15 @@ class _HomepageState extends State<Homepage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: FutureBuilder<String>(
-                future: imageUrl,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  return Image.network(snapshot.data!, fit: BoxFit.cover);
-                },
-                )
-            ),
+                child: FutureBuilder<String>(
+              future: imageUrl,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                return Image.network(snapshot.data!, fit: BoxFit.cover);
+              },
+            )),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -137,7 +146,10 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text("Home"),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -148,7 +160,8 @@ class _HomepageState extends State<Homepage> {
                     padding: EdgeInsets.all(8.0),
                     child: Text(
                       "Recommended for You",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(
@@ -156,14 +169,16 @@ class _HomepageState extends State<Homepage> {
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: filteredItems.length,
-                      itemBuilder: (context, index) => buildItemCard(filteredItems[index]),
+                      itemBuilder: (context, index) =>
+                          buildItemCard(filteredItems[index]),
                     ),
                   ),
                   const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
                       "Trending Now",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(
@@ -171,7 +186,8 @@ class _HomepageState extends State<Homepage> {
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: trendingItems.length,
-                      itemBuilder: (context, index) => buildItemCard(trendingItems[index]),
+                      itemBuilder: (context, index) =>
+                          buildItemCard(trendingItems[index]),
                     ),
                   ),
                 ],

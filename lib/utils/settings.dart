@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
@@ -77,7 +76,8 @@ class SettingsPage extends StatelessWidget {
                         builder: (BuildContext context) {
                           return AlertDialog(
                             title: const Text("Sign Out"),
-                            content: const Text("Are you sure you want to sign out?"),
+                            content: const Text(
+                                "Are you sure you want to sign out?"),
                             actions: [
                               TextButton(
                                 onPressed: () {
@@ -89,7 +89,8 @@ class SettingsPage extends StatelessWidget {
                                 onPressed: () async {
                                   await FirebaseAuth.instance.signOut();
                                   Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (context) => AuthGate()),
+                                    MaterialPageRoute(
+                                        builder: (context) => AuthGate()),
                                     (route) => false,
                                   );
                                 },
