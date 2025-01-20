@@ -1,3 +1,4 @@
+import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -111,16 +112,15 @@ class _HomepageState extends State<Homepage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: FutureBuilder<String>(
-                future: imageUrl,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return Image.network(snapshot.data!, fit: BoxFit.cover);
-                },
-                )
-            ),
+                child: FutureBuilder<String>(
+              future: imageUrl,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return Image.network(snapshot.data!, fit: BoxFit.cover);
+              },
+            )),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -157,11 +157,12 @@ class _HomepageState extends State<Homepage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
-                      'Recommended for You',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      AppLocalizations.of(context).recommendedForYou,
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(
@@ -173,11 +174,12 @@ class _HomepageState extends State<Homepage> {
                           buildItemCard(filteredItems[index]),
                     ),
                   ),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
-                      'Trending Now',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      AppLocalizations.of(context).trendingNow,
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(

@@ -9,6 +9,8 @@ import 'dart:io';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'dart:convert';
 
+import '../generated/l10n.dart';
+
 class UploadItemPage extends StatefulWidget {
   @override
   _UploadItemPageState createState() => _UploadItemPageState();
@@ -121,6 +123,18 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Future<Map<String, dynamic>> _callGemini() async {
     final jsonSchema = Schema.object(
       properties: {
+        AppLocalizations.of(context).brand:
+            Schema.string(description: "Brand of the item, or null if unknown"),
+        AppLocalizations.of(context).color: Schema.string(
+            description: "Color of the item: White, Black, Multicolor"),
+        AppLocalizations.of(context).condition: Schema.string(
+            description:
+                "Condition of the item: Never Used, New, Gently Used, etc."),
+        AppLocalizations.of(context).size:
+            Schema.string(description: "Size of the item, null if uncertain"),
+        AppLocalizations.of(context).type: Schema.string(
+            description:
+                "Type of the item in plural: T-shirts, pants, coats, etc."),
         'Brand': Schema.string(description: 'Brand of the item, or null if unknown'),
         'Color': Schema.string(description: 'Color of the item'),
         'Condition': Schema.string(description: 'Condition of the item'),
@@ -147,7 +161,9 @@ class _UploadItemPageState extends State<UploadItemPage> {
       '''Analyze the provided images and extract metadata including brand, color, condition, size, and type.''',
     );
 
-    final content = [Content.multi([...imageParts, prompt])];
+    final content = [
+      Content.multi([...imageParts, prompt])
+    ];
 
     final response = await model.generateContent(content);
 
@@ -157,6 +173,20 @@ class _UploadItemPageState extends State<UploadItemPage> {
     } catch (e) {
       throw Exception('Failed to parse response from Gemini: ${response.text}');
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDropdownData();
+  }
+
+  Future<void> _pickImages() async {
+    final pickedImages =
+        await _picker.pickMultiImage(limit: 6, imageQuality: 75);
+    setState(() {
+      _images = pickedImages;
+    });
   }
 
   Future<void> _processImagesWithGemini() async {
@@ -196,6 +226,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(AppLocalizations.of(context).uploadItemStep1),
         title: const Text('Upload Item - Step 1'),
         centerTitle: true,
       ),
@@ -203,6 +234,28 @@ class _UploadItemPageState extends State<UploadItemPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            Text(AppLocalizations.of(context).uploadImages),
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8.0,
+              children: _images
+                  .map((image) => Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          Image.file(
+                            File(image.path),
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: Colors.red),
+                            onPressed: () =>
+                                setState(() => _images.remove(image)),
+                          ),
+                        ],
+                      ))
+                  .toList(),
             // Tips
             Text(
               'Tips for better results:\n'
@@ -267,6 +320,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
 
             ElevatedButton(
               onPressed: _images.isNotEmpty ? _processImagesWithGemini : null,
+              child: Text(AppLocalizations.of(context).analyzeImages),
               child: const Text('Next'),
             ),
           ],
@@ -362,6 +416,7 @@ class _StepTwoForm extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        title: Text(AppLocalizations.of(context).uploadItemStep2),
         title: const Text('Upload Item - Step 2'),
         centerTitle: true,
       ),
@@ -395,6 +450,11 @@ class _StepTwoForm extends StatelessWidget {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context).brand),
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context).brandRequired
+                          : null,
                       decoration: const InputDecoration(labelText: 'Brand'),
                       validator: (value) =>
                           value == null || value.isEmpty ? 'Brand is required' : null,

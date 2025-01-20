@@ -6,10 +6,12 @@ environment:
   sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-
   # State management
   provider: ^6.1.2
   cached_network_image: ^3.4.1
@@ -44,13 +46,15 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/items_metadata_lists.json
+    - lib/l10n/
     - assets/images/shirts.png
     - assets/images/pants.png
     - assets/images/shoes.png
     - assets/images/sweaters.png
     - assets/images/coats.png
     - assets/images/dresses.png
-    - assets/images/all.png    
+    - assets/images/all.png

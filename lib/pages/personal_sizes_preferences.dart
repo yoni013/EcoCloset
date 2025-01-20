@@ -4,6 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../generated/l10n.dart';
 
 class PersonalSizesPreferences extends StatefulWidget {
   const PersonalSizesPreferences({Key? key}) : super(key: key);
@@ -129,7 +133,7 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
         title: const Text('Size Preferences'),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 Expanded(
@@ -144,7 +148,8 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                   child: ElevatedButton(
                     onPressed: () async {
                       await updateUserSizes();
-                      Navigator.pop(context);  // <-- Returns to the previous screen
+                      Navigator.pop(
+                          context); // <-- Returns to the previous screen
                     },
                     child: const Text('Save Preferences'),
                   ),

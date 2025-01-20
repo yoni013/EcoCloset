@@ -1,3 +1,4 @@
+import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/main.dart';
 import 'package:eco_closet/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +10,11 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeProvider = context.watch<LocaleProvider>();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(AppLocalizations.of(context).settings),
       ),
       body: Center(
         child: Container(
@@ -19,10 +22,10 @@ class SettingsPage extends StatelessWidget {
           child: ListView(
             children: [
               _SingleSection(
-                title: 'General',
+                title: AppLocalizations.of(context).general,
                 children: [
                   _CustomListTile(
-                    title: 'Dark Mode',
+                    title: AppLocalizations.of(context).darkMode,
                     icon: Icons.dark_mode_outlined,
                     trailing: Switch(
                       value: Theme.of(context).brightness == Brightness.dark,
@@ -31,59 +34,82 @@ class SettingsPage extends StatelessWidget {
                       },
                     ),
                   ),
-                  const _CustomListTile(
-                    title: 'Notifications',
+                  _CustomListTile(
+                    title: AppLocalizations.of(context).notifications,
                     icon: Icons.notifications_none_rounded,
+                  ),
+                  _CustomListTile(
+                    title: AppLocalizations.of(context).language,
+                    icon: Icons.language_outlined,
+                    trailing: DropdownButton<Locale>(
+                      value: localeProvider.locale,
+                      onChanged: (Locale? newLocale) {
+                        if (newLocale != null) {
+                          localeProvider.setLocale(newLocale);
+                        }
+                      },
+                      items: AppLocalizations.supportedLocales
+                          .map((Locale locale) {
+                        return DropdownMenuItem(
+                          value: locale,
+                          child: Text(
+                            locale.languageCode == 'en'
+                                ? 'English'
+                                : 'עברית', // Add more if needed
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ],
               ),
               const Divider(),
-              const _SingleSection(
-                title: 'Account',
+              _SingleSection(
+                title: AppLocalizations.of(context).account,
                 children: [
                   _CustomListTile(
-                    title: 'Profile Settings',
+                    title: AppLocalizations.of(context).profileSettings,
                     icon: Icons.person_outline_rounded,
                   ),
                   _CustomListTile(
-                    title: 'Privacy Settings',
+                    title: AppLocalizations.of(context).privacySettings,
                     icon: Icons.privacy_tip_outlined,
                   ),
                   _CustomListTile(
-                    title: 'Change Password',
+                    title: AppLocalizations.of(context).changePassword,
                     icon: Icons.lock_reset,
                   ),
                 ],
               ),
               const Divider(),
               _SingleSection(
-                title: 'Support',
+                title: AppLocalizations.of(context).support,
                 children: [
-                  const _CustomListTile(
-                    title: 'Help & Feedback',
+                  _CustomListTile(
+                    title: AppLocalizations.of(context).helpFeedback,
                     icon: Icons.help_outline_rounded,
                   ),
-                  const _CustomListTile(
-                    title: 'About',
+                  _CustomListTile(
+                    title: AppLocalizations.of(context).about,
                     icon: Icons.info_outline_rounded,
                   ),
                   _CustomListTile(
-                    title: 'Sign Out',
+                    title: AppLocalizations.of(context).signOut,
                     icon: Icons.exit_to_app_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
                           return AlertDialog(
-                            title: const Text('Sign Out'),
-                            content: const Text(
-                                'Are you sure you want to sign out?'),
+                            title: Text(AppLocalizations.of(context).signOut),
+                            content: Text(AppLocalizations.of(context)
+                                .confirmSignOutMessage),
                             actions: [
                               TextButton(
                                 onPressed: () {
                                   Navigator.of(context).pop();
                                 },
-                                child: const Text('No'),
+                                child: Text(AppLocalizations.of(context).no),
                               ),
                               TextButton(
                                 onPressed: () async {
@@ -94,7 +120,7 @@ class SettingsPage extends StatelessWidget {
                                     (route) => false,
                                   );
                                 },
-                                child: const Text('Yes'),
+                                child: Text(AppLocalizations.of(context).yes),
                               ),
                             ],
                           );

@@ -3,8 +3,8 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../generated/l10n.dart';
 import 'item_page.dart';
-
 
 class MyOrdersPage extends StatefulWidget {
   const MyOrdersPage({Key? key}) : super(key: key);
@@ -15,8 +15,8 @@ class MyOrdersPage extends StatefulWidget {
 
 class _MyOrdersPageState extends State<MyOrdersPage>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;  
-  
+  late TabController _tabController;
+
   // We store two lists of orders: incoming (I'm buyer) and outgoing (I'm seller)
   List<Map<String, dynamic>> incomingOrders = [];
   List<Map<String, dynamic>> outgoingOrders = [];
@@ -42,16 +42,20 @@ class _MyOrdersPageState extends State<MyOrdersPage>
 
     // Listen to vertical scroll controllers so we know when to display the "go up" button
     _incomingScrollController.addListener(() {
-      if (_incomingScrollController.position.pixels > 50 && !_showIncomingScrollUp) {
+      if (_incomingScrollController.position.pixels > 50 &&
+          !_showIncomingScrollUp) {
         setState(() => _showIncomingScrollUp = true);
-      } else if (_incomingScrollController.position.pixels < 50 && _showIncomingScrollUp) {
+      } else if (_incomingScrollController.position.pixels < 50 &&
+          _showIncomingScrollUp) {
         setState(() => _showIncomingScrollUp = false);
       }
     });
     _outgoingScrollController.addListener(() {
-      if (_outgoingScrollController.position.pixels > 50 && !_showOutgoingScrollUp) {
+      if (_outgoingScrollController.position.pixels > 50 &&
+          !_showOutgoingScrollUp) {
         setState(() => _showOutgoingScrollUp = true);
-      } else if (_outgoingScrollController.position.pixels < 50 && _showOutgoingScrollUp) {
+      } else if (_outgoingScrollController.position.pixels < 50 &&
+          _showOutgoingScrollUp) {
         setState(() => _showOutgoingScrollUp = false);
       }
     });
@@ -116,7 +120,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       debugPrint('Error fetching item image: $e');
       return null;
     }
-  } 
+  }
 
   /// Incoming Orders => current user is the Buyer
   Future<void> fetchIncomingOrders() async {
@@ -203,19 +207,18 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   }
 
   // (Optional) function if you want to update status
-  Future<void> updateOrderStatus(String orderId, String newStatus, bool incoming) async {
+  Future<void> updateOrderStatus(
+      String orderId, String newStatus, bool incoming) async {
     try {
       await FirebaseFirestore.instance
           .collection('Orders')
           .doc(orderId)
           .update({'Status': newStatus});
-      incoming ? fetchIncomingOrders() : fetchOutgoingOrders();      
+      incoming ? fetchIncomingOrders() : fetchOutgoingOrders();
     } catch (e) {
       debugPrint('Error updating order status: $e');
     }
   }
-
-
 
   // ------------------ BUILD INCOMING TABLE ------------------
   Widget _buildIncomingOrdersTable() {
@@ -241,10 +244,17 @@ class _MyOrdersPageState extends State<MyOrdersPage>
 
           // Define columns
           columns: const [
-            DataColumn2(label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
-            DataColumn2(label: Text('Seller'), size: ColumnSize.S, fixedWidth: 100),
-            DataColumn2(label: Text('Price'), numeric: true, size: ColumnSize.S, fixedWidth: 100),
-            DataColumn2(label: Text('Status'), size: ColumnSize.S, fixedWidth: 100),
+            DataColumn2(
+                label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
+            DataColumn2(
+                label: Text('Seller'), size: ColumnSize.S, fixedWidth: 100),
+            DataColumn2(
+                label: Text('Price'),
+                numeric: true,
+                size: ColumnSize.S,
+                fixedWidth: 100),
+            DataColumn2(
+                label: Text('Status'), size: ColumnSize.S, fixedWidth: 100),
           ],
 
           // Generate rows from data
@@ -296,8 +306,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                 );
               },
               style: ButtonStyle(
-                backgroundColor:
-                    WidgetStateProperty.all(Colors.grey[800]),
+                backgroundColor: WidgetStateProperty.all(Colors.grey[800]),
                 foregroundColor: WidgetStateProperty.all(Colors.white),
               ),
               child: const Text('↑ Go Up ↑'),
@@ -323,11 +332,19 @@ class _MyOrdersPageState extends State<MyOrdersPage>
           horizontalMargin: 12,
           minWidth: 600,
           columns: const [
-            DataColumn2(label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
-            DataColumn2(label: Text('Buyer'), size: ColumnSize.S, fixedWidth: 80),
-            DataColumn2(label: Text('Price'), numeric: true, size: ColumnSize.S, fixedWidth: 50),
-            DataColumn2(label: Text('Status'), size: ColumnSize.S, fixedWidth: 80),
-            DataColumn2(label: Text('Actions'), size: ColumnSize.S, fixedWidth: 70),
+            DataColumn2(
+                label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
+            DataColumn2(
+                label: Text('Buyer'), size: ColumnSize.S, fixedWidth: 80),
+            DataColumn2(
+                label: Text('Price'),
+                numeric: true,
+                size: ColumnSize.S,
+                fixedWidth: 50),
+            DataColumn2(
+                label: Text('Status'), size: ColumnSize.S, fixedWidth: 80),
+            DataColumn2(
+                label: Text('Actions'), size: ColumnSize.S, fixedWidth: 70),
           ],
           rows: outgoingOrders.map((order) {
             final itemImage = order['itemImage'] as String?;
@@ -373,10 +390,13 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                 itemBuilder: (context) {
                   final List<PopupMenuEntry<String>> options = [];
                   if (order['status'] == 'Pending') {
-                    options.add(const PopupMenuItem(value: 'approve', child: Text('Approve')));
-                    options.add(const PopupMenuItem(value: 'decline', child: Text('Decline')));
+                    options.add(const PopupMenuItem(
+                        value: 'approve', child: Text('Approve')));
+                    options.add(const PopupMenuItem(
+                        value: 'decline', child: Text('Decline')));
                   } else if (order['Status'] == 'Approved') {
-                    options.add(const PopupMenuItem(value: 'shipped', child: Text('Mark as Shipped')));
+                    options.add(const PopupMenuItem(
+                        value: 'shipped', child: Text('Mark as Shipped')));
                   }
                   return options;
                 },
@@ -399,8 +419,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                 );
               },
               style: ButtonStyle(
-                backgroundColor:
-                    WidgetStateProperty.all(Colors.grey[800]),
+                backgroundColor: WidgetStateProperty.all(Colors.grey[800]),
                 foregroundColor: WidgetStateProperty.all(Colors.white),
               ),
               child: const Text('↑ Go Up ↑'),

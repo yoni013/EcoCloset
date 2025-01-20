@@ -1,9 +1,11 @@
 /// main.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/firebase_options.dart';
+import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/pages/onboarding_page.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:eco_closet/utils/firestore_cache_provider.dart';
+import 'package:eco_closet/utils/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/pages/homepage.dart';
 import 'package:eco_closet/pages/explore_page.dart';
@@ -26,7 +28,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FirestoreCacheProvider()),
-          ChangeNotifierProvider(create: (_) => ThemeProvider()..loadUserTheme()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()..loadUserTheme()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
       child: MyApp(),
     ),
@@ -36,7 +39,11 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final localeProvider = Provider.of<LocaleProvider>(context);
     return MaterialApp(
+      locale: localeProvider.locale, // Default language
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       title: 'Eco Closet',
       theme: FlexColorScheme.light(
         scheme: FlexScheme.espresso,
@@ -72,6 +79,19 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class LocaleProvider extends ChangeNotifier {
+  Locale _locale = Locale('en'); // Default locale
+
+  Locale get locale => _locale;
+
+  void setLocale(Locale newLocale) {
+    if (_locale != newLocale) {
+      _locale = newLocale;
+      notifyListeners();
+    }
+  }
+}
+
 class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -96,15 +116,31 @@ class AuthGate extends StatelessWidget {
           return SignInScreen(
             providers: [
               EmailAuthProvider(),
-              PhoneAuthProvider(),
             ],
             actions: [
               AuthStateChangeAction<SignedIn>((context, state) async {
                 print('AuthGate: User signed in with UID: ${state.user?.uid}');
-                await _handleUserVerification(context, state.user!);
+
+                if (!(state.user?.emailVerified ?? false)) {
+                  await state.user?.sendEmailVerification();
+                  _showVerificationMessage(context);
+                  FirebaseAuth.instance
+                      .signOut(); // Log out the user until email is verified
+                } else {
+                  await _checkAndCreateUser(context, state.user!);
+                }
               }),
             ],
           );
+        }
+
+        if (snapshot.hasData && !(snapshot.data?.emailVerified ?? false)) {
+          print('AuthGate: Email not verified, signing out...');
+          FirebaseAuth.instance.signOut();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showVerificationMessage(context);
+          });
+          return Center(child: CircularProgressIndicator());
         }
 
         print('AuthGate: User is logged in with UID: ${snapshot.data?.uid}');
@@ -115,31 +151,12 @@ class AuthGate extends StatelessWidget {
     );
   }
 
-  Future<void> _handleUserVerification(BuildContext context, User user) async {
-    final providers = user.providerData.map((p) => p.providerId).toList();
-
-    if (providers.contains('phone')) {
-      // User signed in with phone, send SMS verification
-      print('AuthGate: User signed in with phone number');
-      await _checkAndCreateUser(context, user);
-    } else if (providers.contains('password') && !(user.emailVerified)) {
-      // User signed in with email but not verified
-      await user.sendEmailVerification();
-      _showVerificationMessage(context, 'email');
-      FirebaseAuth.instance.signOut();
-    } else if (providers.contains('phone') && providers.contains('password')) {
-      // Both phone and email used for sign-in
-      if (!user.emailVerified) {
-        await user.sendEmailVerification();
-        _showVerificationMessage(context, 'both');
-      }
-      await _checkAndCreateUser(context, user);
-    } else {
-      await _checkAndCreateUser(context, user);
-    }
-  }
-
   Future<void> _checkAndCreateUser(BuildContext context, User user) async {
+    if (!user.emailVerified) {
+      print('User email is not verified. Cannot proceed.');
+      return;
+    }
+
     final userDocRef =
         FirebaseFirestore.instance.collection('Users').doc(user.uid);
     final docSnapshot = await userDocRef.get();
@@ -149,8 +166,7 @@ class AuthGate extends StatelessWidget {
 
       await userDocRef.set({
         'uid': user.uid,
-        'email': user.email ?? '',
-        'phone': user.phoneNumber ?? '',
+        'email': user.email,
         'name': user.displayName ?? 'New User',
         'isNewUser': true,
         'profile_picture': user.photoURL ?? '',
@@ -173,36 +189,29 @@ class AuthGate extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: false, // Prevent closing without submission
         builder: (context) => OnboardingForm(userId: userId),
       );
     });
   }
 
-  void _showVerificationMessage(BuildContext context, String method) {
+  void _showVerificationMessage(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      String message;
-      if (method == 'email') {
-        message =
-            'A verification email has been sent. Please check your inbox.';
-      } else if (method == 'phone') {
-        message = 'A verification code has been sent to your phone number.';
-      } else {
-        message =
-            'Verification emails and SMS have been sent. Please check your inbox and phone.';
-      }
-
       showDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible:
+            false, // Prevent the user from dismissing without action
         builder: (context) => AlertDialog(
-          title: Text('Verify Your Account'),
-          content: Text(message),
+          title: Text('Verify Your Email'),
+          content: Text(
+            'A verification email has been sent to your email address. '
+            'Please check your inbox and verify your email before logging in.',
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                FirebaseAuth.instance.signOut();
+                FirebaseAuth.instance.signOut(); // Ensure they sign out
               },
               child: Text('OK'),
             ),
@@ -229,31 +238,32 @@ class PersistentBottomNavPage extends StatelessWidget {
         PersistentTabItem(
           tab: const Homepage(),
           icon: Icons.home,
-          title: 'Home',
+          title: AppLocalizations.of(context).home,
           navigatorkey: _homeNavigatorKey,
         ),
         PersistentTabItem(
           tab: ExplorePage(),
           icon: Icons.search,
-          title: 'Explore',
+          title: AppLocalizations.of(context).explore,
           navigatorkey: _exploreNavigatorKey,
         ),
         PersistentTabItem(
           tab: UploadItemPage(),
           icon: Icons.upload,
-          title: 'Upload',
+          title: AppLocalizations.of(context).upload,
           navigatorkey: _uploadNavigatorKey,
         ),
         PersistentTabItem(
           tab: const MyOrdersPage(),
           icon: Icons.compare_arrows_outlined,
-          title: 'My Orders',
+          title: AppLocalizations.of(context).myShop,
           navigatorkey: _shopNavigatorKey,
         ),
         PersistentTabItem(
-          tab: ProfilePage(viewedUserId: FirebaseAuth.instance.currentUser?.uid ?? ''),
+          tab: ProfilePage(
+              viewedUserId: FirebaseAuth.instance.currentUser?.uid ?? ''),
           icon: Icons.person,
-          title: 'Profile',
+          title: AppLocalizations.of(context).profile,
           navigatorkey: _profileNavigatorKey,
         ),
       ],
