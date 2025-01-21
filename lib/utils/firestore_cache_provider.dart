@@ -6,7 +6,7 @@ class FirestoreCacheProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Map<String, dynamic> _cache = {};
   final Map<String, DateTime> _cacheTimestamps = {};
-  final Duration _ttl = Duration(minutes: 360);
+  final Duration _ttl = const Duration(minutes: 360);
 
   Map<String, dynamic> get cache => _cache;
 
@@ -39,7 +39,7 @@ class FirestoreCacheProvider with ChangeNotifier {
 
       return data;
     } catch (e) {
-      print('Error fetching collection: $e');
+      debugPrint('Error fetching collection: $e');
       return [];
     }
   }
@@ -65,7 +65,7 @@ class FirestoreCacheProvider with ChangeNotifier {
 
       return data;
     } catch (e) {
-      print('Error fetching document: $e');
+      debugPrint('Error fetching document: $e');
       return null;
     }
   }
@@ -92,7 +92,7 @@ class FirestoreCacheProvider with ChangeNotifier {
 
       return data;
     } catch (e) {
-      print('Error fetching collection: $e');
+      debugPrint('Error fetching collection: $e');
       return [];
     }
   }
@@ -117,7 +117,7 @@ class FirestoreCacheProvider with ChangeNotifier {
 
       return data;
     } catch (e) {
-      print('Error fetching document: $e');
+      debugPrint('Error fetching document: $e');
       return null;
     }
   }

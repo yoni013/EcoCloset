@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/firebase_options.dart';
 import 'package:eco_closet/pages/onboarding_page.dart';
+import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:eco_closet/utils/firestore_cache_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/pages/homepage.dart';
@@ -20,11 +21,12 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Utils.loadMetadata();
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FirestoreCacheProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()..loadUserTheme()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()..loadUserTheme()),
       ],
       child: MyApp(),
     ),
@@ -225,7 +227,7 @@ class PersistentBottomNavPage extends StatelessWidget {
     return PersistentBottomBarScaffold(
       items: [
         PersistentTabItem(
-          tab: Homepage(),
+          tab: const Homepage(),
           icon: Icons.home,
           title: 'Home',
           navigatorkey: _homeNavigatorKey,
@@ -243,14 +245,13 @@ class PersistentBottomNavPage extends StatelessWidget {
           navigatorkey: _uploadNavigatorKey,
         ),
         PersistentTabItem(
-          tab: MyShopPage(),
-          icon: Icons.shop,
-          title: 'My Shop',
+          tab: const MyOrdersPage(),
+          icon: Icons.compare_arrows_outlined,
+          title: 'My Orders',
           navigatorkey: _shopNavigatorKey,
         ),
         PersistentTabItem(
-          tab: ProfilePage(
-              viewedUserId: FirebaseAuth.instance.currentUser?.uid ?? ""),
+          tab: ProfilePage(viewedUserId: FirebaseAuth.instance.currentUser?.uid ?? ''),
           icon: Icons.person,
           title: 'Profile',
           navigatorkey: _profileNavigatorKey,

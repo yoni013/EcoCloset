@@ -6,160 +6,433 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'item_page.dart';
 
 
-class MyShopPage extends StatefulWidget {
+class MyOrdersPage extends StatefulWidget {
+  const MyOrdersPage({Key? key}) : super(key: key);
+
   @override
-  _MyShopPageState createState() => _MyShopPageState();
+  State<MyOrdersPage> createState() => _MyOrdersPageState();
 }
 
-class _MyShopPageState extends State<MyShopPage> {
-  List<Map<String, dynamic>> orders = [];
+class _MyOrdersPageState extends State<MyOrdersPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;  
+  
+  // We store two lists of orders: incoming (I'm buyer) and outgoing (I'm seller)
+  List<Map<String, dynamic>> incomingOrders = [];
+  List<Map<String, dynamic>> outgoingOrders = [];
+
+  // Scroll controllers for each table:
+  final ScrollController _incomingScrollController = ScrollController();
+  final ScrollController _incomingHorizontalController = ScrollController();
+
+  final ScrollController _outgoingScrollController = ScrollController();
+  final ScrollController _outgoingHorizontalController = ScrollController();
+
+  // Track whether we show the "Scroll to top" button.
+  bool _showIncomingScrollUp = false;
+  bool _showOutgoingScrollUp = false;
 
   @override
   void initState() {
     super.initState();
-    fetchOrders();
+    // 2 tabs: Incoming & Outgoing
+    _tabController = TabController(length: 2, vsync: this);
+    fetchIncomingOrders();
+    fetchOutgoingOrders();
+
+    // Listen to vertical scroll controllers so we know when to display the "go up" button
+    _incomingScrollController.addListener(() {
+      if (_incomingScrollController.position.pixels > 50 && !_showIncomingScrollUp) {
+        setState(() => _showIncomingScrollUp = true);
+      } else if (_incomingScrollController.position.pixels < 50 && _showIncomingScrollUp) {
+        setState(() => _showIncomingScrollUp = false);
+      }
+    });
+    _outgoingScrollController.addListener(() {
+      if (_outgoingScrollController.position.pixels > 50 && !_showOutgoingScrollUp) {
+        setState(() => _showOutgoingScrollUp = true);
+      } else if (_outgoingScrollController.position.pixels < 50 && _showOutgoingScrollUp) {
+        setState(() => _showOutgoingScrollUp = false);
+      }
+    });
   }
 
-  Future<String> fetchBuyerName(String buyerId) async {
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _incomingScrollController.dispose();
+    _incomingHorizontalController.dispose();
+    _outgoingScrollController.dispose();
+    _outgoingHorizontalController.dispose();
+    super.dispose();
+  }
+
+  // ----- Firestore fetching -----
+
+  /// Fetch a user's "Name" from "Users" collection by userId
+  Future<String> fetchUserName(String userId) async {
     try {
-      final buyerDoc = await FirebaseFirestore.instance.collection('Users').doc(buyerId).get();
-      return buyerDoc.data()?['Name'] ?? 'Unknown Buyer';
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .get();
+      return userDoc.data()?['Name'] ?? 'Unknown';
     } catch (e) {
-      print('Error fetching buyer name: $e');
-      return 'Unknown Buyer';
+      debugPrint('Error fetching user name: $e');
+      return 'Unknown';
     }
   }
 
-Future<String?> fetchItemImage(String itemId) async {
-  try {
-    final itemDoc = await FirebaseFirestore.instance.collection('Items').doc(itemId).get();
-    final List<dynamic>? images = itemDoc.data()?['images'];
-    if (images != null && images.isNotEmpty) {
-      final String imagePath = images[0];
-      return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
-    }
-    return null;
-  } catch (e) {
-    print('Error fetching item image: $e');
-    return null;
-  }
-}
-
-
-  Future<void> fetchOrders() async {
-    final sellerId = FirebaseAuth.instance.currentUser?.uid;
-    if (sellerId == null) return;
-
+  /// Fetch an item's "Name" from "Items" collection by itemId
+  Future<String> fetchItemName(String itemId) async {
     try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('Orders')
-          .where('SellerID', isEqualTo: sellerId)
+      final itemDoc = await FirebaseFirestore.instance
+          .collection('Items')
+          .doc(itemId)
+          .get();
+      return itemDoc.data()?['Name'] ?? 'Unknown Item';
+    } catch (e) {
+      debugPrint('Error fetching item name: $e');
+      return 'Unknown Item';
+    }
+  }
+
+  Future<String?> fetchItemImage(String itemId) async {
+    try {
+      final itemDoc = await FirebaseFirestore.instance
+          .collection('Items')
+          .doc(itemId)
           .get();
 
-      final List<Map<String, dynamic>> fetchedOrders = [];
+      final List<dynamic>? images = itemDoc.data()?['images'];
+      if (images != null && images.isNotEmpty) {
+        final String firstImagePath = images[0];
+        return await FirebaseStorage.instance
+            .ref(firstImagePath)
+            .getDownloadURL();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching item image: $e');
+      return null;
+    }
+  } 
 
-      for (var doc in querySnapshot.docs) {
+  /// Incoming Orders => current user is the Buyer
+  Future<void> fetchIncomingOrders() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Orders')
+          .where('BuyerID', isEqualTo: userId)
+          .get();
+
+      final List<Map<String, dynamic>> fetched = [];
+      for (var doc in snapshot.docs) {
         final data = doc.data();
-        final buyerName = await fetchBuyerName(data['BuyerID'] ?? '');
-        final itemImage = await fetchItemImage(data['ItemID'] ?? '');
-        fetchedOrders.add({
-          "BuyerName": buyerName,
-          "FinalPrice": "\$${(data['FinalPrice'] ?? 0).toStringAsFixed(2)}",
-          "Status": data['Status'] ?? "Pending",
-          "ItemImage": itemImage,
-          "ItemID": data['ItemID'],
-          "actions": doc.id,
+        final sellerId = data['SellerID'] as String? ?? '';
+        final itemId = data['ItemID'] as String? ?? '';
+        final price = data['FinalPrice'] ?? 0;
+        final status = data['Status'] ?? 'Pending';
+
+        final sellerName = await fetchUserName(sellerId);
+        final itemImageUrl = await fetchItemImage(itemId);
+
+        fetched.add({
+          'orderId': doc.id,
+          'itemImage': itemImageUrl,
+          'sellerName': sellerName,
+          'price': price,
+          'status': status,
+          'itemId': itemId,
         });
       }
+
       if (mounted) {
         setState(() {
-          orders = fetchedOrders;
+          incomingOrders = fetched;
         });
       }
     } catch (e) {
-      print("Error fetching orders: $e");
+      debugPrint('Error fetching incoming orders: $e');
     }
   }
 
-  Future<void> updateOrderStatus(String orderId, String status) async {
+  /// Outgoing Orders => current user is the Seller
+  Future<void> fetchOutgoingOrders() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Orders')
+          .where('SellerID', isEqualTo: userId)
+          .get();
+
+      final List<Map<String, dynamic>> fetched = [];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final buyerId = data['BuyerID'] as String? ?? '';
+        final itemId = data['ItemID'] as String? ?? '';
+        final price = data['FinalPrice'] ?? 0;
+        final status = data['Status'] ?? 'Pending';
+
+        final buyerName = await fetchUserName(buyerId);
+        final itemImageUrl = await fetchItemImage(itemId);
+
+        fetched.add({
+          'orderId': doc.id,
+          'itemImage': itemImageUrl,
+          'buyerName': buyerName,
+          'price': price,
+          'status': status,
+          'itemId': itemId,
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          outgoingOrders = fetched;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching outgoing orders: $e');
+    }
+  }
+
+  // (Optional) function if you want to update status
+  Future<void> updateOrderStatus(String orderId, String newStatus, bool incoming) async {
     try {
       await FirebaseFirestore.instance
           .collection('Orders')
           .doc(orderId)
-          .update({'Status': status});
-      fetchOrders();
+          .update({'Status': newStatus});
+      incoming ? fetchIncomingOrders() : fetchOutgoingOrders();      
     } catch (e) {
-      print("Error updating order status: $e");
+      debugPrint('Error updating order status: $e');
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("My Shop")
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: DataTable2(
+
+
+  // ------------------ BUILD INCOMING TABLE ------------------
+  Widget _buildIncomingOrdersTable() {
+    // "Incoming" = I am the buyer
+    // In real code, you'd fetch from Firestore or similar
+    if (incomingOrders.isEmpty) {
+      return const Center(child: Text('No incoming orders found.'));
+    }
+
+    // Wrapping in a Stack so we can position a "Scroll Up" button
+    return Stack(
+      children: [
+        // Scrollable DataTable2
+        DataTable2(
+          // Attach controllers for vertical & horizontal scroll
+          scrollController: _incomingScrollController,
+          horizontalScrollController: _incomingHorizontalController,
+
+          // Sizing
           columnSpacing: 12,
           horizontalMargin: 12,
-          minWidth: MediaQuery.of(context).size.width, // Make table full width
-          columns: [
-            DataColumn(label: Text("Item")),
-            DataColumn(label: Text("Buyer")),
-            DataColumn(label: Text("Price")),
-            DataColumn(label: Text("Status")),
-            DataColumn(label: Text("Actions")),
+          minWidth: 600,
+
+          // Define columns
+          columns: const [
+            DataColumn2(label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
+            DataColumn2(label: Text('Seller'), size: ColumnSize.S, fixedWidth: 100),
+            DataColumn2(label: Text('Price'), numeric: true, size: ColumnSize.S, fixedWidth: 100),
+            DataColumn2(label: Text('Status'), size: ColumnSize.S, fixedWidth: 100),
           ],
-          rows: orders.map((order) {
+
+          // Generate rows from data
+          rows: incomingOrders.map((order) {
+            final itemImage = order['itemImage'] as String?;
+            final sellerName = order['sellerName'] as String;
+            final price = order['price'] as num;
+            final status = order['status'] as String;
+
             return DataRow(cells: [
-              DataCell(order["ItemImage"] != null
-                  ? GestureDetector(
-                      onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ItemPage(itemId: order['ItemID']),
-                        ),
-                      );
-                    },
-                      child: Image.network(
-                        order["ItemImage"],
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
+              DataCell(
+                GestureDetector(
+                  onTap: () {
+                    // Open ItemPage when tapped
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ItemPage(itemId: order['itemId']),
                       ),
-                    )
-                  : Icon(Icons.image_not_supported)),
-              DataCell(Text(order["BuyerName"] ?? "Unknown Buyer")),
-              DataCell(Text(order["FinalPrice"] ?? "\$0.00")),
-              DataCell(Text(order["Status"] ?? "Unknown")),
+                    );
+                  },
+                  child: itemImage != null
+                      ? Image.network(
+                          itemImage,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(Icons.image_not_supported),
+                ),
+              ),
+              DataCell(Text(sellerName)),
+              DataCell(Text('\₪${price.toStringAsFixed(0)}')),
+              DataCell(Text(status)),
+            ]);
+          }).toList(),
+        ),
+        // Optional: "Scroll up" button in bottom-right
+        if (_showIncomingScrollUp)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: OutlinedButton(
+              onPressed: () {
+                _incomingScrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              style: ButtonStyle(
+                backgroundColor:
+                    WidgetStateProperty.all(Colors.grey[800]),
+                foregroundColor: WidgetStateProperty.all(Colors.white),
+              ),
+              child: const Text('↑ Go Up ↑'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ------------------ BUILD OUTGOING TABLE ------------------
+  Widget _buildOutgoingOrdersTable() {
+    // "Outgoing" = I am the seller
+    if (outgoingOrders.isEmpty) {
+      return const Center(child: Text('No outgoing orders found.'));
+    }
+
+    return Stack(
+      children: [
+        DataTable2(
+          scrollController: _outgoingScrollController,
+          horizontalScrollController: _outgoingHorizontalController,
+          columnSpacing: 12,
+          horizontalMargin: 12,
+          minWidth: 600,
+          columns: const [
+            DataColumn2(label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
+            DataColumn2(label: Text('Buyer'), size: ColumnSize.S, fixedWidth: 80),
+            DataColumn2(label: Text('Price'), numeric: true, size: ColumnSize.S, fixedWidth: 50),
+            DataColumn2(label: Text('Status'), size: ColumnSize.S, fixedWidth: 80),
+            DataColumn2(label: Text('Actions'), size: ColumnSize.S, fixedWidth: 70),
+          ],
+          rows: outgoingOrders.map((order) {
+            final itemImage = order['itemImage'] as String?;
+            final buyerName = order['buyerName'] as String;
+            final price = order['price'] as num;
+            final status = order['status'] as String;
+
+            return DataRow(cells: [
+              DataCell(
+                GestureDetector(
+                  onTap: () {
+                    // Open ItemPage when tapped
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ItemPage(itemId: order['itemId']),
+                      ),
+                    );
+                  },
+                  child: itemImage != null
+                      ? Image.network(
+                          itemImage,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(Icons.image_not_supported),
+                ),
+              ),
+              DataCell(Text(buyerName)),
+              DataCell(Text('\₪${price.toStringAsFixed(0)}')),
+              DataCell(Text(status)),
               DataCell(PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'approve') {
-                    updateOrderStatus(order["actions"], "Approved");
+                    updateOrderStatus(order['orderId'], 'Approved', false);
                   } else if (value == 'decline') {
-                    updateOrderStatus(order["actions"], "Declined");
+                    updateOrderStatus(order['orderId'], 'Declined', false);
                   } else if (value == 'shipped') {
-                    updateOrderStatus(order["actions"], "Shipped");
+                    updateOrderStatus(order['orderId'], 'Shipped', false);
                   }
                 },
                 itemBuilder: (context) {
                   final List<PopupMenuEntry<String>> options = [];
-                  if (order["Status"] == "Pending") {
-                    options.add(PopupMenuItem(value: "approve", child: Text("Approve")));
-                    options.add(PopupMenuItem(value: "decline", child: Text("Decline")));
-                  } else if (order["Status"] == "Approved") {
-                    options.add(PopupMenuItem(value: "shipped", child: Text("Mark as Shipped")));
+                  if (order['status'] == 'Pending') {
+                    options.add(const PopupMenuItem(value: 'approve', child: Text('Approve')));
+                    options.add(const PopupMenuItem(value: 'decline', child: Text('Decline')));
+                  } else if (order['Status'] == 'Approved') {
+                    options.add(const PopupMenuItem(value: 'shipped', child: Text('Mark as Shipped')));
                   }
                   return options;
                 },
-                icon: Icon(Icons.more_vert),
+                icon: const Icon(Icons.more_vert),
               )),
             ]);
           }).toList(),
         ),
+        // Optional "Scroll up" button
+        if (_showOutgoingScrollUp)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: OutlinedButton(
+              onPressed: () {
+                _outgoingScrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              style: ButtonStyle(
+                backgroundColor:
+                    WidgetStateProperty.all(Colors.grey[800]),
+                foregroundColor: WidgetStateProperty.all(Colors.white),
+              ),
+              child: const Text('↑ Go Up ↑'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ------------------ MAIN BUILD ------------------
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Orders'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Incoming Orders'), // I'm the buyer, waiting to receive
+            Tab(text: 'Outgoing Orders'), // I'm the seller, need to send
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // 1) INCOMING ORDERS
+          _buildIncomingOrdersTable(),
+
+          // 2) OUTGOING ORDERS
+          _buildOutgoingOrdersTable(),
+        ],
       ),
     );
   }

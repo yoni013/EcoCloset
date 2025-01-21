@@ -9,7 +9,7 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> loadUserTheme() async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       if (userId.isEmpty) return;
 
       final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
@@ -21,13 +21,13 @@ class ThemeProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      print('Error loading user theme: $e');
+      debugPrint('Error loading user theme: $e');
     }
   }
 
   Future<void> updateUserTheme(bool isDark) async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       if (userId.isEmpty) return;
 
       await FirebaseFirestore.instance.collection('Users').doc(userId).set(
@@ -38,7 +38,7 @@ class ThemeProvider extends ChangeNotifier {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
       notifyListeners();
     } catch (e) {
-      print('Error updating user theme: $e');
+      debugPrint('Error updating user theme: $e');
     }
   }
 }

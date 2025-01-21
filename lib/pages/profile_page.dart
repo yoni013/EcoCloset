@@ -71,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           child: ListTile(
-            leading: Icon(Icons.star, color: Colors.yellow),
+            leading: const Icon(Icons.star, color: Colors.yellow),
             title: Text(review['title'] ?? 'Review'),
             subtitle: Text(review['content'] ?? 'No content'),
           ),
@@ -86,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('User Reviews'),
+        title: const Text('User Reviews'),
         content: SizedBox(
           width: double.maxFinite,
           child: _buildReviewsList(reviews),
@@ -94,7 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -105,25 +105,25 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile Page'),
+        title: const Text('Profile Page'),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => SettingsPage(),
+                  builder: (context) => const SettingsPage(),
                 ),
               );
             },
           ),
           IconButton(
-            icon: Icon(Icons.room_preferences),
+            icon: const Icon(Icons.room_preferences),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => PersonalSizesPreferences(),
+                  builder: (context) => const PersonalSizesPreferences(),
                 ),
               );
             },
@@ -134,11 +134,11 @@ class _ProfilePageState extends State<ProfilePage> {
         future: fetchUserData(widget.viewedUserId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError ||
               !snapshot.hasData ||
               snapshot.data!.isEmpty) {
-            return Center(child: Text('Failed to load user data'));
+            return const Center(child: Text('Failed to load user data'));
           }
 
           var userData = snapshot.data!;
@@ -161,14 +161,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           return CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey[200],
-                            child: CircularProgressIndicator(),
+                            child: const CircularProgressIndicator(),
                           );
                         } else if (imageSnapshot.hasError ||
                             !imageSnapshot.hasData) {
                           return CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey[200],
-                            child: Icon(Icons.person, size: 50),
+                            child: const Icon(Icons.person, size: 50),
                           );
                         }
 
@@ -178,24 +178,24 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       },
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       userData['Name'] ?? 'Unknown User',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     GestureDetector(
                       onTap: _showReviewsPopup,
                       child: Row(
                         children: [
-                          Icon(Icons.star, color: Colors.yellow, size: 20),
-                          SizedBox(width: 4),
+                          const Icon(Icons.star, color: Colors.yellow, size: 20),
+                          const SizedBox(width: 4),
                           Text(
                             '$averageRating',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -206,11 +206,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              Divider(height: 1, thickness: 1),
+              const Divider(height: 1, thickness: 1),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Search Items',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.search),
@@ -220,15 +220,15 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                 ),
               ),
-              Divider(height: 1, thickness: 1),
+              const Divider(height: 1, thickness: 1),
               Expanded(
                 child: FutureBuilder<Widget>(
                   future: _buildItemsWidget(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     } else if (snapshot.hasError) {
-                      return Center(child: Text('Error loading data'));
+                      return const Center(child: Text('Error loading data'));
                     }
                     return snapshot.data!;
                   },
@@ -244,7 +244,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildItemsGrid(List<Map<String, dynamic>> items) {
     return GridView.builder(
       padding: const EdgeInsets.all(8.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
@@ -280,7 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     future: imageUrlFuture,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
-                        return Center(child: CircularProgressIndicator());
+                        return const Center(child: CircularProgressIndicator());
                       }
                       return Image.network(snapshot.data!, fit: BoxFit.cover);
                     },
@@ -290,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
                     item['Brand'] ?? 'Unknown',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],

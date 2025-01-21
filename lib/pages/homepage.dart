@@ -31,7 +31,7 @@ class _HomepageState extends State<Homepage> {
   }
 
   Future<void> fetchUserSizesAndItems() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (userId.isEmpty) return;
 
     final userDoc =
@@ -111,15 +111,16 @@ class _HomepageState extends State<Homepage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-                child: FutureBuilder<String>(
-              future: imageUrl,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                return Image.network(snapshot.data!, fit: BoxFit.cover);
-              },
-            )),
+              child: FutureBuilder<String>(
+                future: imageUrl,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return Image.network(snapshot.data!, fit: BoxFit.cover);
+                },
+                )
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -130,7 +131,7 @@ class _HomepageState extends State<Homepage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
-                '\$${item['Price'] ?? 'N/A'}',
+                '\₪${item['Price'] ?? 'N/A'}',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -159,9 +160,8 @@ class _HomepageState extends State<Homepage> {
                   const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
-                      "Recommended for You",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      'Recommended for You',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(
@@ -176,9 +176,8 @@ class _HomepageState extends State<Homepage> {
                   const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text(
-                      "Trending Now",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      'Trending Now',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(

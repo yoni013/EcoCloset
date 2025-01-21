@@ -11,7 +11,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Settings"),
+        title: const Text('Settings'),
       ),
       body: Center(
         child: Container(
@@ -19,10 +19,10 @@ class SettingsPage extends StatelessWidget {
           child: ListView(
             children: [
               _SingleSection(
-                title: "General",
+                title: 'General',
                 children: [
                   _CustomListTile(
-                    title: "Dark Mode",
+                    title: 'Dark Mode',
                     icon: Icons.dark_mode_outlined,
                     trailing: Switch(
                       value: Theme.of(context).brightness == Brightness.dark,
@@ -32,58 +32,58 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   const _CustomListTile(
-                    title: "Notifications",
+                    title: 'Notifications',
                     icon: Icons.notifications_none_rounded,
                   ),
                 ],
               ),
               const Divider(),
               const _SingleSection(
-                title: "Account",
+                title: 'Account',
                 children: [
                   _CustomListTile(
-                    title: "Profile Settings",
+                    title: 'Profile Settings',
                     icon: Icons.person_outline_rounded,
                   ),
                   _CustomListTile(
-                    title: "Privacy Settings",
+                    title: 'Privacy Settings',
                     icon: Icons.privacy_tip_outlined,
                   ),
                   _CustomListTile(
-                    title: "Change Password",
+                    title: 'Change Password',
                     icon: Icons.lock_reset,
                   ),
                 ],
               ),
               const Divider(),
               _SingleSection(
-                title: "Support",
+                title: 'Support',
                 children: [
                   const _CustomListTile(
-                    title: "Help & Feedback",
+                    title: 'Help & Feedback',
                     icon: Icons.help_outline_rounded,
                   ),
                   const _CustomListTile(
-                    title: "About",
+                    title: 'About',
                     icon: Icons.info_outline_rounded,
                   ),
                   _CustomListTile(
-                    title: "Sign Out",
+                    title: 'Sign Out',
                     icon: Icons.exit_to_app_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
                           return AlertDialog(
-                            title: const Text("Sign Out"),
+                            title: const Text('Sign Out'),
                             content: const Text(
-                                "Are you sure you want to sign out?"),
+                                'Are you sure you want to sign out?'),
                             actions: [
                               TextButton(
                                 onPressed: () {
                                   Navigator.of(context).pop();
                                 },
-                                child: const Text("No"),
+                                child: const Text('No'),
                               ),
                               TextButton(
                                 onPressed: () async {
@@ -94,7 +94,7 @@ class SettingsPage extends StatelessWidget {
                                     (route) => false,
                                   );
                                 },
-                                child: const Text("Yes"),
+                                child: const Text('Yes'),
                               ),
                             ],
                           );

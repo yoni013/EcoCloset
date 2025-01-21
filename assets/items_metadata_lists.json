@@ -20,6 +20,7 @@
   "Chloé",
   "Coach",
   "Converse",
+  "Cos",
   "Crazy Line",
   "Crocs",
   "Deichmann",
@@ -93,7 +94,7 @@
   "Zara"
 		],
 
-"sizes": [
+"general_sizes": [
   "XXS",
   "XS",
   "S",
@@ -104,6 +105,38 @@
   "XXXL",
   "One Size",
   "Custom Size"
+],
+
+"pants_sizes": [
+  "24",
+  "26",
+  "28",
+  "30",
+  "32",
+  "34",
+  "36",
+  "38",
+  "40",
+  "42",
+  "44",
+  "46"
+],
+
+"shoe_sizes": [
+  "35",
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+  "47",
+  "48"
 ],
 
 "conditions": [
@@ -144,7 +177,7 @@
   "Sweaters",
   "Swimwear",
   "Tank Tops",
-  "T-shirts",
+  "T-Shirts",
   "Tracksuits"
 ],
 

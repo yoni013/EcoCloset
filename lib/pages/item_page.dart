@@ -27,16 +27,16 @@ class ItemPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Item Details'),
+        title: const Text('Item Details'),
         centerTitle: true,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: fetchItemData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Failed to load item details'));
+            return const Center(child: Text('Failed to load item details'));
           }
 
           var itemData = snapshot.data!;
@@ -56,13 +56,13 @@ class ItemPage extends StatelessWidget {
                         return Container(
                           height: 300,
                           color: Colors.grey[200],
-                          child: Center(child: CircularProgressIndicator()),
+                          child: const Center(child: CircularProgressIndicator()),
                         );
                       } else if (imageSnapshot.hasError || !imageSnapshot.hasData || imageSnapshot.data!.isEmpty) {
                         return Container(
                           height: 300,
                           color: Colors.grey[200],
-                          child: Center(child: Icon(Icons.broken_image, size: 48)),
+                          child: const Center(child: Icon(Icons.broken_image, size: 48)),
                         );
                       }
 
@@ -80,41 +80,46 @@ class ItemPage extends StatelessWidget {
                       );
                     },
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         itemData['Brand'] ?? 'Unknown Item',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         '\₪${itemData['Price'] ?? 'N/A'}',
-                        style: TextStyle(fontSize: 20, color: Colors.green, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 20, color: Colors.green, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Condition: ${itemData['Condition'] ?? 'N/A'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
-                  SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: 8),
+                                    Text(
+                    'Size: ${itemData['Size'] ?? 'N/A'}',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
                     'Description',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     itemData['Description'] ?? 'No description provided.',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Wrap(
                     spacing: 8.0,
                     children: (itemData['Tags'] as List<dynamic>?)?.map((tag) => Chip(label: Text(tag))).toList() ?? [],
                   ),
-                  Divider(height: 32),
+                  const Divider(height: 32),
                   FutureBuilder<Map<String, dynamic>>(
                     future: fetchSellerData(itemData['seller_id'] ?? ''),
                     builder: (context, sellerSnapshot) {
@@ -122,17 +127,17 @@ class ItemPage extends StatelessWidget {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey[200],
-                            child: CircularProgressIndicator(),
+                            child: const CircularProgressIndicator(),
                           ),
-                          title: Text('Loading seller info...'),
+                          title: const Text('Loading seller info...'),
                         );
                       } else if (sellerSnapshot.hasError || !sellerSnapshot.hasData || sellerSnapshot.data!.isEmpty) {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey[200],
-                            child: Icon(Icons.person, size: 32),
+                            child: const Icon(Icons.person, size: 32),
                           ),
-                          title: Text('Unknown Seller'),
+                          title: const Text('Unknown Seller'),
                         );
                       }
 
@@ -144,12 +149,12 @@ class ItemPage extends StatelessWidget {
                             if (imageSnapshot.connectionState == ConnectionState.waiting) {
                               return CircleAvatar(
                                 backgroundColor: Colors.grey[200],
-                                child: CircularProgressIndicator(),
+                                child: const CircularProgressIndicator(),
                               );
                             } else if (imageSnapshot.hasError || !imageSnapshot.hasData) {
                               return CircleAvatar(
                                 backgroundColor: Colors.grey[200],
-                                child: Icon(Icons.person, size: 32),
+                                child: const Icon(Icons.person, size: 32),
                               );
                             }
                             return CircleAvatar(
@@ -160,7 +165,7 @@ class ItemPage extends StatelessWidget {
                         title: Text(sellerData['Name'] ?? 'Unknown Seller'),
                         subtitle: Row(
                           children: [
-                            Icon(Icons.star, color: Colors.yellow, size: 16),
+                            const Icon(Icons.star, color: Colors.yellow, size: 16),
                             Text(' ${sellerData['Rating'] ?? 'N/A'} (100 reviews)'),
                           ],
                         ),
@@ -175,7 +180,7 @@ class ItemPage extends StatelessWidget {
                       );
                     },
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -183,13 +188,13 @@ class ItemPage extends StatelessWidget {
                         onPressed: () {
                           // Contact Seller action
                         },
-                        child: Text('Contact Seller'),
+                        child: const Text('Contact Seller'),
                       ),
                       ElevatedButton(
                         onPressed: () {
                           // Buy Now action
                         },
-                        child: Text('Buy Now'),
+                        child: const Text('Buy Now'),
                       ),
                     ],
                   ),
