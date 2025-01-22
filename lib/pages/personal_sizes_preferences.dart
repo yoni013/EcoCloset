@@ -4,8 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../generated/l10n.dart';
 

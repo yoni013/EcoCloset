@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'dart:convert';
-
 import '../generated/l10n.dart';
 
 class UploadItemPage extends StatefulWidget {
@@ -92,7 +91,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
                 Navigator.pop(context);
                 final pickedImages = await _picker.pickMultiImage(
                   imageQuality: 50,
-                  limit: 6
+                  // You can pick multiple images here; limit them to 6
+                  limit: 6,
                 );
                 if (pickedImages.isNotEmpty) {
                   setState(() {
@@ -123,18 +123,6 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Future<Map<String, dynamic>> _callGemini() async {
     final jsonSchema = Schema.object(
       properties: {
-        AppLocalizations.of(context).brand:
-            Schema.string(description: "Brand of the item, or null if unknown"),
-        AppLocalizations.of(context).color: Schema.string(
-            description: "Color of the item: White, Black, Multicolor"),
-        AppLocalizations.of(context).condition: Schema.string(
-            description:
-                "Condition of the item: Never Used, New, Gently Used, etc."),
-        AppLocalizations.of(context).size:
-            Schema.string(description: "Size of the item, null if uncertain"),
-        AppLocalizations.of(context).type: Schema.string(
-            description:
-                "Type of the item in plural: T-shirts, pants, coats, etc."),
         'Brand': Schema.string(description: 'Brand of the item, or null if unknown'),
         'Color': Schema.string(description: 'Color of the item'),
         'Condition': Schema.string(description: 'Condition of the item'),
@@ -161,9 +149,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
       '''Analyze the provided images and extract metadata including brand, color, condition, size, and type.''',
     );
 
-    final content = [
-      Content.multi([...imageParts, prompt])
-    ];
+    final content = [Content.multi([...imageParts, prompt])];
 
     final response = await model.generateContent(content);
 
@@ -176,57 +162,9 @@ class _UploadItemPageState extends State<UploadItemPage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _fetchDropdownData();
-  }
-
-  Future<void> _pickImages() async {
-    final pickedImages =
-        await _picker.pickMultiImage(limit: 6, imageQuality: 75);
-    setState(() {
-      _images = pickedImages;
-    });
-  }
-
-  Future<void> _processImagesWithGemini() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final metadata = await _callGemini();
-      Navigator.of(context, rootNavigator: true).pop();
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => _StepTwoForm(
-            images: _images,
-            brands: _brands,
-            colors: _colors,
-            conditions: _conditions,
-            sizes: _sizes,
-            types: _types,
-            prefilledData: metadata,
-          ),
-        ),
-      );
-    } catch (e) {
-      Navigator.of(context, rootNavigator: true).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error processing images with Gemini: $e')),
-      );
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).uploadItemStep1),
         title: const Text('Upload Item - Step 1'),
         centerTitle: true,
       ),
@@ -234,28 +172,6 @@ class _UploadItemPageState extends State<UploadItemPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(AppLocalizations.of(context).uploadImages),
-            SizedBox(height: 8),
-            Wrap(
-              spacing: 8.0,
-              children: _images
-                  .map((image) => Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          Image.file(
-                            File(image.path),
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.close, color: Colors.red),
-                            onPressed: () =>
-                                setState(() => _images.remove(image)),
-                          ),
-                        ],
-                      ))
-                  .toList(),
             // Tips
             Text(
               'Tips for better results:\n'
@@ -271,7 +187,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
             ),
             const SizedBox(height: 12),
 
-            // Images in a bigger Grid, portrait aspect ratio
+            // Images in a Grid
             Expanded(
               child: GridView.builder(
                 itemCount: _images.length,
@@ -286,14 +202,14 @@ class _UploadItemPageState extends State<UploadItemPage> {
                     alignment: Alignment.topRight,
                     children: [
                       GestureDetector(
-                        onTap: () => _makeImageMain(index), // Move tapped to front
+                        onTap: () => _makeImageMain(index),
                         child: AspectRatio(
                           aspectRatio: 3 / 4, // Force a portrait box
                           child: Container(
                             color: Colors.grey[300],
                             child: Image.file(
                               File(image.path),
-                              fit: BoxFit.contain, // center if square or wide
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -319,8 +235,53 @@ class _UploadItemPageState extends State<UploadItemPage> {
             const SizedBox(height: 16),
 
             ElevatedButton(
-              onPressed: _images.isNotEmpty ? _processImagesWithGemini : null,
-              child: Text(AppLocalizations.of(context).analyzeImages),
+            onPressed: _images.isNotEmpty
+                ? () async {
+                    // 1) Show a loading screen while calling Gemini
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+
+                    try {
+                      final metadata = await _callGemini();
+
+                      // Hide the loading dialog
+                      Navigator.of(context, rootNavigator: true).pop();
+
+                      // 2) Navigate to Step2 and wait for the result
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => _StepTwoForm(
+                            images: _images,
+                            brands: _brands,
+                            colors: _colors,
+                            conditions: _conditions,
+                            sizes: _sizes,
+                            types: _types,
+                            prefilledData: metadata,
+                          ),
+                        ),
+                      );
+
+                      // 3) If Step2 returned true => images cleared, rebuild Step1
+                      if (result == true) {
+                        setState(() {
+                          // `_images` is already empty, but we need to rebuild
+                        });
+                      }
+                    } catch (e) {
+                      // Hide the loading dialog if an error occurs
+                      Navigator.of(context, rootNavigator: true).pop();
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error processing images with Gemini: $e')),
+                      );
+                    }
+                  }
+                : null,
               child: const Text('Next'),
             ),
           ],
@@ -393,8 +354,6 @@ class _StepTwoForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _formKey = GlobalKey<FormState>();
-    String? warningMessage;
-
 
     // Use the helper to find a match ignoring case
     final matchedBrand = _findIgnoreCase(brands, prefilledData['Brand']);
@@ -416,7 +375,6 @@ class _StepTwoForm extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).uploadItemStep2),
         title: const Text('Upload Item - Step 2'),
         centerTitle: true,
       ),
@@ -450,11 +408,6 @@ class _StepTwoForm extends StatelessWidget {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context).brand),
-                      validator: (value) => value == null || value.isEmpty
-                          ? AppLocalizations.of(context).brandRequired
-                          : null,
                       decoration: const InputDecoration(labelText: 'Brand'),
                       validator: (value) =>
                           value == null || value.isEmpty ? 'Brand is required' : null,
@@ -602,13 +555,22 @@ class _StepTwoForm extends StatelessWidget {
                               TextButton(
                                 onPressed: () async {
                                   Navigator.pop(context);
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (_) =>
+                                        const Center(child: CircularProgressIndicator()),
+                                  );
                                   try {
                                     await _uploadItemToFirebase(formData, context);
+                                    images.clear();
+                                    Navigator.of(context, rootNavigator: true).pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Item uploaded successfully!')),
                                     );
-                                    Navigator.popUntil(context, (route) => route.isFirst);
+                                    Navigator.pop(context, true);
                                   } catch (e) {
+                                    Navigator.of(context, rootNavigator: true).pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('Error uploading item: $e')),
                                     );
@@ -620,14 +582,23 @@ class _StepTwoForm extends StatelessWidget {
                           ),
                         );
                       } else {
-                        // If ratioPercent <= 120, just upload the item directly
+                        // If ratioPercent <= 120, just upload the item directly with a loading screen
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => const Center(child: CircularProgressIndicator()),
+                        );
+
                         try {
                           await _uploadItemToFirebase(formData, context);
+                          images.clear();
+                          Navigator.of(context, rootNavigator: true).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Item uploaded successfully!')),
                           );
-                          Navigator.popUntil(context, (route) => route.isFirst);
+                          Navigator.pop(context, true);
                         } catch (e) {
+                          Navigator.of(context, rootNavigator: true).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Error uploading item: $e')),
                           );

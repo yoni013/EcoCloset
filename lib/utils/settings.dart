@@ -1,3 +1,4 @@
+import 'package:eco_closet/auth_onboarding/authentication.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/main.dart';
 import 'package:eco_closet/providers/theme_provider.dart';

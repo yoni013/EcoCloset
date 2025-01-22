@@ -52,7 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (imagePath is String) {
       return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
     } else {
-      throw TypeError();
+      return '';
     }
   }
 
@@ -168,14 +168,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: const CircularProgressIndicator(),
                           );
                         } else if (imageSnapshot.hasError ||
-                            !imageSnapshot.hasData) {
+                            !imageSnapshot.hasData || (imageSnapshot.data?.isEmpty ?? true)) {
                           return CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey[200],
                             child: const Icon(Icons.person, size: 50),
                           );
                         }
-
                         return CircleAvatar(
                           radius: 50,
                           backgroundImage: NetworkImage(imageSnapshot.data!),

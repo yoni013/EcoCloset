@@ -16,9 +16,11 @@ class Utils {
     final Map<String, dynamic> jsonData = jsonDecode(jsonString);
 
     brands = List<String>.from(jsonData['brands']);
-    sizes = List<String>.from(jsonData['general_sizes'])
-                        ..addAll(List<String>.from(jsonData['pants_sizes']))
-                        ..addAll(List<String>.from(jsonData['shoe_sizes']));
+    sizes = Set<String>.from([
+      ...jsonData['general_sizes'] as List<dynamic>,
+      ...jsonData['pants_sizes'] as List<dynamic>,
+      ...jsonData['shoe_sizes'] as List<dynamic>,
+    ]).toList();
     general_sizes = List<String>.from(jsonData['general_sizes']);
     pants_sizes = List<String>.from(jsonData['pants_sizes']);
     shoe_sizes = List<String>.from(jsonData['shoe_sizes']);
