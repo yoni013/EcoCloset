@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:eco_closet/bottom_navigation.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -103,12 +104,17 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             'profilePicUrl': _onboardingData.profilePicUrl ?? '',
             'favoriteBrands': _onboardingData.favoriteBrands ?? [],
             'Sizes': sizesToSave,
+            'isNewUser': false,
+            'enablePushNotifications': _onboardingData.enablePushNotifications,
+            'enableEmailNotifications': _onboardingData.enableEmailNotifications,
+            'enableSmsNotifications': _onboardingData.enableSmsNotifications,
           },
-          SetOptions(merge: true), // merge so we don't overwrite entire doc
+          SetOptions(merge: true),
         );
       }
       // Navigate to main app flow, or pop
-      Navigator.of(context).pop(); // or pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => PersistentBottomNavPage()),
+    );
     } catch (e) {
       // Handle error
       debugPrint('Error completing onboarding: $e');
@@ -205,28 +211,24 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
     }
   }
 
-    Future<void> _uploadProfileImage() async {
-      // Make sure we have an image and a logged-in user
-      if (_pickedImage == null) return;
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+  Future<void> _uploadProfileImage() async {
+    // Make sure we have an image and a logged-in user
+    if (_pickedImage == null) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-      // Create a reference to "profile_pics/{uid}.jpg" in Firebase Storage
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_pics')
-          .child('${user.uid}.jpg');
+    // Create a reference to "profile_pics/{uid}.jpg" in Firebase Storage
+    final String imageName = 'profile_pics/${user.uid}.jpg';
+    final storageRef = FirebaseStorage.instance.ref().child(imageName);
 
-      // Upload the file
-      await storageRef.putFile(File(_pickedImage!.path));
-      // Get the download URL
-      final downloadUrl = await storageRef.getDownloadURL();
+    // Upload the file
+    await storageRef.putFile(File(_pickedImage!.path));
 
-      // Store in onboarding data
-      setState(() {
-        widget.onboardingData.profilePicUrl = downloadUrl;
-      });
-    }
+    // Store in onboarding data
+    setState(() {
+      widget.onboardingData.profilePicUrl = imageName;
+    });
+  }
 
   void _saveAndNext() {
     if (_formKey.currentState!.validate()) {

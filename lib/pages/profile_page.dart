@@ -34,6 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return querySnapshot.docs.map((doc) {
       var data = doc.data();
+      data['image_preview'] = FirebaseStorage.instance.ref(doc['images'][0]).getDownloadURL();
       data['id'] = doc.id;
       return data;
     }).toList();
@@ -73,7 +74,7 @@ class _ProfilePageState extends State<ProfilePage> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           child: ListTile(
-            leading: Icon(Icons.star, color: Colors.yellow),
+            leading: const Icon(Icons.star, color: Colors.yellow),
             title: Text(review['title'] ?? AppLocalizations.of(context).review),
             subtitle: Text(
                 review['content'] ?? AppLocalizations.of(context).noContent),
@@ -146,7 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           var userData = snapshot.data!;
-          var imageUrlFuture = fetchImageUrl(userData['pic']);
+          var imageUrlFuture = fetchImageUrl(userData['profilePicUrl']);
           var averageRating = (userData['average_rating'] ?? 0).toDouble();
 
           return Column(
@@ -183,12 +184,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      userData['Name'] ??
+                      userData['name'] ??
                           AppLocalizations.of(context).unknownUser,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Address: ${userData['address'] ?? ''}",
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -217,8 +223,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: TextField(
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context).searchItems,
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.search),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     // Implement filtering logic here
@@ -277,7 +283,24 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Image.network(item['images'][0], fit: BoxFit.cover),
+                  child: FutureBuilder<String>(
+                    future: item['image_preview'], // Handle the future properly
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator(); // Show loading spinner while waiting
+                      } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey));
+                      } else {
+                        return Image.network(
+                          snapshot.data!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset('assets/images/default_image.png', fit: BoxFit.cover);
+                          },
+                        );
+                      }
+                    },
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),

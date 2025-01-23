@@ -507,7 +507,7 @@ class _StepTwoForm extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   initialValue: formData['Price'].toString(),
                   onChanged: (value) {
-                    formData['Price'] = value;
+                    formData['Price'] = int.tryParse(value);
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -534,8 +534,7 @@ class _StepTwoForm extends StatelessWidget {
                         formData['Condition'] ?? 'New',
                         formData['Type'] ?? 'T-Shirts',
                       );
-                      final price = int.tryParse(formData['Price']) ?? 0;
-                      final ratioPercent = ((price / estimated) * 100).round();
+                      final ratioPercent = ((formData['Price'] / estimated) * 100).round();
 
                       if (ratioPercent > 120) {
                         showDialog(

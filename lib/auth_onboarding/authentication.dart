@@ -80,9 +80,7 @@ class AuthGate extends StatelessWidget {
       await userDocRef.set({
         'uid': user.uid,
         'email': user.email,
-        'name': user.displayName ?? 'New User',
         'isNewUser': true,
-        'profile_picture': user.photoURL ?? '',
         'created_at': FieldValue.serverTimestamp(),
         'average_rating': 0,
         'seller_reviews': [],

@@ -97,6 +97,8 @@ class _PersistentBottomBarScaffoldState
               .toList(),
         ),
         bottomNavigationBar: BottomNavigationBar(
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
           currentIndex: _selectedTab,
           onTap: (index) {
             setState(() {
