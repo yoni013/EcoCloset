@@ -1,5 +1,6 @@
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:eco_closet/utils/get_recommended_price.dart';
+import 'package:eco_closet/utils/translation_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -8,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'dart:convert';
-import '../generated/l10n.dart';
+import 'package:eco_closet/generated/l10n.dart';
 
 class UploadItemPage extends StatefulWidget {
   @override
@@ -62,12 +63,12 @@ class _UploadItemPageState extends State<UploadItemPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Take Photo'),
+              title: Text(AppLocalizations.of(context).takePhoto),
               onTap: () async {
                 Navigator.pop(context);
                 if (_images.length >= 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Maximum 6 images allowed.')),
+                    SnackBar(content: Text(AppLocalizations.of(context).maxImagesAllowed)),
                   );
                   return;
                 }
@@ -86,7 +87,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Select From Gallery'),
+              title: Text(AppLocalizations.of(context).selectFromGallery),
               onTap: () async {
                 Navigator.pop(context);
                 final pickedImages = await _picker.pickMultiImage(
@@ -152,6 +153,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
     final content = [Content.multi([...imageParts, prompt])];
 
     final response = await model.generateContent(content);
+    debugPrint(response.text);
 
     try {
       var decoded = jsonDecode(response.text!) as Map<String, dynamic>;
@@ -165,7 +167,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Item - Step 1'),
+        title: Text(AppLocalizations.of(context).uploadItemStep1),
         centerTitle: true,
       ),
       body: Padding(
@@ -174,16 +176,13 @@ class _UploadItemPageState extends State<UploadItemPage> {
           children: [
             // Tips
             Text(
-              'Tips for better results:\n'
-              '- Take clear photos, possibly wearing the item.\n'
-              '- Capture labels or tags clearly.\n',
+              AppLocalizations.of(context).photoTips,
               style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey[700]),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Tap an image to set it as the main image for this item.\n'
-              'The first image in the list will be used as the main image.',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            Text(
+              AppLocalizations.of(context).mainImageInstructions,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 12),
 
@@ -230,7 +229,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: _pickImageSource,
-              child: const Text('Pick Images (Max 6)'),
+              child: Text(AppLocalizations.of(context).pickImages),
             ),
             const SizedBox(height: 16),
 
@@ -282,7 +281,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
                     }
                   }
                 : null,
-              child: const Text('Next'),
+              child: Text(AppLocalizations.of(context).next),
             ),
           ],
         ),
@@ -339,7 +338,8 @@ class _StepTwoForm extends StatelessWidget {
       final String imageName = 'items/${image.name}';
       final ref = FirebaseStorage.instance.ref().child(imageName);
       await ref.putFile(File(image.path));
-      imagePaths.add(imageName);
+      final url = await ref.getDownloadURL();
+      imagePaths.add(url);
     }
 
     // Create the document in Firestore
@@ -375,7 +375,7 @@ class _StepTwoForm extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Item - Step 2'),
+      title: Text(AppLocalizations.of(context).uploadItemStep2),
         centerTitle: true,
       ),
       body: Padding(
@@ -408,9 +408,16 @@ class _StepTwoForm extends StatelessWidget {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      decoration: const InputDecoration(labelText: 'Brand'),
+                      decoration: InputDecoration(labelText: AppLocalizations.of(context).brand),
                       validator: (value) =>
-                          value == null || value.isEmpty ? 'Brand is required' : null,
+                          value == null || value.isEmpty ? AppLocalizations.of(context).brandRequired : null,
+                      onChanged: (value) {
+                        formData['Brand'] = value; // Update formData on text change
+                      },
+                      onFieldSubmitted: (value) {
+                        formData['Brand'] = value;
+                        onFieldSubmitted(); // Trigger any additional submission logic
+                      },
                     );
                   },
                 ),
@@ -422,15 +429,19 @@ class _StepTwoForm extends StatelessWidget {
                     if (textEditingValue.text.isEmpty) {
                       return const Iterable<String>.empty();
                     }
-                    return colors.where((option) => option
-                        .toLowerCase()
-                        .contains(textEditingValue.text.toLowerCase()));
+                    final translatedColors = colors.map((color) => TranslationUtils.getColor(color, context)).toList();
+                    return translatedColors.where((translatedColor) =>
+                        translatedColor.toLowerCase().contains(textEditingValue.text.toLowerCase()));
                   },
                   onSelected: (String selection) {
-                    formData['Color'] = selection;
+                    formData['Color'] = colors.firstWhere(
+                      (color) => TranslationUtils.getColor(color, context) == selection,
+                      orElse: () => selection);
                   },
                   initialValue: TextEditingValue(
-                    text: formData['Color'] ?? '',
+                    text: formData['Color'] != null
+                      ? TranslationUtils.getColor(formData['Color']!, context) // Show localized color
+                      : '',
                   ),
                   fieldViewBuilder: (BuildContext context,
                       TextEditingController textEditingController,
@@ -439,9 +450,9 @@ class _StepTwoForm extends StatelessWidget {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      decoration: const InputDecoration(labelText: 'Color'),
+                      decoration: InputDecoration(labelText: AppLocalizations.of(context).color),
                       validator: (value) =>
-                          value == null || value.isEmpty ? 'Color is required' : null,
+                        value == null || value.isEmpty ? AppLocalizations.of(context).colorRequired : null,
                     );
                   },
                 ),
@@ -452,13 +463,13 @@ class _StepTwoForm extends StatelessWidget {
                   items: conditions
                       .map((condition) => DropdownMenuItem(
                             value: condition,
-                            child: Text(condition),
+                            child: Text(TranslationUtils.getCondition(condition, context)),
                           ))
                       .toList(),
                   value: formData['Condition'],
                   onChanged: (value) => formData['Condition'] = value,
-                  decoration: const InputDecoration(labelText: 'Condition'),
-                  validator: (value) => value == null ? 'Condition is required' : null,
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context).condition),
+                  validator: (value) => value == null ? AppLocalizations.of(context).conditionRequired : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -472,8 +483,8 @@ class _StepTwoForm extends StatelessWidget {
                       .toList(),
                   value: formData['Size'],
                   onChanged: (value) => formData['Size'] = value,
-                  decoration: const InputDecoration(labelText: 'Size'),
-                  validator: (value) => value == null ? 'Size is required' : null,
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context).size),
+                  validator: (value) => value == null ? AppLocalizations.of(context).sizeRequired : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -482,19 +493,19 @@ class _StepTwoForm extends StatelessWidget {
                   items: types
                       .map((type) => DropdownMenuItem(
                             value: type,
-                            child: Text(type),
+                            child: Text(TranslationUtils.getCategory(type, context)),
                           ))
                       .toList(),
                   value: formData['Type'],
                   onChanged: (value) => formData['Type'] = value,
-                  decoration: const InputDecoration(labelText: 'Type'),
-                  validator: (value) => value == null ? 'Type is required' : null,
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context).type),
+                  validator: (value) => value == null ? AppLocalizations.of(context).typeRequired : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Description
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Description'),
+                decoration: InputDecoration(labelText: AppLocalizations.of(context).description),
                   maxLines: 3,
                   initialValue: formData['Description'],
                   onChanged: (value) => formData['Description'] = value,
@@ -503,7 +514,7 @@ class _StepTwoForm extends StatelessWidget {
 
                 // Price
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Price'),
+                decoration: InputDecoration(labelText: AppLocalizations.of(context).price),
                   keyboardType: TextInputType.number,
                   initialValue: formData['Price'].toString(),
                   onChanged: (value) {
@@ -511,14 +522,14 @@ class _StepTwoForm extends StatelessWidget {
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Price is required';
+                    return AppLocalizations.of(context).priceRequired;
                     }
                     final intValue = int.tryParse(value);
                     if (intValue == null) {
-                      return 'Price must be a valid integer';
+                    return AppLocalizations.of(context).priceValidInteger;
                     }
                     if (intValue <= 0) {
-                      return 'Price must be greater than 0';
+                    return AppLocalizations.of(context).priceGreaterThanZero;
                     }
                     return null;
                   },
@@ -540,16 +551,16 @@ class _StepTwoForm extends StatelessWidget {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('Verify Your Price'),
+                            title: Text(AppLocalizations.of(context).verifyYourPrice),
                             content: Text(
-                              'Your price is $ratioPercent% of the recommended price of $estimated₪. Do you still want to upload?',
+                              AppLocalizations.of(context).priceVerificationMessage(ratioPercent, estimated),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(context);
                                 },
-                                child: const Text('Change Price'),
+                                child: Text(AppLocalizations.of(context).changePrice),
                               ),
                               TextButton(
                                 onPressed: () async {
@@ -563,11 +574,13 @@ class _StepTwoForm extends StatelessWidget {
                                   try {
                                     await _uploadItemToFirebase(formData, context);
                                     images.clear();
-                                    Navigator.of(context, rootNavigator: true).pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Item uploaded successfully!')),
-                                    );
-                                    Navigator.pop(context, true);
+                                    if (context.mounted) {
+                                      Navigator.of(context, rootNavigator: true).pop();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(AppLocalizations.of(context).itemUploadedSuccess)),
+                                      );
+                                      Navigator.pop(context, true);
+                                    }
                                   } catch (e) {
                                     Navigator.of(context, rootNavigator: true).pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -575,7 +588,7 @@ class _StepTwoForm extends StatelessWidget {
                                     );
                                   }
                                 },
-                                child: const Text('Upload Item'),
+                                child: Text(AppLocalizations.of(context).uploadItem),
                               ),
                             ],
                           ),
@@ -593,7 +606,7 @@ class _StepTwoForm extends StatelessWidget {
                           images.clear();
                           Navigator.of(context, rootNavigator: true).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Item uploaded successfully!')),
+                        SnackBar(content: Text(AppLocalizations.of(context).itemUploadedSuccess)),
                           );
                           Navigator.pop(context, true);
                         } catch (e) {
@@ -605,7 +618,7 @@ class _StepTwoForm extends StatelessWidget {
                       }
                     }
                   },
-                  child: const Text('Submit'),
+                child: Text(AppLocalizations.of(context).submit),
                 )
               ],
             ),

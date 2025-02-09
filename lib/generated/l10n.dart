@@ -263,6 +263,660 @@ abstract class AppLocalizations {
   /// **'Address'**
   String get address;
 
+  /// No description provided for @notificationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Settings'**
+  String get notificationSettings;
+
+  /// No description provided for @enablePushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Push Notifications'**
+  String get enablePushNotifications;
+
+  /// No description provided for @enableEmailNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Email Notifications'**
+  String get enableEmailNotifications;
+
+  /// No description provided for @enableSmsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable SMS Notifications'**
+  String get enableSmsNotifications;
+
+  /// No description provided for @addressSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search your location'**
+  String get addressSearch;
+
+  /// No description provided for @update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Password'**
+  String get currentPassword;
+
+  /// No description provided for @currentPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your current password'**
+  String get currentPasswordPlaceholder;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPassword;
+
+  /// No description provided for @newPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a new password'**
+  String get newPasswordPlaceholder;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get confirmNewPassword;
+
+  /// No description provided for @confirmNewPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get confirmNewPasswordPlaceholder;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @passwordChangedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully!'**
+  String get passwordChangedSuccess;
+
+  /// No description provided for @errorInvalidCredential.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password is incorrect.'**
+  String get errorInvalidCredential;
+
+  /// No description provided for @errorWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'The current password is incorrect.'**
+  String get errorWrongPassword;
+
+  /// No description provided for @errorWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'The new password is too weak.'**
+  String get errorWeakPassword;
+
+  /// No description provided for @errorNoCurrentUser.
+  ///
+  /// In en, this message translates to:
+  /// **'No user is currently signed in.'**
+  String get errorNoCurrentUser;
+
+  /// No description provided for @errorReauthentication.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-authentication error.'**
+  String get errorReauthentication;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred.'**
+  String get errorGeneric;
+
+  /// No description provided for @errorSomethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong.'**
+  String get errorSomethingWentWrong;
+
+  /// No description provided for @sizePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Size Preferences'**
+  String get sizePreferences;
+
+  /// No description provided for @savePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Preferences'**
+  String get savePreferences;
+
+  /// No description provided for @chooseCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Categories'**
+  String get chooseCategories;
+
+  /// No description provided for @categoryDresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Dresses'**
+  String get categoryDresses;
+
+  /// No description provided for @shopAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop All'**
+  String get shopAll;
+
+  /// No description provided for @categoryActivewear.
+  ///
+  /// In en, this message translates to:
+  /// **'Activewear'**
+  String get categoryActivewear;
+
+  /// No description provided for @categoryBelts.
+  ///
+  /// In en, this message translates to:
+  /// **'Belts'**
+  String get categoryBelts;
+
+  /// No description provided for @categoryCoats.
+  ///
+  /// In en, this message translates to:
+  /// **'Coats'**
+  String get categoryCoats;
+
+  /// No description provided for @categoryGloves.
+  ///
+  /// In en, this message translates to:
+  /// **'Gloves'**
+  String get categoryGloves;
+
+  /// No description provided for @categoryHats.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats'**
+  String get categoryHats;
+
+  /// No description provided for @categoryJeans.
+  ///
+  /// In en, this message translates to:
+  /// **'Jeans'**
+  String get categoryJeans;
+
+  /// No description provided for @categoryJumpsuits.
+  ///
+  /// In en, this message translates to:
+  /// **'Jumpsuits'**
+  String get categoryJumpsuits;
+
+  /// No description provided for @categoryOveralls.
+  ///
+  /// In en, this message translates to:
+  /// **'Overalls'**
+  String get categoryOveralls;
+
+  /// No description provided for @categoryPants.
+  ///
+  /// In en, this message translates to:
+  /// **'Pants'**
+  String get categoryPants;
+
+  /// No description provided for @categoryScarves.
+  ///
+  /// In en, this message translates to:
+  /// **'Scarves'**
+  String get categoryScarves;
+
+  /// No description provided for @categoryShirts.
+  ///
+  /// In en, this message translates to:
+  /// **'Shirts'**
+  String get categoryShirts;
+
+  /// No description provided for @categoryShoes.
+  ///
+  /// In en, this message translates to:
+  /// **'Shoes'**
+  String get categoryShoes;
+
+  /// No description provided for @categoryShorts.
+  ///
+  /// In en, this message translates to:
+  /// **'Shorts'**
+  String get categoryShorts;
+
+  /// No description provided for @categorySkirts.
+  ///
+  /// In en, this message translates to:
+  /// **'Skirts'**
+  String get categorySkirts;
+
+  /// No description provided for @categorySleepwear.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleepwear'**
+  String get categorySleepwear;
+
+  /// No description provided for @categorySweaters.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweaters'**
+  String get categorySweaters;
+
+  /// No description provided for @categorySwimwear.
+  ///
+  /// In en, this message translates to:
+  /// **'Swimwear'**
+  String get categorySwimwear;
+
+  /// No description provided for @colorBeige.
+  ///
+  /// In en, this message translates to:
+  /// **'Beige'**
+  String get colorBeige;
+
+  /// No description provided for @colorBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get colorBlack;
+
+  /// No description provided for @colorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get colorBlue;
+
+  /// No description provided for @colorBrown.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get colorBrown;
+
+  /// No description provided for @colorCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Color'**
+  String get colorCustom;
+
+  /// No description provided for @colorGold.
+  ///
+  /// In en, this message translates to:
+  /// **'Gold'**
+  String get colorGold;
+
+  /// No description provided for @colorGray.
+  ///
+  /// In en, this message translates to:
+  /// **'Gray'**
+  String get colorGray;
+
+  /// No description provided for @colorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get colorGreen;
+
+  /// No description provided for @colorMaroon.
+  ///
+  /// In en, this message translates to:
+  /// **'Maroon'**
+  String get colorMaroon;
+
+  /// No description provided for @colorMulticolor.
+  ///
+  /// In en, this message translates to:
+  /// **'Multicolor'**
+  String get colorMulticolor;
+
+  /// No description provided for @colorNavy.
+  ///
+  /// In en, this message translates to:
+  /// **'Navy'**
+  String get colorNavy;
+
+  /// No description provided for @colorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get colorOrange;
+
+  /// No description provided for @colorPink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get colorPink;
+
+  /// No description provided for @colorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get colorPurple;
+
+  /// No description provided for @colorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get colorRed;
+
+  /// No description provided for @colorSilver.
+  ///
+  /// In en, this message translates to:
+  /// **'Silver'**
+  String get colorSilver;
+
+  /// No description provided for @colorTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get colorTeal;
+
+  /// No description provided for @colorWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get colorWhite;
+
+  /// No description provided for @colorYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get colorYellow;
+
+  /// No description provided for @conditionNeverUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Never Used'**
+  String get conditionNeverUsed;
+
+  /// No description provided for @conditionUsedOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Used Once'**
+  String get conditionUsedOnce;
+
+  /// No description provided for @conditionNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get conditionNew;
+
+  /// No description provided for @conditionLikeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Like New'**
+  String get conditionLikeNew;
+
+  /// No description provided for @conditionGentlyUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Gently Used'**
+  String get conditionGentlyUsed;
+
+  /// No description provided for @conditionWornGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Worn (Good Condition)'**
+  String get conditionWornGood;
+
+  /// No description provided for @conditionVintage.
+  ///
+  /// In en, this message translates to:
+  /// **'Vintage'**
+  String get conditionVintage;
+
+  /// No description provided for @conditionDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged (Repair Needed)'**
+  String get conditionDamaged;
+
+  /// No description provided for @selectSizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {category} Sizes'**
+  String selectSizes(Object category);
+
+  /// No description provided for @uploadItemStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Item - Step 1'**
+  String get uploadItemStep1;
+
+  /// No description provided for @photoTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips for better results:\n- Take clear photos, possibly wearing the item.\n- Capture labels or tags clearly.\n'**
+  String get photoTips;
+
+  /// No description provided for @mainImageInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an image to set it as the main image for this item.\nThe first image in the list will be used as the main image.'**
+  String get mainImageInstructions;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get takePhoto;
+
+  /// No description provided for @selectFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Select From Gallery'**
+  String get selectFromGallery;
+
+  /// No description provided for @maxImagesAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum 6 images allowed.'**
+  String get maxImagesAllowed;
+
+  /// No description provided for @pickImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Images'**
+  String get pickImages;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @uploadItemStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Item - Step 2'**
+  String get uploadItemStep2;
+
+  /// No description provided for @brand.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brand;
+
+  /// No description provided for @brandRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand is required'**
+  String get brandRequired;
+
+  /// No description provided for @color.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get color;
+
+  /// No description provided for @colorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Color is required'**
+  String get colorRequired;
+
+  /// No description provided for @condition.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition'**
+  String get condition;
+
+  /// No description provided for @conditionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition is required'**
+  String get conditionRequired;
+
+  /// No description provided for @size.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get size;
+
+  /// No description provided for @sizeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Size is required'**
+  String get sizeRequired;
+
+  /// No description provided for @type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get type;
+
+  /// No description provided for @typeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Type is required'**
+  String get typeRequired;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get price;
+
+  /// No description provided for @priceRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Price is required'**
+  String get priceRequired;
+
+  /// No description provided for @priceValidInteger.
+  ///
+  /// In en, this message translates to:
+  /// **'Price must be a valid integer'**
+  String get priceValidInteger;
+
+  /// No description provided for @priceGreaterThanZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Price must be greater than 0'**
+  String get priceGreaterThanZero;
+
+  /// No description provided for @itemUploadedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Item uploaded successfully!'**
+  String get itemUploadedSuccess;
+
+  /// No description provided for @verifyYourPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Price'**
+  String get verifyYourPrice;
+
+  /// No description provided for @priceVerificationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price is {ratioPercent}% of the recommended price of {estimated}₪. Do you still want to upload?'**
+  String priceVerificationMessage(Object estimated, Object ratioPercent);
+
+  /// No description provided for @changePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Price'**
+  String get changePrice;
+
+  /// No description provided for @uploadItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Item'**
+  String get uploadItem;
+
+  /// No description provided for @sortByPriceLowToHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Price (Low to High)'**
+  String get sortByPriceLowToHigh;
+
+  /// No description provided for @sortByPriceHighToLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Price (High to Low)'**
+  String get sortByPriceHighToLow;
+
+  /// No description provided for @sortByRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get sortByRecommended;
+
+  /// No description provided for @forMe.
+  ///
+  /// In en, this message translates to:
+  /// **'For Me'**
+  String get forMe;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get search;
+
+  /// No description provided for @noItemsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No items match your search.'**
+  String get noItemsMatch;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// No description provided for @analyzeImagesMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze the provided images and extract metadata including brand, color, condition, size, and type.'**
+  String get analyzeImagesMetadata;
+
   /// No description provided for @phoneNumber.
   ///
   /// In en, this message translates to:
@@ -353,17 +1007,23 @@ abstract class AppLocalizations {
   /// **'Profile Settings'**
   String get profileSettings;
 
-  /// No description provided for @privacySettings.
+  /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
-  /// **'Privacy Settings'**
-  String get privacySettings;
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
 
-  /// No description provided for @changePassword.
+  /// No description provided for @termsAndCondition.
   ///
   /// In en, this message translates to:
-  /// **'Change Password'**
-  String get changePassword;
+  /// **'Terms & Conditions'**
+  String get termsAndCondition;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
 
   /// No description provided for @support.
   ///
@@ -401,77 +1061,17 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get yes;
 
-  /// No description provided for @uploadItemStep1.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload Item - Step 1'**
-  String get uploadItemStep1;
-
-  /// No description provided for @uploadItemStep2.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload Item - Step 2'**
-  String get uploadItemStep2;
-
   /// No description provided for @uploadImages.
   ///
   /// In en, this message translates to:
   /// **'Upload Images (up to 6):'**
   String get uploadImages;
 
-  /// No description provided for @pickImages.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick Images'**
-  String get pickImages;
-
   /// No description provided for @analyzeImages.
   ///
   /// In en, this message translates to:
   /// **'Analyze Images with Gemini'**
   String get analyzeImages;
-
-  /// No description provided for @brand.
-  ///
-  /// In en, this message translates to:
-  /// **'Brand'**
-  String get brand;
-
-  /// No description provided for @color.
-  ///
-  /// In en, this message translates to:
-  /// **'Color'**
-  String get color;
-
-  /// No description provided for @condition.
-  ///
-  /// In en, this message translates to:
-  /// **'Condition'**
-  String get condition;
-
-  /// No description provided for @size.
-  ///
-  /// In en, this message translates to:
-  /// **'Size'**
-  String get size;
-
-  /// No description provided for @type.
-  ///
-  /// In en, this message translates to:
-  /// **'Type'**
-  String get type;
-
-  /// No description provided for @description.
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get description;
-
-  /// No description provided for @price.
-  ///
-  /// In en, this message translates to:
-  /// **'Price'**
-  String get price;
 
   /// No description provided for @validPrice.
   ///
@@ -490,36 +1090,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error uploading item: {error}'**
   String errorUploadingItem(Object error);
-
-  /// No description provided for @colorRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Color is required'**
-  String get colorRequired;
-
-  /// No description provided for @typeRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Type is required'**
-  String get typeRequired;
-
-  /// No description provided for @sizeRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Size is required'**
-  String get sizeRequired;
-
-  /// No description provided for @conditionRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Condition is required'**
-  String get conditionRequired;
-
-  /// No description provided for @brandRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Brand is required'**
-  String get brandRequired;
 
   /// No description provided for @itemDetails.
   ///
@@ -743,12 +1313,6 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get skip;
 
-  /// No description provided for @sizePreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Size Preferences'**
-  String get sizePreferences;
-
   /// No description provided for @addSize.
   ///
   /// In en, this message translates to:
@@ -760,12 +1324,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preferences saved successfully!'**
   String get preferencesSaved;
-
-  /// No description provided for @savePreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Save Preferences'**
-  String get savePreferences;
 
   /// No description provided for @jackets.
   ///
@@ -856,6 +1414,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown Brand'**
   String get unknownBrand;
+
+  /// No description provided for @editItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Item'**
+  String get editItem;
+
+  /// No description provided for @itemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name'**
+  String get itemName;
+
+  /// No description provided for @thisFieldIsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get thisFieldIsRequired;
+
+  /// No description provided for @invalidPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid price'**
+  String get invalidPrice;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @available.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get available;
+
+  /// No description provided for @soldOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold Out'**
+  String get soldOut;
+
+  /// No description provided for @existingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing Images'**
+  String get existingImages;
+
+  /// No description provided for @noImagesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No images available'**
+  String get noImagesAvailable;
+
+  /// No description provided for @mainImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Image'**
+  String get mainImage;
+
+  /// No description provided for @image.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get image;
+
+  /// No description provided for @newImages.
+  ///
+  /// In en, this message translates to:
+  /// **'New Images'**
+  String get newImages;
+
+  /// No description provided for @none.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// No description provided for @addImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Images'**
+  String get addImages;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// No description provided for @anonymous_reviewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous Reviewer'**
+  String get anonymous_reviewer;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

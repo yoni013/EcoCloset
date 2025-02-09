@@ -2,7 +2,11 @@
     <application
         android:label="eco_closet"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="false">
+        <meta-data 
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyB9vjhEDF4fRZ6x_Qy73Xgwhrb2GQjBjK8"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -91,6 +91,337 @@ class AppLocalizationsEn extends AppLocalizations {
   String get address => 'Address';
 
   @override
+  String get notificationSettings => 'Notification Settings';
+
+  @override
+  String get enablePushNotifications => 'Enable Push Notifications';
+
+  @override
+  String get enableEmailNotifications => 'Enable Email Notifications';
+
+  @override
+  String get enableSmsNotifications => 'Enable SMS Notifications';
+
+  @override
+  String get addressSearch => 'Search your location';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get currentPassword => 'Current Password';
+
+  @override
+  String get currentPasswordPlaceholder => 'Please enter your current password';
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get newPasswordPlaceholder => 'Please enter a new password';
+
+  @override
+  String get confirmNewPassword => 'Confirm New Password';
+
+  @override
+  String get confirmNewPasswordPlaceholder => 'Passwords do not match';
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get passwordChangedSuccess => 'Password changed successfully!';
+
+  @override
+  String get errorInvalidCredential => 'Current password is incorrect.';
+
+  @override
+  String get errorWrongPassword => 'The current password is incorrect.';
+
+  @override
+  String get errorWeakPassword => 'The new password is too weak.';
+
+  @override
+  String get errorNoCurrentUser => 'No user is currently signed in.';
+
+  @override
+  String get errorReauthentication => 'Re-authentication error.';
+
+  @override
+  String get errorGeneric => 'An error occurred.';
+
+  @override
+  String get errorSomethingWentWrong => 'Something went wrong.';
+
+  @override
+  String get sizePreferences => 'Size Preferences';
+
+  @override
+  String get savePreferences => 'Save Preferences';
+
+  @override
+  String get chooseCategories => 'Choose Categories';
+
+  @override
+  String get categoryDresses => 'Dresses';
+
+  @override
+  String get shopAll => 'Shop All';
+
+  @override
+  String get categoryActivewear => 'Activewear';
+
+  @override
+  String get categoryBelts => 'Belts';
+
+  @override
+  String get categoryCoats => 'Coats';
+
+  @override
+  String get categoryGloves => 'Gloves';
+
+  @override
+  String get categoryHats => 'Hats';
+
+  @override
+  String get categoryJeans => 'Jeans';
+
+  @override
+  String get categoryJumpsuits => 'Jumpsuits';
+
+  @override
+  String get categoryOveralls => 'Overalls';
+
+  @override
+  String get categoryPants => 'Pants';
+
+  @override
+  String get categoryScarves => 'Scarves';
+
+  @override
+  String get categoryShirts => 'Shirts';
+
+  @override
+  String get categoryShoes => 'Shoes';
+
+  @override
+  String get categoryShorts => 'Shorts';
+
+  @override
+  String get categorySkirts => 'Skirts';
+
+  @override
+  String get categorySleepwear => 'Sleepwear';
+
+  @override
+  String get categorySweaters => 'Sweaters';
+
+  @override
+  String get categorySwimwear => 'Swimwear';
+
+  @override
+  String get colorBeige => 'Beige';
+
+  @override
+  String get colorBlack => 'Black';
+
+  @override
+  String get colorBlue => 'Blue';
+
+  @override
+  String get colorBrown => 'Brown';
+
+  @override
+  String get colorCustom => 'Custom Color';
+
+  @override
+  String get colorGold => 'Gold';
+
+  @override
+  String get colorGray => 'Gray';
+
+  @override
+  String get colorGreen => 'Green';
+
+  @override
+  String get colorMaroon => 'Maroon';
+
+  @override
+  String get colorMulticolor => 'Multicolor';
+
+  @override
+  String get colorNavy => 'Navy';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorPink => 'Pink';
+
+  @override
+  String get colorPurple => 'Purple';
+
+  @override
+  String get colorRed => 'Red';
+
+  @override
+  String get colorSilver => 'Silver';
+
+  @override
+  String get colorTeal => 'Teal';
+
+  @override
+  String get colorWhite => 'White';
+
+  @override
+  String get colorYellow => 'Yellow';
+
+  @override
+  String get conditionNeverUsed => 'Never Used';
+
+  @override
+  String get conditionUsedOnce => 'Used Once';
+
+  @override
+  String get conditionNew => 'New';
+
+  @override
+  String get conditionLikeNew => 'Like New';
+
+  @override
+  String get conditionGentlyUsed => 'Gently Used';
+
+  @override
+  String get conditionWornGood => 'Worn (Good Condition)';
+
+  @override
+  String get conditionVintage => 'Vintage';
+
+  @override
+  String get conditionDamaged => 'Damaged (Repair Needed)';
+
+  @override
+  String selectSizes(Object category) {
+    return 'Select $category Sizes';
+  }
+
+  @override
+  String get uploadItemStep1 => 'Upload Item - Step 1';
+
+  @override
+  String get photoTips => 'Tips for better results:\n- Take clear photos, possibly wearing the item.\n- Capture labels or tags clearly.\n';
+
+  @override
+  String get mainImageInstructions => 'Tap an image to set it as the main image for this item.\nThe first image in the list will be used as the main image.';
+
+  @override
+  String get takePhoto => 'Take Photo';
+
+  @override
+  String get selectFromGallery => 'Select From Gallery';
+
+  @override
+  String get maxImagesAllowed => 'Maximum 6 images allowed.';
+
+  @override
+  String get pickImages => 'Pick Images';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get uploadItemStep2 => 'Upload Item - Step 2';
+
+  @override
+  String get brand => 'Brand';
+
+  @override
+  String get brandRequired => 'Brand is required';
+
+  @override
+  String get color => 'Color';
+
+  @override
+  String get colorRequired => 'Color is required';
+
+  @override
+  String get condition => 'Condition';
+
+  @override
+  String get conditionRequired => 'Condition is required';
+
+  @override
+  String get size => 'Size';
+
+  @override
+  String get sizeRequired => 'Size is required';
+
+  @override
+  String get type => 'Type';
+
+  @override
+  String get typeRequired => 'Type is required';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get price => 'Price';
+
+  @override
+  String get priceRequired => 'Price is required';
+
+  @override
+  String get priceValidInteger => 'Price must be a valid integer';
+
+  @override
+  String get priceGreaterThanZero => 'Price must be greater than 0';
+
+  @override
+  String get itemUploadedSuccess => 'Item uploaded successfully!';
+
+  @override
+  String get verifyYourPrice => 'Verify Your Price';
+
+  @override
+  String priceVerificationMessage(Object estimated, Object ratioPercent) {
+    return 'Your price is $ratioPercent% of the recommended price of $estimated₪. Do you still want to upload?';
+  }
+
+  @override
+  String get changePrice => 'Change Price';
+
+  @override
+  String get uploadItem => 'Upload Item';
+
+  @override
+  String get sortByPriceLowToHigh => 'Price (Low to High)';
+
+  @override
+  String get sortByPriceHighToLow => 'Price (High to Low)';
+
+  @override
+  String get sortByRecommended => 'Recommended';
+
+  @override
+  String get forMe => 'For Me';
+
+  @override
+  String get search => 'Search...';
+
+  @override
+  String get noItemsMatch => 'No items match your search.';
+
+  @override
+  String get filter => 'Filter';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get analyzeImagesMetadata => 'Analyze the provided images and extract metadata including brand, color, condition, size, and type.';
+
+  @override
   String get phoneNumber => 'Phone Number';
 
   @override
@@ -136,10 +467,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSettings => 'Profile Settings';
 
   @override
-  String get privacySettings => 'Privacy Settings';
+  String get privacyPolicy => 'Privacy Policy';
 
   @override
-  String get changePassword => 'Change Password';
+  String get termsAndCondition => 'Terms & Conditions';
+
+  @override
+  String get name => 'Name';
 
   @override
   String get support => 'Support';
@@ -160,40 +494,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yes => 'Yes';
 
   @override
-  String get uploadItemStep1 => 'Upload Item - Step 1';
-
-  @override
-  String get uploadItemStep2 => 'Upload Item - Step 2';
-
-  @override
   String get uploadImages => 'Upload Images (up to 6):';
 
   @override
-  String get pickImages => 'Pick Images';
-
-  @override
   String get analyzeImages => 'Analyze Images with Gemini';
-
-  @override
-  String get brand => 'Brand';
-
-  @override
-  String get color => 'Color';
-
-  @override
-  String get condition => 'Condition';
-
-  @override
-  String get size => 'Size';
-
-  @override
-  String get type => 'Type';
-
-  @override
-  String get description => 'Description';
-
-  @override
-  String get price => 'Price';
 
   @override
   String get validPrice => 'Valid price is required';
@@ -205,21 +509,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String errorUploadingItem(Object error) {
     return 'Error uploading item: $error';
   }
-
-  @override
-  String get colorRequired => 'Color is required';
-
-  @override
-  String get typeRequired => 'Type is required';
-
-  @override
-  String get sizeRequired => 'Size is required';
-
-  @override
-  String get conditionRequired => 'Condition is required';
-
-  @override
-  String get brandRequired => 'Brand is required';
 
   @override
   String get itemDetails => 'Item Details';
@@ -333,16 +622,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skip => 'Skip';
 
   @override
-  String get sizePreferences => 'Size Preferences';
-
-  @override
   String get addSize => 'Add Size';
 
   @override
   String get preferencesSaved => 'Preferences saved successfully!';
-
-  @override
-  String get savePreferences => 'Save Preferences';
 
   @override
   String get jackets => 'Jackets';
@@ -388,4 +671,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unknownBrand => 'Unknown Brand';
+
+  @override
+  String get editItem => 'Edit Item';
+
+  @override
+  String get itemName => 'Item Name';
+
+  @override
+  String get thisFieldIsRequired => 'This field is required';
+
+  @override
+  String get invalidPrice => 'Invalid price';
+
+  @override
+  String get category => 'Category';
+
+  @override
+  String get available => 'Available';
+
+  @override
+  String get soldOut => 'Sold Out';
+
+  @override
+  String get existingImages => 'Existing Images';
+
+  @override
+  String get noImagesAvailable => 'No images available';
+
+  @override
+  String get mainImage => 'Main Image';
+
+  @override
+  String get image => 'Image';
+
+  @override
+  String get newImages => 'New Images';
+
+  @override
+  String get none => 'None';
+
+  @override
+  String get addImages => 'Add Images';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get anonymous_reviewer => 'Anonymous Reviewer';
 }

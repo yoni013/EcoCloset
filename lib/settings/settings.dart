@@ -1,13 +1,51 @@
 import 'package:eco_closet/auth_onboarding/authentication.dart';
+import 'package:eco_closet/settings/change_password.dart';
+import 'package:eco_closet/settings/notifications_settings.dart';
+import 'package:eco_closet/settings/profile_settings_page.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/main.dart';
 import 'package:eco_closet/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
+
+    Future<void> _showPrivacyDialog(BuildContext context) async {
+    final privacyText = await rootBundle.loadString('assets/privacy_policy.txt');
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: SingleChildScrollView(child: Text(privacyText)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showTermsDialog(BuildContext context) async {
+    final termsText = await rootBundle.loadString('assets/terms_and_conditions.txt');
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Terms & Conditions'),
+        content: SingleChildScrollView(child: Text(termsText)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +76,19 @@ class SettingsPage extends StatelessWidget {
                   _CustomListTile(
                     title: AppLocalizations.of(context).notifications,
                     icon: Icons.notifications_none_rounded,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                      );
+                    },
                   ),
                   _CustomListTile(
                     title: AppLocalizations.of(context).language,
                     icon: Icons.language_outlined,
                     trailing: DropdownButton<Locale>(
-                      value: localeProvider.locale,
+                      value: (localeProvider.locale.languageCode == 'he' || localeProvider.locale.languageCode == 'en') 
+                              ? localeProvider.locale 
+                              : const Locale('en'),
                       onChanged: (Locale? newLocale) {
                         if (newLocale != null) {
                           localeProvider.setLocale(newLocale);
@@ -71,14 +116,32 @@ class SettingsPage extends StatelessWidget {
                   _CustomListTile(
                     title: AppLocalizations.of(context).profileSettings,
                     icon: Icons.person_outline_rounded,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ProfileSettingsPage()),
+                      );
+                    },
                   ),
+                  // Privacy Button
                   _CustomListTile(
-                    title: AppLocalizations.of(context).privacySettings,
+                    title: AppLocalizations.of(context).privacyPolicy,
                     icon: Icons.privacy_tip_outlined,
+                    onTap: () => _showPrivacyDialog(context),
+                  ),
+                  // Terms & Conditions Button
+                  _CustomListTile(
+                    title: AppLocalizations.of(context).termsAndCondition,
+                    icon: Icons.policy_outlined,
+                    onTap: () => _showTermsDialog(context),
                   ),
                   _CustomListTile(
                     title: AppLocalizations.of(context).changePassword,
                     icon: Icons.lock_reset,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -89,10 +152,44 @@ class SettingsPage extends StatelessWidget {
                   _CustomListTile(
                     title: AppLocalizations.of(context).helpFeedback,
                     icon: Icons.help_outline_rounded,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text(AppLocalizations.of(context).helpFeedback),
+                            content: const Text('Feel free to contact us using one of the emails: ariel4216@gmail.com, yoni013@gmail.com'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(AppLocalizations.of(context).ok),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                   _CustomListTile(
                     title: AppLocalizations.of(context).about,
                     icon: Icons.info_outline_rounded,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text(AppLocalizations.of(context).about),
+                            content: const Text('Ariel Porath and Yonathan Eliav, just two regular guys trying to make the world a better place.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(AppLocalizations.of(context).ok),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                   _CustomListTile(
                     title: AppLocalizations.of(context).signOut,

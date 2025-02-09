@@ -16,7 +16,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get home => 'בית';
 
   @override
-  String get explore => 'חיפוש';
+  String get explore => 'חפש';
 
   @override
   String get upload => 'העלאה';
@@ -91,6 +91,337 @@ class AppLocalizationsHe extends AppLocalizations {
   String get address => 'כתובת';
 
   @override
+  String get notificationSettings => 'הגדרות התראות';
+
+  @override
+  String get enablePushNotifications => 'הפעל התראות פוש';
+
+  @override
+  String get enableEmailNotifications => 'הפעל התראות בדוא\"ל';
+
+  @override
+  String get enableSmsNotifications => 'הפעל התראות ב-SMS';
+
+  @override
+  String get addressSearch => 'בחר כתובת';
+
+  @override
+  String get update => 'עדכן';
+
+  @override
+  String get currentPassword => 'סיסמה נוכחית';
+
+  @override
+  String get currentPasswordPlaceholder => 'נא להזין את הסיסמה הנוכחית שלך';
+
+  @override
+  String get newPassword => 'סיסמה חדשה';
+
+  @override
+  String get newPasswordPlaceholder => 'נא להזין סיסמה חדשה';
+
+  @override
+  String get confirmNewPassword => 'אישור סיסמה חדשה';
+
+  @override
+  String get confirmNewPasswordPlaceholder => 'הסיסמאות אינן תואמות';
+
+  @override
+  String get changePassword => 'שנה סיסמא';
+
+  @override
+  String get passwordChangedSuccess => 'הסיסמה שונתה בהצלחה!';
+
+  @override
+  String get errorInvalidCredential => 'הסיסמה הנוכחית שגויה.';
+
+  @override
+  String get errorWrongPassword => 'הסיסמה הנוכחית אינה נכונה.';
+
+  @override
+  String get errorWeakPassword => 'הסיסמה החדשה חלשה מדי.';
+
+  @override
+  String get errorNoCurrentUser => 'לא קיים משתמש מחובר.';
+
+  @override
+  String get errorReauthentication => 'שגיאה באימות מחדש.';
+
+  @override
+  String get errorGeneric => 'אירעה שגיאה.';
+
+  @override
+  String get errorSomethingWentWrong => 'משהו השתבש.';
+
+  @override
+  String get sizePreferences => 'העדפות מידות';
+
+  @override
+  String get savePreferences => 'שמור העדפות';
+
+  @override
+  String get chooseCategories => 'בחר קטגוריות';
+
+  @override
+  String get categoryDresses => 'שמלות';
+
+  @override
+  String get shopAll => 'הצג הכל';
+
+  @override
+  String get categoryActivewear => 'בגדי ספורט';
+
+  @override
+  String get categoryBelts => 'חגורות';
+
+  @override
+  String get categoryCoats => 'מעילים';
+
+  @override
+  String get categoryGloves => 'כפפות';
+
+  @override
+  String get categoryHats => 'כובעים';
+
+  @override
+  String get categoryJeans => 'ג\'ינסים';
+
+  @override
+  String get categoryJumpsuits => 'אוברולים';
+
+  @override
+  String get categoryOveralls => 'אוברולים';
+
+  @override
+  String get categoryPants => 'מכנסיים';
+
+  @override
+  String get categoryScarves => 'צעיפים';
+
+  @override
+  String get categoryShirts => 'חולצות';
+
+  @override
+  String get categoryShoes => 'נעליים';
+
+  @override
+  String get categoryShorts => 'מכנסיים קצרים';
+
+  @override
+  String get categorySkirts => 'חצאיות';
+
+  @override
+  String get categorySleepwear => 'פיג\'מות';
+
+  @override
+  String get categorySweaters => 'סוודרים';
+
+  @override
+  String get categorySwimwear => 'בגדי ים';
+
+  @override
+  String get colorBeige => 'בז\'';
+
+  @override
+  String get colorBlack => 'שחור';
+
+  @override
+  String get colorBlue => 'כחול';
+
+  @override
+  String get colorBrown => 'חום';
+
+  @override
+  String get colorCustom => 'צבע מותאם אישית';
+
+  @override
+  String get colorGold => 'זהב';
+
+  @override
+  String get colorGray => 'אפור';
+
+  @override
+  String get colorGreen => 'ירוק';
+
+  @override
+  String get colorMaroon => 'בורדו';
+
+  @override
+  String get colorMulticolor => 'רב צבעים';
+
+  @override
+  String get colorNavy => 'כחול כהה';
+
+  @override
+  String get colorOrange => 'כתום';
+
+  @override
+  String get colorPink => 'ורוד';
+
+  @override
+  String get colorPurple => 'סגול';
+
+  @override
+  String get colorRed => 'אדום';
+
+  @override
+  String get colorSilver => 'כסף';
+
+  @override
+  String get colorTeal => 'טורקיז';
+
+  @override
+  String get colorWhite => 'לבן';
+
+  @override
+  String get colorYellow => 'צהוב';
+
+  @override
+  String get conditionNeverUsed => 'מעולם לא נעשה בו שימוש';
+
+  @override
+  String get conditionUsedOnce => 'שומש פעם אחת';
+
+  @override
+  String get conditionNew => 'חדש';
+
+  @override
+  String get conditionLikeNew => 'כמו חדש';
+
+  @override
+  String get conditionGentlyUsed => 'שומש בעדינות';
+
+  @override
+  String get conditionWornGood => 'משומש (במצב טוב)';
+
+  @override
+  String get conditionVintage => 'וינטג\'';
+
+  @override
+  String get conditionDamaged => 'פגום (זקוק לתיקון)';
+
+  @override
+  String selectSizes(Object category) {
+    return 'מידות ל$category';
+  }
+
+  @override
+  String get uploadItemStep1 => 'העלאת פריט - שלב 1';
+
+  @override
+  String get photoTips => 'טיפים לתמונות טובות יותר:\n- צלם תמונות ברורות, רצוי ללבוש את הפריט.\n- צלם תוויות או תגיות בבירור.\n';
+
+  @override
+  String get mainImageInstructions => 'לחץ על תמונה כדי להגדיר אותה כתמונה הראשית של הפריט.\nהתמונה הראשונה ברשימה תשמש כתמונה הראשית.';
+
+  @override
+  String get takePhoto => 'צלם תמונה';
+
+  @override
+  String get selectFromGallery => 'בחר מהגלריה';
+
+  @override
+  String get maxImagesAllowed => 'ניתן להעלות עד 6 תמונות בלבד.';
+
+  @override
+  String get pickImages => 'בחר תמונות';
+
+  @override
+  String get next => 'הבא';
+
+  @override
+  String get uploadItemStep2 => 'העלאת פריט - שלב 2';
+
+  @override
+  String get brand => 'מותג';
+
+  @override
+  String get brandRequired => 'חובה להכניס מותג';
+
+  @override
+  String get color => 'צבע';
+
+  @override
+  String get colorRequired => 'חובה להכניס צבע';
+
+  @override
+  String get condition => 'מצב';
+
+  @override
+  String get conditionRequired => 'חובה להכניס מצב';
+
+  @override
+  String get size => 'מידה';
+
+  @override
+  String get sizeRequired => 'חובה להכניס מידה';
+
+  @override
+  String get type => 'סוג';
+
+  @override
+  String get typeRequired => 'סוג מוצר is required';
+
+  @override
+  String get description => 'תיאור';
+
+  @override
+  String get price => 'מחיר';
+
+  @override
+  String get priceRequired => 'חובה להזין מחיר';
+
+  @override
+  String get priceValidInteger => 'המחיר חייב להיות מספר שלם תקין';
+
+  @override
+  String get priceGreaterThanZero => 'המחיר חייב להיות גדול מ-0';
+
+  @override
+  String get itemUploadedSuccess => 'הפריט הועלה בהצלחה!';
+
+  @override
+  String get verifyYourPrice => 'אימות מחיר';
+
+  @override
+  String priceVerificationMessage(Object estimated, Object ratioPercent) {
+    return 'המחיר שלך הוא $estimated% מהמחיר המומלץ של $ratioPercent₪. האם אתה עדיין רוצה להעלות?';
+  }
+
+  @override
+  String get changePrice => 'שנה מחיר';
+
+  @override
+  String get uploadItem => 'העלה פריט';
+
+  @override
+  String get sortByPriceLowToHigh => 'מחיר (מהנמוך לגבוה)';
+
+  @override
+  String get sortByPriceHighToLow => 'מחיר (מהגבוה לנמוך)';
+
+  @override
+  String get sortByRecommended => 'מומלץ';
+
+  @override
+  String get forMe => 'בשבילי';
+
+  @override
+  String get search => 'חפש...';
+
+  @override
+  String get noItemsMatch => 'אין פריטים שמתאימים לחיפוש שלך.';
+
+  @override
+  String get filter => 'סינון';
+
+  @override
+  String get apply => 'אשר';
+
+  @override
+  String get analyzeImagesMetadata => 'נתח את התמונות שסופקו וחלץ מידע כולל מותג, צבע, מצב, מידה וסוג, את המותג והמידה אתה יכול לרשום באנגלית אבל את הצבע, המצב והסוג תרשום בעברית';
+
+  @override
   String get phoneNumber => 'מספר טלפון';
 
   @override
@@ -112,7 +443,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get logout => 'התנתק';
 
   @override
-  String get recommendedForYou => 'מומלצים בישבילך';
+  String get recommendedForYou => 'מומלצים בשבילך';
 
   @override
   String get trendingNow => 'טרנדי עכשיו';
@@ -136,10 +467,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get profileSettings => 'הגדרות פרופיל';
 
   @override
-  String get privacySettings => 'הגדרות פרטיות';
+  String get privacyPolicy => 'תקנון הפרטיות';
 
   @override
-  String get changePassword => 'שנה סיסמא';
+  String get termsAndCondition => 'תנאי השימוש';
+
+  @override
+  String get name => 'שם';
 
   @override
   String get support => 'תמיכה';
@@ -160,40 +494,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get yes => 'כן';
 
   @override
-  String get uploadItemStep1 => 'העלאת פריט - שלב 1';
-
-  @override
-  String get uploadItemStep2 => 'העלאת פריט - שלב 2';
-
-  @override
   String get uploadImages => 'העלה תמונות (עד 6):';
 
   @override
-  String get pickImages => 'בחר תמונות';
-
-  @override
   String get analyzeImages => 'נתח תמונות עם Gemini';
-
-  @override
-  String get brand => 'מותג';
-
-  @override
-  String get color => 'צבע';
-
-  @override
-  String get condition => 'מצב';
-
-  @override
-  String get size => 'מידה';
-
-  @override
-  String get type => 'סוג';
-
-  @override
-  String get description => 'תיאור';
-
-  @override
-  String get price => 'מחיר';
 
   @override
   String get validPrice => 'נדרש מחיר תקף';
@@ -207,22 +511,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get colorRequired => 'חובה להכניס צבע';
-
-  @override
-  String get typeRequired => 'סוג מוצר is required';
-
-  @override
-  String get sizeRequired => 'חובה להכניס מידה';
-
-  @override
-  String get conditionRequired => 'חובה להכניס מצב';
-
-  @override
-  String get brandRequired => 'חובה להכניס מותג';
-
-  @override
-  String get itemDetails => 'פרטי פריט';
+  String get itemDetails => 'פרטי המוצר';
 
   @override
   String get failedToLoadItem => 'טעינת הפריט נכשלה';
@@ -333,16 +622,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get skip => 'דלג';
 
   @override
-  String get sizePreferences => 'העדפות מידות';
-
-  @override
   String get addSize => 'הוסף מידה';
 
   @override
   String get preferencesSaved => 'העדפות נשמרו בהצלחה!';
-
-  @override
-  String get savePreferences => 'שמור העדפות';
 
   @override
   String get jackets => 'מעילים';
@@ -388,4 +671,55 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get unknownBrand => 'מותג לא ידוע';
+
+  @override
+  String get editItem => 'עריכת פריט';
+
+  @override
+  String get itemName => 'שם הפריט';
+
+  @override
+  String get thisFieldIsRequired => 'שדה זה נדרש';
+
+  @override
+  String get invalidPrice => 'מחיר לא חוקי';
+
+  @override
+  String get category => 'קטגוריה';
+
+  @override
+  String get available => 'זמין';
+
+  @override
+  String get soldOut => 'אזל המלאי';
+
+  @override
+  String get existingImages => 'תמונות קיימות';
+
+  @override
+  String get noImagesAvailable => 'אין תמונות זמינות';
+
+  @override
+  String get mainImage => 'תמונה ראשית';
+
+  @override
+  String get image => 'תמונה';
+
+  @override
+  String get newImages => 'תמונות חדשות';
+
+  @override
+  String get none => 'אין';
+
+  @override
+  String get addImages => 'הוסף תמונות';
+
+  @override
+  String get cancel => 'ביטול';
+
+  @override
+  String get saveChanges => 'שמור שינויים';
+
+  @override
+  String get anonymous_reviewer => 'מבקר אנונימי';
 }

@@ -8,17 +8,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-
-// Reference your utility or metadata fetcher, if needed
-// import 'package:eco_closet/utils/fetch_item_metadata.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/gestures.dart';
+import 'package:google_places_flutter/google_places_flutter.dart';
+import 'package:google_places_flutter/model/prediction.dart';
 
 class UserOnboardingData {
   // Step 1: Personal info
   String? name;
-  int? age;
+  DateTime? birthday;
   String? address;
   String? profilePicUrl;
   String? gender;
+  double? latitude;
+  double? longitude;
 
   // Step 2: Favorite brands
   List<String>? favoriteBrands = [];
@@ -77,11 +80,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     }
   }
 
-  /// Skip the current step (if allowed) - just move forward
-  void _skipStep() {
-    _nextPage();
-  }
-
   /// Once completed, update Firestore with the data
   Future<void> _completeOnboarding() async {
     try {
@@ -99,7 +97,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             .set(
           {
             'name': _onboardingData.name ?? '',
-            'age': _onboardingData.age ?? 0,
+            'age': _onboardingData.birthday ?? DateTime.now(),
             'address': _onboardingData.address ?? '',
             'profilePicUrl': _onboardingData.profilePicUrl ?? '',
             'favoriteBrands': _onboardingData.favoriteBrands ?? [],
@@ -108,6 +106,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             'enablePushNotifications': _onboardingData.enablePushNotifications,
             'enableEmailNotifications': _onboardingData.enableEmailNotifications,
             'enableSmsNotifications': _onboardingData.enableSmsNotifications,
+            'location': (_onboardingData.latitude != null &&
+                  _onboardingData.longitude != null)
+              ? GeoPoint(_onboardingData.latitude!, _onboardingData.longitude!)
+              : null,
           },
           SetOptions(merge: true),
         );
@@ -123,42 +125,43 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap with your FlexTheme-based Scaffold or use your top-level MaterialApp
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Onboarding'),
-      ),
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // user can't swipe
-        onPageChanged: (index) => setState(() => _currentPage = index),
-        children: [
-          // STEP 1: Personal info
-          _Step1PersonalInfo(
-            onboardingData: _onboardingData,
-            onNext: _nextPage,
-          ),
-          // STEP 2: Favorite brands
-          _Step2FavoriteBrands(
-            onboardingData: _onboardingData,
-            allBrands: allBrands,
-            onNext: _nextPage,
-            onSkip: _skipStep,
-          ),
-          // STEP 3: Sizes
-          _Step3Sizes(
-            onboardingData: _onboardingData,
-            availableSizes: availableSizes,
-            onNext: _nextPage,
-            onSkip: _skipStep,
-          ),
-          // Step 4: Notification & Privacy
-          _Step4NotificationPrefs(
-            onboardingData: _onboardingData,
-            onNext: _nextPage,
-            onSkip: _skipStep,
-          ),
-        ],
+    return PopScope(
+      onPopInvokedWithResult: (bool didPop, Object? result) async {return;},
+      child: Scaffold(
+        appBar: AppBar(
+          // Remove the default back/leading button
+          automaticallyImplyLeading: false,
+          title: const Text('Onboarding'),
+        ),
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(), // prevents swiping
+          onPageChanged: (index) => setState(() => _currentPage = index),
+          children: [
+            // STEP 1: Personal info
+            _Step1PersonalInfo(
+              onboardingData: _onboardingData,
+              onNext: _nextPage,
+            ),
+            // STEP 2: Favorite brands
+            _Step2FavoriteBrands(
+              onboardingData: _onboardingData,
+              allBrands: allBrands,
+              onNext: _nextPage,
+            ),
+            // STEP 3: Sizes
+            _Step3Sizes(
+              onboardingData: _onboardingData,
+              availableSizes: availableSizes,
+              onNext: _nextPage,
+            ),
+            // STEP 4: Notification & Privacy
+            _Step4NotificationPrefs(
+              onboardingData: _onboardingData,
+              onNext: _nextPage,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -181,8 +184,8 @@ class _Step1PersonalInfo extends StatefulWidget {
 class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
   final _addressController = TextEditingController();
+  DateTime? _birthday = DateTime.now(); // Store birthday as DateTime
   XFile? _pickedImage;
   String? _selectedGender;
   final List<String> _genders = ['Male', 'Female', 'Other'];
@@ -192,8 +195,7 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
     super.initState();
     // If we have existing data, populate
     _nameController.text = widget.onboardingData.name ?? '';
-    _ageController.text =
-    _ageController.text = widget.onboardingData.age?.toString() ?? '';
+    _birthday = widget.onboardingData.birthday ?? DateTime(2000, 1, 1);
     _addressController.text = widget.onboardingData.address ?? '';
     _selectedGender = widget.onboardingData.gender;
     _nameController.addListener(() {
@@ -233,11 +235,69 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
   void _saveAndNext() {
     if (_formKey.currentState!.validate()) {
       widget.onboardingData.name = _nameController.text.trim();
-      widget.onboardingData.age = int.tryParse(_ageController.text.trim());
+      widget.onboardingData.birthday = _birthday;
       widget.onboardingData.address = _addressController.text.trim();
       widget.onboardingData.gender = _selectedGender;
       widget.onNext();
     }
+  }
+
+  Widget placesAutoCompleteTextField() {
+    return GooglePlaceAutoCompleteTextField(
+        // Connect this to our address controller
+        textEditingController: _addressController,
+        googleAPIKey: 'AIzaSyB9vjhEDF4fRZ6x_Qy73Xgwhrb2GQjBjK8', // Replace with your valid key
+        inputDecoration: const InputDecoration(
+          hintText: 'Search your location',
+        ),
+        debounceTime: 400,
+        // Restrict or broaden countries as needed
+        countries: const ['il'], // example: "in", "fr", etc.
+        isLatLngRequired: true,
+        getPlaceDetailWithLatLng: (Prediction prediction) {
+          // This callback provides lat and lng directly from the prediction
+          debugPrint('placeDetails lat: ${prediction.lat}, lng: ${prediction.lng}');
+          // Save lat/lng in the onboarding data for future distance calculations
+          if (prediction.lat != null && prediction.lng != null) {
+            double? lat = double.tryParse(prediction.lat!);
+            double? lng = double.tryParse(prediction.lng!);
+
+            if (lat != null && lng != null) {
+              widget.onboardingData.latitude = lat;
+              widget.onboardingData.longitude = lng;
+            }
+          }
+        },
+        itemClick: (Prediction prediction) {
+          // When user taps a prediction in the dropdown,
+          // set the text and move the cursor to the end.
+          _addressController.text = prediction.description ?? '';
+          _addressController.selection = TextSelection.fromPosition(
+            TextPosition(offset: prediction.description?.length ?? 0),
+          );
+          // If you need to store textual address immediately, do it here
+          widget.onboardingData.address = prediction.description;
+        },
+
+        // Optional customization of how each row in the suggestion list is built
+        itemBuilder: (context, index, Prediction prediction) {
+          return Container(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(prediction.description ?? ''),
+                ),
+              ],
+            ),
+          );
+        },
+
+        // Show a cross/clear button in the widget
+        isCrossBtnShown: true,
+      );
   }
 
   @override
@@ -279,42 +339,60 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
                     return null;
                   },
                 ),
-                TextFormField(
-                  controller: _ageController,
-                  decoration: const InputDecoration(labelText: 'Age'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      final age = int.tryParse(value);
-                      if (age == null) {
-                        return 'Please enter a valid age';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-                DropdownButtonFormField<String>(
-                  value: _selectedGender,
-                  decoration: const InputDecoration(labelText: 'Gender'),
-                  items: _genders.map((gender) {
-                    return DropdownMenuItem(
-                      value: gender,
-                      child: Text(gender),
+                const Divider(),
+                ListTile(
+                  title: const Text('Birthday'),
+                  trailing: Text(
+                    _birthday != null
+                        ? "${_birthday!.year}-${_birthday!.month.toString().padLeft(2, '0')}-${_birthday!.day.toString().padLeft(2, '0')}"
+                        : 'Select your birthday',
+                    style: TextStyle(color: _birthday == null ? Colors.grey : Colors.black),
+                  ),
+                  onTap: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime(2000, 1, 1),
+                      firstDate: DateTime(1900, 1, 1),
+                      lastDate: DateTime.now(),
                     );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedGender = value;
-                    });
+
+                    if (pickedDate != null) {
+                      setState(() {
+                        _birthday = pickedDate;
+                      });
+                    }
                   },
-                  validator: (value) =>
-                      value == null ? 'Please select a gender' : null,
                 ),
-                TextFormField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
+                const Divider(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 50,
+                      children: _genders.map((gender) {
+                        return ChoiceChip(
+                          label: Text(gender),
+                          selected: _selectedGender == gender,
+                          onSelected: (selected) {
+                            setState(() {
+                              _selectedGender = selected ? gender : null;
+                            });
+                          },
+                          selectedColor:  Theme.of(context).textSelectionTheme.selectionColor,
+                          labelStyle: Theme.of(context).textTheme.bodyLarge?.copyWith( 
+                            fontWeight: _selectedGender == gender ? FontWeight.bold : FontWeight.normal,
+                            color: _selectedGender == gender 
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface, 
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
+                const Divider(),
+                placesAutoCompleteTextField(),
+                const Divider(),
                 ElevatedButton(
                   onPressed: _nameController.text.trim().isNotEmpty
                       ? () {
@@ -333,18 +411,17 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
   }
 }
 
+
 class _Step2FavoriteBrands extends StatefulWidget {
   final UserOnboardingData onboardingData;
   final List<String> allBrands;
   final VoidCallback onNext;
-  final VoidCallback onSkip;
 
   const _Step2FavoriteBrands({
     Key? key,
     required this.onboardingData,
     required this.allBrands,
     required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
   @override
@@ -418,14 +495,12 @@ class _Step3Sizes extends StatefulWidget {
   final UserOnboardingData onboardingData;
   final Map<String, List<String>> availableSizes;
   final VoidCallback onNext;
-  final VoidCallback onSkip;
 
   const _Step3Sizes({
     Key? key,
     required this.onboardingData,
     required this.availableSizes,
     required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
   @override
@@ -512,13 +587,11 @@ class _Step3SizesState extends State<_Step3Sizes> {
 class _Step4NotificationPrefs extends StatefulWidget {
   final UserOnboardingData onboardingData;
   final VoidCallback onNext;
-  final VoidCallback onSkip;
 
   const _Step4NotificationPrefs({
     Key? key,
     required this.onboardingData,
     required this.onNext,
-    required this.onSkip,
   }) : super(key: key);
 
   @override
@@ -526,16 +599,99 @@ class _Step4NotificationPrefs extends StatefulWidget {
 }
 
 class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
+  Future<void> _showPrivacyPolicy() async {
+    try {
+      final String privacyPolicyText = 
+          await rootBundle.loadString('assets/privacy_policy.txt');
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Privacy Policy'),
+            content: SingleChildScrollView(
+              child: Text(privacyPolicyText),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      // Handle any file loading errors here
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: const Text('Could not load the privacy policy. Please contact +972-528783610 urgently.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  /// Method to load and show the Terms & Conditions
+  Future<void> _showTermsAndConditions() async {
+    try {
+      final String termsText = 
+          await rootBundle.loadString('assets/terms_and_conditions.txt');
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Terms & Conditions'),
+            content: SingleChildScrollView(
+              child: Text(termsText),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      // Handle any file loading errors here
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: const Text('Could not load the terms and conditions. Please contact +972-528783610 urgently.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications & Privacy'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
         child: Column(
           children: [
+            Text('Step 4: Notifications & Privacy',
+                style: Theme.of(context).textTheme.headlineSmall),
             SwitchListTile(
               title: const Text('Enable Push Notifications'),
               value: widget.onboardingData.enablePushNotifications,
@@ -565,7 +721,33 @@ class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
             ),
             const SizedBox(height: 16),
             CheckboxListTile(
-              title: const Text('I agree to the Privacy Policy'),
+              title: RichText(
+                text: TextSpan(
+                  text: 'I agree to the ',
+                  style: DefaultTextStyle.of(context).style,
+                  children: [
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = _showPrivacyPolicy,
+                    ),
+                    const TextSpan(text: ' & '),
+                    TextSpan(
+                      text: 'Terms and Conditions',
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = _showTermsAndConditions,
+                    ),
+                  ],
+                ),
+              ),
               value: widget.onboardingData.hasAcceptedPrivacyPolicy,
               onChanged: (val) {
                 if (val != null) {
@@ -580,8 +762,8 @@ class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: widget.onboardingData.hasAcceptedPrivacyPolicy 
-                      ? widget.onNext 
+                  onPressed: widget.onboardingData.hasAcceptedPrivacyPolicy
+                      ? widget.onNext
                       : null, // Disable button if not accepted
                   child: const Text('Finish'),
                 ),

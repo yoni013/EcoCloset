@@ -1,12 +1,12 @@
 /// profile_page.dart
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eco_closet/pages/personal_sizes_preferences.dart';
-import 'package:eco_closet/utils/settings.dart';
+import 'package:eco_closet/settings/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:eco_closet/pages/item_page.dart';
 
-import '../generated/l10n.dart';
+import 'package:eco_closet/generated/l10n.dart';
 
 class ProfilePage extends StatefulWidget {
   final String viewedUserId;
@@ -34,7 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return querySnapshot.docs.map((doc) {
       var data = doc.data();
-      data['image_preview'] = FirebaseStorage.instance.ref(doc['images'][0]).getDownloadURL();
+      data['image_preview'] = doc['images'][0];
       data['id'] = doc.id;
       return data;
     }).toList();
@@ -47,14 +47,6 @@ class _ProfilePageState extends State<ProfilePage> {
         .get();
 
     return querySnapshot.docs.map((doc) => doc.data()).toList();
-  }
-
-  Future<String> fetchImageUrl(dynamic imagePath) async {
-    if (imagePath is String) {
-      return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
-    } else {
-      return '';
-    }
   }
 
   Future<Widget> _buildItemsWidget() async {
@@ -74,10 +66,19 @@ class _ProfilePageState extends State<ProfilePage> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           child: ListTile(
-            leading: const Icon(Icons.star, color: Colors.yellow),
-            title: Text(review['title'] ?? AppLocalizations.of(context).review),
+            leading: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star, color: Colors.yellow, size: 24),
+                Text(
+                  review['rating'].toDouble().toStringAsFixed(1), // Convert int to float format
+                  style: const TextStyle(color: Colors.black, fontSize: 15),
+                ),
+              ],
+            ),
+            title: Text(review['content'] ?? AppLocalizations.of(context).noContent),
             subtitle: Text(
-                review['content'] ?? AppLocalizations.of(context).noContent),
+                review['seller_name'] ?? AppLocalizations.of(context).anonymous_reviewer),
           ),
         );
       },
@@ -147,8 +148,8 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           var userData = snapshot.data!;
-          var imageUrlFuture = fetchImageUrl(userData['profilePicUrl']);
           var averageRating = (userData['average_rating'] ?? 0).toDouble();
+          var num_of_reviewers = (userData['num_of_reviewers'] ?? 0);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,29 +159,19 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FutureBuilder<String>(
-                      future: imageUrlFuture,
-                      builder: (context, imageSnapshot) {
-                        if (imageSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.grey[200],
-                            child: const CircularProgressIndicator(),
-                          );
-                        } else if (imageSnapshot.hasError ||
-                            !imageSnapshot.hasData || (imageSnapshot.data?.isEmpty ?? true)) {
-                          return CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.grey[200],
-                            child: const Icon(Icons.person, size: 50),
-                          );
-                        }
-                        return CircleAvatar(
-                          radius: 50,
-                          backgroundImage: NetworkImage(imageSnapshot.data!),
-                        );
-                      },
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.grey[200],
+                      child: userData['profilePicUrl'] != null && userData['profilePicUrl'].isNotEmpty
+                          ? ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: userData['profilePicUrl'],
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const CircularProgressIndicator(),
+                                errorWidget: (context, url, error) => const Icon(Icons.person, size: 50),
+                              ),
+                            )
+                          : const Icon(Icons.person, size: 50),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -193,7 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Address: ${userData['address'] ?? ''}",
+                      userData['address'],
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 8),
@@ -205,7 +196,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: Colors.yellow, size: 20),
                           const SizedBox(width: 4),
                           Text(
-                            '$averageRating',
+                            '$averageRating (${num_of_reviewers.toString()})',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -283,24 +274,17 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: FutureBuilder<String>(
-                    future: item['image_preview'], // Handle the future properly
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator(); // Show loading spinner while waiting
-                      } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey));
-                      } else {
-                        return Image.network(
-                          snapshot.data!,
+                  child: item['images'] != null && item['images'].isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: item['images'][0],
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset('assets/images/default_image.png', fit: BoxFit.cover);
-                          },
-                        );
-                      }
-                    },
-                  ),
+                          placeholder: (context, url) => const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => 
+                              const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                        )
+                      : const Center(
+                          child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                        ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),

@@ -5,7 +5,7 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 
-import '../generated/l10n.dart';
+import 'package:eco_closet/generated/l10n.dart';
 
 class PersonalSizesPreferences extends StatefulWidget {
   const PersonalSizesPreferences({Key? key}) : super(key: key);
@@ -97,11 +97,19 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
     final items = availableSizes[category]!
         .map((size) => MultiSelectItem<String>(size, size))
         .toList();
+    
+    final categoryLocalized = {
+      'Coats': AppLocalizations.of(context).categoryCoats,
+      'Sweaters': AppLocalizations.of(context).categorySweaters,
+      'T-Shirts': AppLocalizations.of(context).categoryShirts,
+      'Pants': AppLocalizations.of(context).categoryPants,
+      'Shoes': AppLocalizations.of(context).categoryShoes,
+    }[category] ?? category;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: MultiSelectDialogField<String>(
-        title: Text(category),
+        title: Text(categoryLocalized),
         // The list of items to display in the multi-select dialog
         items: items,
         // Show a search bar in the dialog (optional)
@@ -109,12 +117,11 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
         // Pre-select currently chosen sizes
         initialValue: userSizes[category]?.toList() ?? [],
         // How the field looks on the main form
-        buttonText: Text('Select $category Sizes'),
+        buttonText: Text(AppLocalizations.of(context).selectSizes(categoryLocalized)),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(4.0),
         ),
-        // Once the user confirms (clicks "OK") in the dialog
         onConfirm: (List<String> selectedValues) {
           setState(() {
             userSizes[category] = selectedValues.toSet();
@@ -128,10 +135,10 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Size Preferences'),
+        title: Text(AppLocalizations.of(context).sizePreferences),
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 Expanded(
@@ -149,7 +156,7 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                       Navigator.pop(
                           context); // <-- Returns to the previous screen
                     },
-                    child: const Text('Save Preferences'),
+                    child: Text(AppLocalizations.of(context).savePreferences),
                   ),
                 )
               ],

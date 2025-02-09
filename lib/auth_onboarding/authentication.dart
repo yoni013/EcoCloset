@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/bottom_navigation.dart';
-import 'package:eco_closet/auth_onboarding/onboarding_page.dart';
+import 'package:eco_closet/auth_onboarding/onboarding_main.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     hide EmailAuthProvider, PhoneAuthProvider;

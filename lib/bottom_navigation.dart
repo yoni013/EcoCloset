@@ -22,31 +22,31 @@ class PersistentBottomNavPage extends StatelessWidget {
     return PersistentBottomBarScaffold(
       items: [
         PersistentTabItem(
-          tab: const Homepage(),
+          tab: () => const Homepage(),
           icon: Icons.home,
           title: AppLocalizations.of(context).home,
           navigatorkey: _homeNavigatorKey,
         ),
         PersistentTabItem(
-          tab: ExplorePage(),
+          tab: () => ExplorePage(),
           icon: Icons.search,
           title: AppLocalizations.of(context).explore,
           navigatorkey: _exploreNavigatorKey,
         ),
         PersistentTabItem(
-          tab: UploadItemPage(),
+          tab: () => UploadItemPage(),
           icon: Icons.upload,
           title: AppLocalizations.of(context).upload,
           navigatorkey: _uploadNavigatorKey,
         ),
         PersistentTabItem(
-          tab: const MyOrdersPage(),
+          tab: () => const MyOrdersPage(),
           icon: Icons.compare_arrows_outlined,
           title: AppLocalizations.of(context).myShop,
           navigatorkey: _shopNavigatorKey,
         ),
         PersistentTabItem(
-          tab: ProfilePage(
+          tab: () => ProfilePage(
               viewedUserId: FirebaseAuth.instance.currentUser?.uid ?? ''),
           icon: Icons.person,
           title: AppLocalizations.of(context).profile,
@@ -74,49 +74,45 @@ class _PersistentBottomBarScaffoldState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvokedWithResult: (shouldPop, result) {
-        if (shouldPop &&
-            (widget.items[_selectedTab].navigatorkey?.currentState?.canPop() ??
-                false)) {
-          widget.items[_selectedTab].navigatorkey?.currentState?.pop();
-        }
-      },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedTab,
-          children: widget.items
-              .map((page) => Navigator(
-                    key: page.navigatorkey,
-                    onGenerateInitialRoutes: (navigator, initialRoute) {
-                      return [
-                        MaterialPageRoute(builder: (context) => page.tab)
-                      ];
-                    },
-                  ))
-              .toList(),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          currentIndex: _selectedTab,
-          onTap: (index) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedTab,
+        children: widget.items
+            .map((page) => Navigator(
+                  key: page.navigatorkey,
+                  onGenerateInitialRoutes: (navigator, initialRoute) {
+                    return [
+                      MaterialPageRoute(builder: (context) => page.tab())
+                    ];
+                  },
+                ))
+            .toList(),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        currentIndex: _selectedTab,
+        onTap: (index) {
+          if (_selectedTab == index) {
+            widget.items[index].navigatorkey?.currentState?.popUntil((route) => route.isFirst);
+            setState(() {});
+          } else {
             setState(() {
               _selectedTab = index;
             });
-          },
-          items: widget.items
-              .map((item) => BottomNavigationBarItem(
-                  icon: Icon(item.icon), label: item.title))
-              .toList(),
-        ),
+          }
+        },
+        items: widget.items
+            .map((item) => BottomNavigationBarItem(
+                icon: Icon(item.icon), label: item.title))
+            .toList(),
       ),
     );
   }
 }
 
 class PersistentTabItem {
-  final Widget tab;
+  final Widget Function() tab;
   final GlobalKey<NavigatorState>? navigatorkey;
   final String title;
   final IconData icon;

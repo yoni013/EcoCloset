@@ -1,13 +1,14 @@
+import 'package:eco_closet/utils/translation_metadata.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'item_page.dart';
 import 'package:provider/provider.dart';
 import 'package:eco_closet/utils/firestore_cache_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:eco_closet/generated/l10n.dart';
 
 class CategoryItemsPage extends StatefulWidget {
   final String category;
@@ -83,7 +84,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
 
     fetchedItems = await Future.wait(fetchedItems.map((data) async {
       if (data['images'] is List && data['images'].isNotEmpty) {
-        data['imageUrl'] = await fetchImageUrl(data['images'][0]);
+        data['imageUrl'] = data['images'][0];
       } else {
         data['imageUrl'] = '';
       }
@@ -109,13 +110,6 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
               (item['Color'] ?? '').toString().toLowerCase().contains(_searchText.toLowerCase()))
           .toList();
     });
-  }
-
-  Future<String> fetchImageUrl(dynamic imagePath) async {
-    if (imagePath is String && imagePath.isNotEmpty) {
-      return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
-    }
-    return '';
   }
 
   void applySorting() {
@@ -190,7 +184,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Explore ${widget.category}'),
+        title: Text( '${AppLocalizations.of(context).explore} ${TranslationUtils.getCategory(widget.category, context)}',),
         centerTitle: true,
         actions: [
           IconButton(
@@ -207,7 +201,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'Price (Low to High)',
-                child: Text('Price (Low to High)',
+                child: Text(AppLocalizations.of(context).sortByPriceLowToHigh,
                     style: TextStyle(
                         fontWeight: sortBy == 'Price (Low to High)'
                             ? FontWeight.bold
@@ -215,7 +209,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
               ),
               PopupMenuItem(
                 value: 'Price (High to Low)',
-                child: Text('Price (High to Low)',
+                child: Text(AppLocalizations.of(context).sortByPriceHighToLow,
                     style: TextStyle(
                         fontWeight: sortBy == 'Price (High to Low)'
                             ? FontWeight.bold
@@ -224,7 +218,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
               PopupMenuItem(
                 value: 'Recommended',
                 child: Text(
-                  'Recommended',
+                  AppLocalizations.of(context).sortByRecommended,
                   style: TextStyle(
                     fontWeight: sortBy == 'Recommended'
                         ? FontWeight.bold
@@ -257,7 +251,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
               }
             },
             child: Text(
-              'For Me',
+              AppLocalizations.of(context).forMe,
               style: TextStyle(
                 color: isForMeActive
                     ? Colors.brown
@@ -273,9 +267,9 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              decoration: const InputDecoration(
-                labelText: 'Search...',
-                suffixIcon: Icon(Icons.search),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).search,
+                suffixIcon: const Icon(Icons.search),
               ),
               onChanged: (val) {
                 setState(() {
@@ -288,7 +282,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : searchFilteredItems.isEmpty
-                  ? const Center(child: Text('No items match your search.'))
+                  ? Center(child: Text(AppLocalizations.of(context).noItemsMatch))
                   : Expanded(
                       child: _buildGridViewOfItems(),
                     ),
@@ -422,41 +416,46 @@ class _FilterPopupState extends State<FilterPopup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Filter')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).filter)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildMultiselectField(
-              label: 'Type',
+              label: AppLocalizations.of(context).type,
               options: widget.types,
               initialValues: localFilters['type'],
               onConfirm: (values) => localFilters['type'] = values,
+              type: 'category',
             ),
             _buildMultiselectField(
-              label: 'Size',
+              label: AppLocalizations.of(context).size,
               options: widget.sizes,
               initialValues: localFilters['size'],
               onConfirm: (values) => localFilters['size'] = values,
+              type: '',
             ),
             _buildMultiselectField(
-              label: 'Brand',
+              label: AppLocalizations.of(context).brand,
               options: widget.brands,
               initialValues: localFilters['brand'],
               onConfirm: (values) => localFilters['brand'] = values,
+              type: '',
             ),
             _buildMultiselectField(
-              label: 'Color',
+              label: AppLocalizations.of(context).color,
               options: widget.colors,
               initialValues: localFilters['color'],
               onConfirm: (values) => localFilters['color'] = values,
+              type: 'color',
             ),
             _buildMultiselectField(
-              label: 'Condition',
+              label: AppLocalizations.of(context).condition,
               options: widget.conditions,
               initialValues: localFilters['condition'],
               onConfirm: (values) => localFilters['condition'] = values,
+              type: 'condition',
             ),
             const SizedBox(height: 16),
             RangeSlider(
@@ -480,7 +479,7 @@ class _FilterPopupState extends State<FilterPopup> {
                 widget.onApply(localFilters);
                 Navigator.pop(context);
               },
-              child: const Text('Apply'),
+              child: Text(AppLocalizations.of(context).apply),
             ),
           ],
         ),
@@ -493,10 +492,24 @@ class _FilterPopupState extends State<FilterPopup> {
     required List<String> options,
     required List<String> initialValues,
     required Function(List<String>) onConfirm,
+    required String type,
   }) {
-    final items = options
-        .map((option) => MultiSelectItem<String>(option, option))
-        .toList();
+    final items = options.map((option) {
+      String translatedOption = option;
+
+      // Apply the correct translation function
+      if (type == 'category') {
+        translatedOption = TranslationUtils.getCategory(option, context);
+      } else if (type == 'color') {
+        translatedOption = TranslationUtils.getColor(option, context);
+      } else if (type == 'condition') {
+        translatedOption = TranslationUtils.getCondition(option, context);
+      } else {
+        translatedOption = option;
+      }
+
+      return MultiSelectItem<String>(option, translatedOption);
+    }).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),

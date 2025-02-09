@@ -2,7 +2,7 @@ import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -90,19 +90,10 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
-  Future<String> fetchImageUrl(dynamic imagePath) async {
-    if (imagePath is String) {
-      return await FirebaseStorage.instance.ref(imagePath).getDownloadURL();
-    } else {
-      throw TypeError();
-    }
-  }
-
   Widget buildItemCard(Map<String, dynamic> item) {
-    final imageUrl =
-        item['images'] != null && (item['images'] as List).isNotEmpty
-            ? fetchImageUrl(item['images'][0])
-            : null;
+    final imageUrl = item['images'] != null && (item['images'] as List).isNotEmpty
+                      ? item['images'][0]
+                      : null;
 
     return Card(
       margin: const EdgeInsets.all(8.0),
@@ -112,15 +103,15 @@ class _HomepageState extends State<Homepage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-                child: FutureBuilder<String>(
-              future: imageUrl,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return Image.network(snapshot.data!, fit: BoxFit.cover);
-              },
-            )),
+              child: imageUrl != null && imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                    )
+                  : const Center(child: CircularProgressIndicator()),
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(

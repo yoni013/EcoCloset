@@ -1,9 +1,11 @@
 /// main.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/auth_onboarding/authentication.dart';
 import 'package:eco_closet/firebase_options.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:eco_closet/utils/firestore_cache_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/providers/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -72,14 +74,44 @@ class MyApp extends StatelessWidget {
 
 class LocaleProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');
+  bool _isLoaded = false;
 
   Locale get locale => _locale;
+
+  Future<void> _loadLocale() async {
+    if (_isLoaded) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(user.uid).get();
+      if (doc.exists && doc.data()?['locale'] != null) {
+        _locale = Locale(doc.data()?['locale']);
+      }
+    } catch (e) {
+      debugPrint('Error fetching locale: $e');
+    } finally {
+      _isLoaded = true;
+    }
+  }
 
   void setLocale(Locale newLocale) {
     if (_locale != newLocale) {
       _locale = newLocale;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        FirebaseFirestore.instance.collection('Users').doc(user.uid).update(
+          {'locale': newLocale.languageCode}
+        ).catchError((e) {
+          debugPrint('Error updating locale: $e');
+        });
+      }
       notifyListeners();
     }
+  }
+
+  LocaleProvider() {
+    _loadLocale();
   }
 }
 

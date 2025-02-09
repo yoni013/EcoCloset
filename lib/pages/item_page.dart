@@ -1,7 +1,9 @@
 /// item_page.dart
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:eco_closet/pages/edit_item_page.dart';
+import 'package:eco_closet/utils/translation_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:eco_closet/pages/profile_page.dart';
 import '../generated/l10n.dart';
 
@@ -24,23 +26,36 @@ class ItemPage extends StatelessWidget {
     return documentSnapshot.data() ?? {};
   }
 
-  Future<List<String>> fetchImageUrls(List<dynamic> imagePaths) async {
-    return Future.wait(imagePaths
-        .map((path) => FirebaseStorage.instance.ref(path).getDownloadURL()));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).itemDetails),
         centerTitle: true,
+        actions: [
+
+          if (true) //add condition if this is the seller
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditItemPage(
+                      itemId: itemId,
+                      initialItemData: {}, // send the item's data
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: fetchItemData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError ||
               !snapshot.hasData ||
               snapshot.data!.isEmpty) {
@@ -50,7 +65,6 @@ class ItemPage extends StatelessWidget {
 
           var itemData = snapshot.data!;
           var images = itemData['images'] as List<dynamic>? ?? [];
-          var imageUrlsFuture = fetchImageUrls(images);
 
           return SingleChildScrollView(
             child: Padding(
@@ -58,42 +72,27 @@ class ItemPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FutureBuilder<List<String>>(
-                    future: imageUrlsFuture,
-                    builder: (context, imageSnapshot) {
-                      if (imageSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return Container(
-                          height: 300,
-                          color: Colors.grey[200],
-                          child:
-                              const Center(child: CircularProgressIndicator()),
-                        );
-                      } else if (imageSnapshot.hasError ||
-                          !imageSnapshot.hasData ||
-                          imageSnapshot.data!.isEmpty) {
-                        return Container(
-                          height: 300,
-                          color: Colors.grey[200],
-                          child:
-                              Center(child: Icon(Icons.broken_image, size: 48)),
-                        );
-                      }
-
-                      return Container(
+                  if (images.isEmpty)
+                      Container(
+                        height: 300,
+                        color: Colors.grey[200],
+                        child: const Center(child: Icon(Icons.broken_image, size: 48)),
+                      )
+                    else
+                      Container(
                         height: 300,
                         child: PageView.builder(
-                          itemCount: imageSnapshot.data!.length,
+                          itemCount: images.length,
                           itemBuilder: (context, index) {
-                            return Image.network(
-                              imageSnapshot.data![index],
+                            return CachedNetworkImage(
+                              imageUrl: images[index],
                               fit: BoxFit.contain,
+                              placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                              errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
                             );
                           },
                         ),
-                      );
-                    },
-                  ),
+                      ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -101,12 +100,12 @@ class ItemPage extends StatelessWidget {
                       Text(
                         itemData['Brand'] ??
                             AppLocalizations.of(context).unknownItem,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         '\₪${itemData['Price'] ?? AppLocalizations.of(context).notAvailable}',
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 20,
                             color: Colors.green,
                             fontWeight: FontWeight.bold),
@@ -115,18 +114,18 @@ class ItemPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context).condition}: ${itemData['Condition'] ?? AppLocalizations.of(context).notAvailable}',
+                    '${AppLocalizations.of(context).condition}: ${TranslationUtils.getCondition(itemData['Condition'], context)}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Size: ${itemData['Size'] ?? 'N/A'}',
+                    '${AppLocalizations.of(context).size}: ${itemData['Size'] ?? 'N/A'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     AppLocalizations.of(context).description,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -171,37 +170,25 @@ class ItemPage extends StatelessWidget {
 
                       var sellerData = sellerSnapshot.data!;
                       return ListTile(
-                        leading: FutureBuilder<String>(
-                          future: FirebaseStorage.instance
-                              .ref(sellerData['pic'])
-                              .getDownloadURL(),
-                          builder: (context, imageSnapshot) {
-                            if (imageSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return CircleAvatar(
-                                backgroundColor: Colors.grey[200],
-                                child: const CircularProgressIndicator(),
-                              );
-                            } else if (imageSnapshot.hasError ||
-                                !imageSnapshot.hasData) {
-                              return CircleAvatar(
-                                backgroundColor: Colors.grey[200],
-                                child: const Icon(Icons.person, size: 32),
-                              );
-                            }
-                            return CircleAvatar(
-                              backgroundImage:
-                                  NetworkImage(imageSnapshot.data!),
-                            );
-                          },
-                        ),
-                        title: Text(sellerData['Name'] ??
+                      leading: sellerData['profilePicUrl'] != null && sellerData['profilePicUrl'].isNotEmpty
+                          ? CircleAvatar(
+                              backgroundImage: CachedNetworkImageProvider(sellerData['profilePicUrl']),
+                            )
+                          : CircleAvatar(
+                              backgroundColor: Colors.grey[200],
+                              child: const Icon(Icons.person, size: 32),
+                            ),
+                        title: Text(sellerData['name'] ??
                             AppLocalizations.of(context).unknownSeller),
                         subtitle: Row(
                           children: [
-                            Icon(Icons.star, color: Colors.yellow, size: 16),
+                            const Icon(Icons.star, color: Colors.yellow, size: 16),
                             Text(
-                                ' ${sellerData['Rating'] ?? 'N/A'} (100 ${AppLocalizations.of(context).reviews})'),
+                              '${(sellerData['average_rating'] != null) 
+                                  ? (sellerData['average_rating'] as num).toStringAsFixed(1) 
+                                  : 'N/A'} '
+                              '(${sellerData['num_of_reviewers'] ?? 0} ${AppLocalizations.of(context).reviews})',
+                            ),
                           ],
                         ),
                         onTap: () {
