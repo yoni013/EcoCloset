@@ -1,8 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../generated/l10n.dart';
 import 'item_page.dart';
 
@@ -80,45 +80,10 @@ class _MyOrdersPageState extends State<MyOrdersPage>
           .collection('Users')
           .doc(userId)
           .get();
-      return userDoc.data()?['Name'] ?? 'Unknown';
+      return userDoc.data()?['name'] ?? AppLocalizations.of(context).unknown;
     } catch (e) {
       debugPrint('Error fetching user name: $e');
-      return 'Unknown';
-    }
-  }
-
-  /// Fetch an item's "Name" from "Items" collection by itemId
-  Future<String> fetchItemName(String itemId) async {
-    try {
-      final itemDoc = await FirebaseFirestore.instance
-          .collection('Items')
-          .doc(itemId)
-          .get();
-      return itemDoc.data()?['Name'] ?? 'Unknown Item';
-    } catch (e) {
-      debugPrint('Error fetching item name: $e');
-      return 'Unknown Item';
-    }
-  }
-
-  Future<String?> fetchItemImage(String itemId) async {
-    try {
-      final itemDoc = await FirebaseFirestore.instance
-          .collection('Items')
-          .doc(itemId)
-          .get();
-
-      final List<dynamic>? images = itemDoc.data()?['images'];
-      if (images != null && images.isNotEmpty) {
-        final String firstImagePath = images[0];
-        return await FirebaseStorage.instance
-            .ref(firstImagePath)
-            .getDownloadURL();
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error fetching item image: $e');
-      return null;
+      return AppLocalizations.of(context).unknown;
     }
   }
 
@@ -142,7 +107,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
         final status = data['Status'] ?? 'Pending';
 
         final sellerName = await fetchUserName(sellerId);
-        final itemImageUrl = await fetchItemImage(itemId);
+        final itemImageUrl = doc['Preview'];
 
         fetched.add({
           'orderId': doc.id,
@@ -184,7 +149,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
         final status = data['Status'] ?? 'Pending';
 
         final buyerName = await fetchUserName(buyerId);
-        final itemImageUrl = await fetchItemImage(itemId);
+        final itemImageUrl = doc['Preview'];
 
         fetched.add({
           'orderId': doc.id,
@@ -225,7 +190,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     // "Incoming" = I am the buyer
     // In real code, you'd fetch from Firestore or similar
     if (incomingOrders.isEmpty) {
-      return const Center(child: Text('No incoming orders found.'));
+      return Center(child: Text(AppLocalizations.of(context).noIncomingOrders));
     }
 
     // Wrapping in a Stack so we can position a "Scroll Up" button
@@ -243,18 +208,18 @@ class _MyOrdersPageState extends State<MyOrdersPage>
           minWidth: 600,
 
           // Define columns
-          columns: const [
+          columns: [
             DataColumn2(
-                label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
+                label: Text(AppLocalizations.of(context).item), size: ColumnSize.S, fixedWidth: 50),
             DataColumn2(
-                label: Text('Seller'), size: ColumnSize.S, fixedWidth: 100),
+                label: Text(AppLocalizations.of(context).seller), size: ColumnSize.S, fixedWidth: 100),
             DataColumn2(
-                label: Text('Price'),
+                label: Text(AppLocalizations.of(context).price),
                 numeric: true,
                 size: ColumnSize.S,
                 fixedWidth: 100),
             DataColumn2(
-                label: Text('Status'), size: ColumnSize.S, fixedWidth: 100),
+                label: Text(AppLocalizations.of(context).status), size: ColumnSize.S, fixedWidth: 100),
           ],
 
           // Generate rows from data
@@ -276,12 +241,14 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                       ),
                     );
                   },
-                  child: itemImage != null
-                      ? Image.network(
-                          itemImage,
+                  child: itemImage != null && itemImage.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: itemImage,
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
                         )
                       : const Icon(Icons.image_not_supported),
                 ),
@@ -320,7 +287,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   Widget _buildOutgoingOrdersTable() {
     // "Outgoing" = I am the seller
     if (outgoingOrders.isEmpty) {
-      return const Center(child: Text('No outgoing orders found.'));
+      return Center(child: Text(AppLocalizations.of(context).noOutgoingOrders));
     }
 
     return Stack(
@@ -331,20 +298,20 @@ class _MyOrdersPageState extends State<MyOrdersPage>
           columnSpacing: 12,
           horizontalMargin: 12,
           minWidth: 600,
-          columns: const [
+          columns: [
             DataColumn2(
-                label: Text('Item'), size: ColumnSize.S, fixedWidth: 50),
+                label: Text(AppLocalizations.of(context).item), size: ColumnSize.S, fixedWidth: 50),
             DataColumn2(
-                label: Text('Buyer'), size: ColumnSize.S, fixedWidth: 80),
+                label: Text(AppLocalizations.of(context).buyer), size: ColumnSize.S, fixedWidth: 80),
             DataColumn2(
-                label: Text('Price'),
+                label: Text(AppLocalizations.of(context).price),
                 numeric: true,
                 size: ColumnSize.S,
                 fixedWidth: 50),
             DataColumn2(
-                label: Text('Status'), size: ColumnSize.S, fixedWidth: 80),
+                label: Text(AppLocalizations.of(context).status), size: ColumnSize.S, fixedWidth: 80),
             DataColumn2(
-                label: Text('Actions'), size: ColumnSize.S, fixedWidth: 70),
+                label: Text(AppLocalizations.of(context).actions), size: ColumnSize.S, fixedWidth: 70),
           ],
           rows: outgoingOrders.map((order) {
             final itemImage = order['itemImage'] as String?;
@@ -364,12 +331,14 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                       ),
                     );
                   },
-                  child: itemImage != null
-                      ? Image.network(
-                          itemImage,
+                  child: itemImage != null && itemImage.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: itemImage,
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
                         )
                       : const Icon(Icons.image_not_supported),
                 ),
@@ -434,12 +403,12 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Orders'),
+        title: Text(AppLocalizations.of(context).myOrders),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Incoming Orders'), // I'm the buyer, waiting to receive
-            Tab(text: 'Outgoing Orders'), // I'm the seller, need to send
+          tabs: [
+            Tab(text: AppLocalizations.of(context).incomingOrders),
+            Tab(text: AppLocalizations.of(context).outgoingOrders),
           ],
         ),
       ),

@@ -580,6 +580,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unknown => 'Unknown';
 
   @override
+  String get myOrders => 'My Orders';
+
+  @override
+  String get incomingOrders => 'Incoming Orders';
+
+  @override
+  String get outgoingOrders => 'Outgoing Orders';
+
+  @override
+  String get noIncomingOrders => 'No incoming orders found.';
+
+  @override
+  String get noOutgoingOrders => 'No outgoing orders found.';
+
+  @override
+  String get seller => 'Seller';
+
+  @override
   String get errorFetchingOrders => 'Error fetching orders: ';
 
   @override

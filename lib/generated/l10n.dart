@@ -1229,6 +1229,42 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get unknown;
 
+  /// No description provided for @myOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'My Orders'**
+  String get myOrders;
+
+  /// No description provided for @incomingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming Orders'**
+  String get incomingOrders;
+
+  /// No description provided for @outgoingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing Orders'**
+  String get outgoingOrders;
+
+  /// No description provided for @noIncomingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No incoming orders found.'**
+  String get noIncomingOrders;
+
+  /// No description provided for @noOutgoingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No outgoing orders found.'**
+  String get noOutgoingOrders;
+
+  /// No description provided for @seller.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller'**
+  String get seller;
+
   /// No description provided for @errorFetchingOrders.
   ///
   /// In en, this message translates to:

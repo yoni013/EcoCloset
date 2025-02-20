@@ -580,6 +580,24 @@ class AppLocalizationsHe extends AppLocalizations {
   String get unknown => 'לא ידוע';
 
   @override
+  String get myOrders => 'ההזמנות שלי';
+
+  @override
+  String get incomingOrders => 'הזמנות נכנסות';
+
+  @override
+  String get outgoingOrders => 'הזמנות יוצאות';
+
+  @override
+  String get noIncomingOrders => 'לא נמצאו הזמנות נכנסות.';
+
+  @override
+  String get noOutgoingOrders => 'לא נמצאו הזמנות יוצאות.';
+
+  @override
+  String get seller => 'מוכר';
+
+  @override
   String get errorFetchingOrders => 'שגיאה בשליפת הזמנות: ';
 
   @override
