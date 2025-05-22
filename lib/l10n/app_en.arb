@@ -314,5 +314,12 @@
   "itemProperties": "Item Properties",
   "unauthorized": "Unauthorized",
   "unauthorizedAccess": "Unauthorized Access",
-  "unauthorizedMessage": "Your access is unauthorized. Please log in again to continue."
+  "unauthorizedMessage": "Your access is unauthorized. Please log in again to continue.",
+  "aiSuggestions": "AI Suggestions",
+  "suggestedDescription": "Suggested Description",
+  "suggestedPrice": "Suggested Price",
+  "viewAISuggestions": "View AI Suggestions",
+  "applySuggestions": "Apply Suggestions",
+  "suggestionsApplied": "AI suggestions applied successfully",
+  "close": "Close"
 }

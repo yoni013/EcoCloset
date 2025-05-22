@@ -796,4 +796,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String select(String label) {
     return 'select $label';
   }
+
+  @override
+  String get aiSuggestions => 'AI Suggestions';
+
+  @override
+  String get suggestedDescription => 'Suggested Description';
+
+  @override
+  String get suggestedPrice => 'Suggested Price';
+
+  @override
+  String get viewAISuggestions => 'View AI Suggestions';
+
+  @override
+  String get applySuggestions => 'Apply Suggestions';
+
+  @override
+  String get suggestionsApplied => 'AI suggestions applied successfully';
 }

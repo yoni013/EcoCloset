@@ -259,5 +259,11 @@
   "itemProperties": "מאפייני פריט",
   "unauthorized": "לא מורשה",
   "unauthorizedAccess": "גישה לא מורשית",
-  "unauthorizedMessage": "הגישה שלך לא מורשית. אנא התחבר שוב כדי להמשיך"
+  "unauthorizedMessage": "הגישה שלך לא מורשית. אנא התחבר שוב כדי להמשיך",
+  "aiSuggestions": "הצעות בינה מלאכותית",
+  "suggestedDescription": "תיאור מוצע",
+  "suggestedPrice": "מחיר מוצע",
+  "viewAISuggestions": "צפה בהצעות בינה מלאכותית",
+  "applySuggestions": "החל הצעות",
+  "suggestionsApplied": "ההצעות הוחלו בהצלחה"
 }

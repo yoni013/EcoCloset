@@ -796,4 +796,22 @@ class AppLocalizationsHe extends AppLocalizations {
   String select(String label) {
     return 'בחר $label';
   }
+
+  @override
+  String get aiSuggestions => 'הצעות בינה מלאכותית';
+
+  @override
+  String get suggestedDescription => 'תיאור מוצע';
+
+  @override
+  String get suggestedPrice => 'מחיר מוצע';
+
+  @override
+  String get viewAISuggestions => 'צפה בהצעות בינה מלאכותית';
+
+  @override
+  String get applySuggestions => 'החל הצעות';
+
+  @override
+  String get suggestionsApplied => 'ההצעות הוחלו בהצלחה';
 }

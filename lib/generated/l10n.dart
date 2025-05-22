@@ -1660,6 +1660,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'select {label}'**
   String select(String label);
+
+  /// No description provided for @aiSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Suggestions'**
+  String get aiSuggestions;
+
+  /// No description provided for @suggestedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested Description'**
+  String get suggestedDescription;
+
+  /// No description provided for @suggestedPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested Price'**
+  String get suggestedPrice;
+
+  /// No description provided for @viewAISuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'View AI Suggestions'**
+  String get viewAISuggestions;
+
+  /// No description provided for @applySuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Suggestions'**
+  String get applySuggestions;
+
+  /// No description provided for @suggestionsApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'AI suggestions applied successfully'**
+  String get suggestionsApplied;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

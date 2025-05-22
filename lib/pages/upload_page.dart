@@ -132,7 +132,12 @@ class _UploadItemPageState extends State<UploadItemPage> {
         'Color': Schema.string(description: 'Color of the item'),
         'Condition': Schema.string(description: 'Condition of the item'),
         'Size': Schema.string(description: 'Size of the item'),
-        'Type': Schema.string(description: 'Type of the item in plural'),
+        'Type': Schema.string(
+            description:
+                'Type of the item one of this list: Activewear,Belts,Coats,Dresses,Gloves,Hats,Jeans,Jumpsuits,Overalls,Pants,Scarves,Shirts,Shoes,Shorts,Skirts,Sleepwear,Sweaters,Swimwear'),
+        'Description': Schema.string(
+            description:
+                'A detailed description of the item based on visual analysis in maximum 7 words in low level language'),
       },
     );
 
@@ -141,6 +146,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: jsonSchema,
+        temperature: 0.2, // Lower temperature for more consistent results
+        maxOutputTokens: 1024,
       ),
     );
 
@@ -151,21 +158,45 @@ class _UploadItemPageState extends State<UploadItemPage> {
     }
 
     final prompt = TextPart(
-      '''Analyze the provided images and extract metadata including brand, color, condition, size, and type.''',
+      '''Analyze the provided images of the clothing item and extract detailed metadata:
+      1. Identify the brand if visible on tags or labels
+      2. Determine the exact color(s)
+      3. Assess the condition based on visible wear, stains, or damage
+      4. Identify the size from tags or labels
+      5. Determine the type of clothing item
+      6. Write a detailed description including material, style, and notable features
+      7. Estimate a fair market price based on brand, condition, and type
+      
+      Focus on accuracy and provide specific details when possible.''',
     );
 
     final content = [
       Content.multi([...imageParts, prompt])
     ];
 
-    final response = await model.generateContent(content);
-    debugPrint(response.text);
-
     try {
+      final response = await model.generateContent(content);
+      debugPrint('Gemini Response: ${response.text}');
+
+      if (response.text == null) {
+        throw Exception('No response from Gemini');
+      }
+
       var decoded = jsonDecode(response.text!) as Map<String, dynamic>;
-      return decoded;
+
+      // Validate and clean up the response
+      return {
+        'Brand': decoded['Brand']?.toString() ?? '',
+        'Color': decoded['Color']?.toString() ?? '',
+        'Condition': decoded['Condition']?.toString() ?? '',
+        'Size': decoded['Size']?.toString() ?? '',
+        'Type': decoded['Type']?.toString() ?? '',
+        'Description': decoded['Description']?.toString() ?? '',
+        'EstimatedPrice': decoded['EstimatedPrice']?.toString() ?? '',
+      };
     } catch (e) {
-      throw Exception('Failed to parse response from Gemini: ${response.text}');
+      debugPrint('Error in Gemini analysis: $e');
+      throw Exception('Failed to analyze images: ${e.toString()}');
     }
   }
 
@@ -187,7 +218,10 @@ class _UploadItemPageState extends State<UploadItemPage> {
           Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withOpacity(0.1),
               borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(24),
               ),
@@ -226,13 +260,21 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                 Icon(
                                   Icons.add_photo_alternate_outlined,
                                   size: 64,
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.5),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   AppLocalizations.of(context).pickImages,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                       ),
                                 ),
                               ],
@@ -240,7 +282,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
                           ).animate().fadeIn(duration: 600.ms)
                         : GridView.builder(
                             itemCount: _images.length,
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
@@ -271,13 +314,19 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.primaryContainer,
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                           child: Text(
-                                            AppLocalizations.of(context).mainImage,
+                                            AppLocalizations.of(context)
+                                                .mainImage,
                                             style: TextStyle(
-                                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimaryContainer,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 12,
                                             ),
@@ -290,8 +339,12 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                       child: IconButton(
                                         icon: const Icon(Icons.close),
                                         style: IconButton.styleFrom(
-                                          backgroundColor: Theme.of(context).colorScheme.surface,
-                                          foregroundColor: Theme.of(context).colorScheme.error,
+                                          backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .surface,
+                                          foregroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .error,
                                         ),
                                         onPressed: () {
                                           setState(() {
@@ -308,7 +361,9 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                           decoration: BoxDecoration(
                                             border: Border.all(
                                               color: index == 0
-                                                  ? Theme.of(context).colorScheme.primary
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
                                                   : Colors.transparent,
                                               width: 2,
                                             ),
@@ -318,10 +373,13 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                     ),
                                   ],
                                 ),
-                              ).animate(delay: (50 * index).ms).fadeIn(
+                              )
+                                  .animate(delay: (50 * index).ms)
+                                  .fadeIn(
                                     duration: 600.ms,
                                     curve: Curves.easeOutQuad,
-                                  ).slideY(
+                                  )
+                                  .slideY(
                                     begin: 0.2,
                                     end: 0,
                                     duration: 600.ms,
@@ -363,9 +421,15 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                           const CircularProgressIndicator(),
                                           const SizedBox(height: 16),
                                           Text(
-                                            AppLocalizations.of(context).analyzingImages,
-                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                  color: Theme.of(context).colorScheme.onSurface,
+                                            AppLocalizations.of(context)
+                                                .analyzingImages,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
                                                 ),
                                           ),
                                         ],
@@ -375,7 +439,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
 
                                   try {
                                     final metadata = await _callGemini();
-                                    Navigator.of(context, rootNavigator: true).pop();
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop();
 
                                     final result = await Navigator.push(
                                       context,
@@ -396,11 +461,14 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                       setState(() {});
                                     }
                                   } catch (e) {
-                                    Navigator.of(context, rootNavigator: true).pop();
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Error processing images: $e'),
-                                        backgroundColor: Theme.of(context).colorScheme.error,
+                                        content:
+                                            Text('Error processing images: $e'),
+                                        backgroundColor:
+                                            Theme.of(context).colorScheme.error,
                                       ),
                                     );
                                   }
@@ -513,9 +581,64 @@ class _StepTwoForm extends StatelessWidget {
       'Condition': matchedCondition,
       'Size': matchedSize,
       'Type': matchedType,
-      'Description': '',
-      'Price': '',
+      'Description': prefilledData['Description'] ?? '',
+      'Price': prefilledData['EstimatedPrice'] ?? '',
     };
+
+    // Add a method to show AI suggestions
+    void _showAISuggestions() {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(AppLocalizations.of(context).aiSuggestions),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (prefilledData['Description']?.isNotEmpty ?? false) ...[
+                  Text(
+                    AppLocalizations.of(context).suggestedDescription,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(prefilledData['Description'] ?? ''),
+                  const SizedBox(height: 16),
+                ],
+                if (prefilledData['EstimatedPrice']?.isNotEmpty ?? false) ...[
+                  Text(
+                    AppLocalizations.of(context).suggestedPrice,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text('${prefilledData['EstimatedPrice']} ₪'),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context).close),
+            ),
+            TextButton(
+              onPressed: () {
+                // Apply AI suggestions
+                formData['Description'] = prefilledData['Description'] ?? '';
+                formData['Price'] = prefilledData['EstimatedPrice'] ?? '';
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(
+                          AppLocalizations.of(context).suggestionsApplied)),
+                );
+              },
+              child: Text(AppLocalizations.of(context).applySuggestions),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -807,7 +930,15 @@ class _StepTwoForm extends StatelessWidget {
                     }
                   },
                   child: Text(AppLocalizations.of(context).submit),
-                )
+                ),
+
+                // Add a button to show AI suggestions before the submit button
+                ElevatedButton.icon(
+                  onPressed: _showAISuggestions,
+                  icon: const Icon(Icons.auto_awesome),
+                  label: Text(AppLocalizations.of(context).viewAISuggestions),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
