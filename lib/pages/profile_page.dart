@@ -71,14 +71,17 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 const Icon(Icons.star, color: Colors.yellow, size: 24),
                 Text(
-                  review['rating'].toDouble().toStringAsFixed(1), // Convert int to float format
+                  review['rating']
+                      .toDouble()
+                      .toStringAsFixed(1), // Convert int to float format
                   style: const TextStyle(color: Colors.black, fontSize: 15),
                 ),
               ],
             ),
-            title: Text(review['content'] ?? AppLocalizations.of(context).noContent),
-            subtitle: Text(
-                review['seller_name'] ?? AppLocalizations.of(context).anonymous_reviewer),
+            title: Text(
+                review['content'] ?? AppLocalizations.of(context).noContent),
+            subtitle: Text(review['seller_name'] ??
+                AppLocalizations.of(context).anonymous_reviewer),
           ),
         );
       },
@@ -162,13 +165,16 @@ class _ProfilePageState extends State<ProfilePage> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.grey[200],
-                      child: userData['profilePicUrl'] != null && userData['profilePicUrl'].isNotEmpty
+                      child: userData['profilePicUrl'] != null &&
+                              userData['profilePicUrl'].isNotEmpty
                           ? ClipOval(
                               child: CachedNetworkImage(
                                 imageUrl: userData['profilePicUrl'],
                                 fit: BoxFit.cover,
-                                placeholder: (context, url) => const CircularProgressIndicator(),
-                                errorWidget: (context, url, error) => const Icon(Icons.person, size: 50),
+                                placeholder: (context, url) =>
+                                    const CircularProgressIndicator(),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.person, size: 50),
                               ),
                             )
                           : const Icon(Icons.person, size: 50),
@@ -184,7 +190,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      userData['address'],
+                      userData['address'] ?? 'No address provided',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 8),
@@ -278,12 +284,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       ? CachedNetworkImage(
                           imageUrl: item['images'][0],
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => 
-                              const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                          placeholder: (context, url) =>
+                              const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => const Icon(
+                              Icons.image_not_supported,
+                              size: 50,
+                              color: Colors.grey),
                         )
                       : const Center(
-                          child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                          child: Icon(Icons.image_not_supported,
+                              size: 50, color: Colors.grey),
                         ),
                 ),
                 Padding(

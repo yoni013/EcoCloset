@@ -14,10 +14,36 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await Utils.loadMetadata();
+  
+  // Initialize Firebase with persistence enabled
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Enable offline persistence for Firestore
+  FirebaseFirestore.instance.enablePersistence()
+    .catchError((err) {
+      if (err.code == 'failed-precondition') {
+        // Multiple tabs open, persistence can only be enabled in one tab at a time
+        debugPrint('Firestore persistence failed: Multiple tabs open');
+      } else if (err.code == 'unimplemented') {
+        // The current browser doesn't support persistence
+        debugPrint('Firestore persistence not available');
+      }
+    });
+
+  // Load metadata with error handling
+  try {
+    await Utils.loadMetadata();
+    debugPrint('✅ Metadata loaded successfully:');
+    debugPrint('Brands: ${Utils.brands.length}');
+    debugPrint('Sizes: ${Utils.sizes.length}');
+    debugPrint('Conditions: ${Utils.conditions.length}');
+  } catch (e) {
+    debugPrint('❌ Error loading metadata: $e');
+  }
+
   runApp(
-    
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FirestoreCacheProvider()),
@@ -84,7 +110,10 @@ class LocaleProvider extends ChangeNotifier {
     if (user == null) return;
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .get();
       if (doc.exists && doc.data()?['locale'] != null) {
         _locale = Locale(doc.data()?['locale']);
       }
@@ -100,9 +129,10 @@ class LocaleProvider extends ChangeNotifier {
       _locale = newLocale;
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        FirebaseFirestore.instance.collection('Users').doc(user.uid).update(
-          {'locale': newLocale.languageCode}
-        ).catchError((e) {
+        FirebaseFirestore.instance
+            .collection('Users')
+            .doc(user.uid)
+            .update({'locale': newLocale.languageCode}).catchError((e) {
           debugPrint('Error updating locale: $e');
         });
       }
@@ -114,4 +144,3 @@ class LocaleProvider extends ChangeNotifier {
     _loadLocale();
   }
 }
-

@@ -12,7 +12,8 @@ class Utils {
   static List<String> colors = [];
 
   static Future<void> loadMetadata() async {
-    final String jsonString = await rootBundle.loadString('assets/items_metadata_lists.json');
+    final String jsonString =
+        await rootBundle.loadString('assets/items_metadata_lists.json');
     final Map<String, dynamic> jsonData = jsonDecode(jsonString);
 
     brands = List<String>.from(jsonData['brands']);

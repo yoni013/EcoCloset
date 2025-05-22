@@ -14,19 +14,42 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        // Handle connection state
         if (snapshot.connectionState == ConnectionState.waiting) {
           debugPrint('AuthGate: Waiting for auth state...');
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
 
+        // Handle errors
         if (snapshot.hasError) {
           debugPrint('AuthGate: Error occurred - ${snapshot.error}');
-          return const Center(child: Text('Error occurred!'));
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Error occurred!'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Retry by rebuilding the widget
+                      (context as Element).markNeedsBuild();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
+        // Handle no user
         if (!snapshot.hasData) {
           debugPrint('AuthGate: No user logged in, showing SignInScreen');
-
           return SignInScreen(
             providers: [
               EmailAuthProvider(),
@@ -47,15 +70,21 @@ class AuthGate extends StatelessWidget {
           );
         }
 
+        // Handle unverified email
         if (snapshot.hasData && !(snapshot.data?.emailVerified ?? false)) {
           debugPrint('AuthGate: Email not verified, signing out...');
           FirebaseAuth.instance.signOut();
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _showVerificationMessage(context);
           });
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
 
+        // Handle authenticated user
         debugPrint('AuthGate: User is logged in with UID: ${snapshot.data?.uid}');
         _checkAndCreateUser(context, snapshot.data!);
 

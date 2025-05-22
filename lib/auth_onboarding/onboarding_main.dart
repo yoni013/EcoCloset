@@ -48,6 +48,7 @@ class OnboardingFlow extends StatefulWidget {
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
 }
+
 class _OnboardingFlowState extends State<OnboardingFlow> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -60,11 +61,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
   // Hardcode or load available sizes from your metadata for Step 3
   Map<String, List<String>> availableSizes = {
-        'Coats': Utils.general_sizes,
-        'Pants': Utils.pants_sizes,
-        'T-Shirts': Utils.general_sizes,
-        'Shoes': Utils.shoe_sizes,
-        'Sweaters': Utils.general_sizes
+    'Coats': Utils.general_sizes,
+    'Pants': Utils.pants_sizes,
+    'T-Shirts': Utils.general_sizes,
+    'Shoes': Utils.shoe_sizes,
+    'Sweaters': Utils.general_sizes
   };
 
   /// Navigate to the next page, or finish onboarding if last page
@@ -91,10 +92,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           sizesToSave[category] = sizes.toList();
         });
 
-        await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(user.uid)
-            .set(
+        await FirebaseFirestore.instance.collection('Users').doc(user.uid).set(
           {
             'name': _onboardingData.name ?? '',
             'age': _onboardingData.birthday ?? DateTime.now(),
@@ -104,19 +102,22 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             'Sizes': sizesToSave,
             'isNewUser': false,
             'enablePushNotifications': _onboardingData.enablePushNotifications,
-            'enableEmailNotifications': _onboardingData.enableEmailNotifications,
+            'enableEmailNotifications':
+                _onboardingData.enableEmailNotifications,
             'enableSmsNotifications': _onboardingData.enableSmsNotifications,
             'location': (_onboardingData.latitude != null &&
-                  _onboardingData.longitude != null)
-              ? GeoPoint(_onboardingData.latitude!, _onboardingData.longitude!)
-              : null,
+                    _onboardingData.longitude != null)
+                ? GeoPoint(
+                    _onboardingData.latitude!, _onboardingData.longitude!)
+                : null,
           },
           SetOptions(merge: true),
         );
       }
       // Navigate to main app flow, or pop
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => PersistentBottomNavPage()),
-    );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => PersistentBottomNavPage()),
+      );
     } catch (e) {
       // Handle error
       debugPrint('Error completing onboarding: $e');
@@ -126,7 +127,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onPopInvokedWithResult: (bool didPop, Object? result) async {return;},
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        return;
+      },
       child: Scaffold(
         appBar: AppBar(
           // Remove the default back/leading button
@@ -199,7 +202,7 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
     _addressController.text = widget.onboardingData.address ?? '';
     _selectedGender = widget.onboardingData.gender;
     _nameController.addListener(() {
-      setState(() {});  // Trigger rebuild when text changes
+      setState(() {}); // Trigger rebuild when text changes
     });
   }
 
@@ -244,60 +247,62 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
 
   Widget placesAutoCompleteTextField() {
     return GooglePlaceAutoCompleteTextField(
-        // Connect this to our address controller
-        textEditingController: _addressController,
-        googleAPIKey: 'AIzaSyB9vjhEDF4fRZ6x_Qy73Xgwhrb2GQjBjK8', // Replace with your valid key
-        inputDecoration: const InputDecoration(
-          hintText: 'Search your location',
-        ),
-        debounceTime: 400,
-        // Restrict or broaden countries as needed
-        countries: const ['il'], // example: "in", "fr", etc.
-        isLatLngRequired: true,
-        getPlaceDetailWithLatLng: (Prediction prediction) {
-          // This callback provides lat and lng directly from the prediction
-          debugPrint('placeDetails lat: ${prediction.lat}, lng: ${prediction.lng}');
-          // Save lat/lng in the onboarding data for future distance calculations
-          if (prediction.lat != null && prediction.lng != null) {
-            double? lat = double.tryParse(prediction.lat!);
-            double? lng = double.tryParse(prediction.lng!);
+      // Connect this to our address controller
+      textEditingController: _addressController,
+      googleAPIKey:
+          'AIzaSyB9vjhEDF4fRZ6x_Qy73Xgwhrb2GQjBjK8', // Replace with your valid key
+      inputDecoration: const InputDecoration(
+        hintText: 'Search your location',
+      ),
+      debounceTime: 400,
+      // Restrict or broaden countries as needed
+      countries: const ['il'], // example: "in", "fr", etc.
+      isLatLngRequired: true,
+      getPlaceDetailWithLatLng: (Prediction prediction) {
+        // This callback provides lat and lng directly from the prediction
+        debugPrint(
+            'placeDetails lat: ${prediction.lat}, lng: ${prediction.lng}');
+        // Save lat/lng in the onboarding data for future distance calculations
+        if (prediction.lat != null && prediction.lng != null) {
+          double? lat = double.tryParse(prediction.lat!);
+          double? lng = double.tryParse(prediction.lng!);
 
-            if (lat != null && lng != null) {
-              widget.onboardingData.latitude = lat;
-              widget.onboardingData.longitude = lng;
-            }
+          if (lat != null && lng != null) {
+            widget.onboardingData.latitude = lat;
+            widget.onboardingData.longitude = lng;
           }
-        },
-        itemClick: (Prediction prediction) {
-          // When user taps a prediction in the dropdown,
-          // set the text and move the cursor to the end.
-          _addressController.text = prediction.description ?? '';
-          _addressController.selection = TextSelection.fromPosition(
-            TextPosition(offset: prediction.description?.length ?? 0),
-          );
-          // If you need to store textual address immediately, do it here
-          widget.onboardingData.address = prediction.description;
-        },
+        }
+      },
+      itemClick: (Prediction prediction) {
+        // When user taps a prediction in the dropdown,
+        // set the text and move the cursor to the end.
+        _addressController.text = prediction.description ?? '';
+        _addressController.selection = TextSelection.fromPosition(
+          TextPosition(offset: prediction.description?.length ?? 0),
+        );
+        // If you need to store textual address immediately, do it here
+        widget.onboardingData.address = prediction.description;
+      },
 
-        // Optional customization of how each row in the suggestion list is built
-        itemBuilder: (context, index, Prediction prediction) {
-          return Container(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(prediction.description ?? ''),
-                ),
-              ],
-            ),
-          );
-        },
+      // Optional customization of how each row in the suggestion list is built
+      itemBuilder: (context, index, Prediction prediction) {
+        return Container(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(prediction.description ?? ''),
+              ),
+            ],
+          ),
+        );
+      },
 
-        // Show a cross/clear button in the widget
-        isCrossBtnShown: true,
-      );
+      // Show a cross/clear button in the widget
+      isCrossBtnShown: true,
+    );
   }
 
   @override
@@ -321,7 +326,8 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
                         ? FileImage(File(_pickedImage!.path))
                         : null,
                     child: _pickedImage == null
-                        ? const Icon(Icons.camera_alt, size: 50, color: Colors.white)
+                        ? const Icon(Icons.camera_alt,
+                            size: 50, color: Colors.white)
                         : null,
                   ),
                 ),
@@ -331,7 +337,9 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Full Name'),
+                  decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      floatingLabelBehavior: FloatingLabelBehavior.always),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Name is required';
@@ -346,7 +354,8 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
                     _birthday != null
                         ? "${_birthday!.year}-${_birthday!.month.toString().padLeft(2, '0')}-${_birthday!.day.toString().padLeft(2, '0')}"
                         : 'Select your birthday',
-                    style: TextStyle(color: _birthday == null ? Colors.grey : Colors.black),
+                    style: TextStyle(
+                        color: _birthday == null ? Colors.grey : Colors.black),
                   ),
                   onTap: () async {
                     DateTime? pickedDate = await showDatePicker(
@@ -378,13 +387,20 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
                               _selectedGender = selected ? gender : null;
                             });
                           },
-                          selectedColor:  Theme.of(context).textSelectionTheme.selectionColor,
-                          labelStyle: Theme.of(context).textTheme.bodyLarge?.copyWith( 
-                            fontWeight: _selectedGender == gender ? FontWeight.bold : FontWeight.normal,
-                            color: _selectedGender == gender 
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface, 
-                          ),
+                          selectedColor: Theme.of(context)
+                              .textSelectionTheme
+                              .selectionColor,
+                          labelStyle: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(
+                                fontWeight: _selectedGender == gender
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: _selectedGender == gender
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
                         );
                       }).toList(),
                     ),
@@ -410,7 +426,6 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
     );
   }
 }
-
 
 class _Step2FavoriteBrands extends StatefulWidget {
   final UserOnboardingData onboardingData;
@@ -471,7 +486,7 @@ class _Step2FavoriteBrandsState extends State<_Step2FavoriteBrands> {
                   initialValue: _selectedBrands,
                   onTap: (selection) {
                     setState(() {
-                      _selectedBrands = selection.whereType<String>().toList(); 
+                      _selectedBrands = selection.whereType<String>().toList();
                     });
                   },
                 ),
@@ -480,7 +495,8 @@ class _Step2FavoriteBrandsState extends State<_Step2FavoriteBrands> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton(onPressed: _saveAndNext, child: const Text('Next'))
+                ElevatedButton(
+                    onPressed: _saveAndNext, child: const Text('Next'))
               ],
             ),
             const SizedBox(height: 24),
@@ -514,9 +530,8 @@ class _Step3SizesState extends State<_Step3Sizes> {
   void initState() {
     super.initState();
     // Copy from the onboarding data model
-    userSizes = {
-      ...widget.onboardingData.userSizes
-    }.map((key, value) => MapEntry(key, {...value}));
+    userSizes = {...widget.onboardingData.userSizes}
+        .map((key, value) => MapEntry(key, {...value}));
   }
 
   Widget _buildMultiSelectField(String category) {
@@ -595,13 +610,14 @@ class _Step4NotificationPrefs extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<_Step4NotificationPrefs> createState() => _Step4NotificationPrefsState();
+  State<_Step4NotificationPrefs> createState() =>
+      _Step4NotificationPrefsState();
 }
 
 class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
   Future<void> _showPrivacyPolicy() async {
     try {
-      final String privacyPolicyText = 
+      final String privacyPolicyText =
           await rootBundle.loadString('assets/privacy_policy.txt');
 
       showDialog(
@@ -628,7 +644,8 @@ class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Error'),
-            content: const Text('Could not load the privacy policy. Please contact +972-528783610 urgently.'),
+            content: const Text(
+                'Could not load the privacy policy. Please contact +972-528783610 urgently.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -644,7 +661,7 @@ class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
   /// Method to load and show the Terms & Conditions
   Future<void> _showTermsAndConditions() async {
     try {
-      final String termsText = 
+      final String termsText =
           await rootBundle.loadString('assets/terms_and_conditions.txt');
 
       showDialog(
@@ -671,7 +688,8 @@ class _Step4NotificationPrefsState extends State<_Step4NotificationPrefs> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Error'),
-            content: const Text('Could not load the terms and conditions. Please contact +972-528783610 urgently.'),
+            content: const Text(
+                'Could not load the terms and conditions. Please contact +972-528783610 urgently.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),

@@ -68,7 +68,9 @@ class _UploadItemPageState extends State<UploadItemPage> {
                 Navigator.pop(context);
                 if (_images.length >= 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context).maxImagesAllowed)),
+                    SnackBar(
+                        content: Text(
+                            AppLocalizations.of(context).maxImagesAllowed)),
                   );
                   return;
                 }
@@ -124,7 +126,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Future<Map<String, dynamic>> _callGemini() async {
     final jsonSchema = Schema.object(
       properties: {
-        'Brand': Schema.string(description: 'Brand of the item, or null if unknown'),
+        'Brand':
+            Schema.string(description: 'Brand of the item, or null if unknown'),
         'Color': Schema.string(description: 'Color of the item'),
         'Condition': Schema.string(description: 'Condition of the item'),
         'Size': Schema.string(description: 'Size of the item'),
@@ -150,7 +153,9 @@ class _UploadItemPageState extends State<UploadItemPage> {
       '''Analyze the provided images and extract metadata including brand, color, condition, size, and type.''',
     );
 
-    final content = [Content.multi([...imageParts, prompt])];
+    final content = [
+      Content.multi([...imageParts, prompt])
+    ];
 
     final response = await model.generateContent(content);
     debugPrint(response.text);
@@ -177,7 +182,8 @@ class _UploadItemPageState extends State<UploadItemPage> {
             // Tips
             Text(
               AppLocalizations.of(context).photoTips,
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey[700]),
+              style: TextStyle(
+                  fontStyle: FontStyle.italic, color: Colors.grey[700]),
             ),
             const SizedBox(height: 16),
             Text(
@@ -234,53 +240,56 @@ class _UploadItemPageState extends State<UploadItemPage> {
             const SizedBox(height: 16),
 
             ElevatedButton(
-            onPressed: _images.isNotEmpty
-                ? () async {
-                    // 1) Show a loading screen while calling Gemini
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => const Center(child: CircularProgressIndicator()),
-                    );
+              onPressed: _images.isNotEmpty
+                  ? () async {
+                      // 1) Show a loading screen while calling Gemini
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
 
-                    try {
-                      final metadata = await _callGemini();
+                      try {
+                        final metadata = await _callGemini();
 
-                      // Hide the loading dialog
-                      Navigator.of(context, rootNavigator: true).pop();
+                        // Hide the loading dialog
+                        Navigator.of(context, rootNavigator: true).pop();
 
-                      // 2) Navigate to Step2 and wait for the result
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => _StepTwoForm(
-                            images: _images,
-                            brands: _brands,
-                            colors: _colors,
-                            conditions: _conditions,
-                            sizes: _sizes,
-                            types: _types,
-                            prefilledData: metadata,
+                        // 2) Navigate to Step2 and wait for the result
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => _StepTwoForm(
+                              images: _images,
+                              brands: _brands,
+                              colors: _colors,
+                              conditions: _conditions,
+                              sizes: _sizes,
+                              types: _types,
+                              prefilledData: metadata,
+                            ),
                           ),
-                        ),
-                      );
+                        );
 
-                      // 3) If Step2 returned true => images cleared, rebuild Step1
-                      if (result == true) {
-                        setState(() {
-                          // `_images` is already empty, but we need to rebuild
-                        });
+                        // 3) If Step2 returned true => images cleared, rebuild Step1
+                        if (result == true) {
+                          setState(() {
+                            // `_images` is already empty, but we need to rebuild
+                          });
+                        }
+                      } catch (e) {
+                        // Hide the loading dialog if an error occurs
+                        Navigator.of(context, rootNavigator: true).pop();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  'Error processing images with Gemini: $e')),
+                        );
                       }
-                    } catch (e) {
-                      // Hide the loading dialog if an error occurs
-                      Navigator.of(context, rootNavigator: true).pop();
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error processing images with Gemini: $e')),
-                      );
                     }
-                  }
-                : null,
+                  : null,
               child: Text(AppLocalizations.of(context).next),
             ),
           ],
@@ -358,7 +367,8 @@ class _StepTwoForm extends StatelessWidget {
     // Use the helper to find a match ignoring case
     final matchedBrand = _findIgnoreCase(brands, prefilledData['Brand']);
     final matchedColor = _findIgnoreCase(colors, prefilledData['Color']);
-    final matchedCondition = _findIgnoreCase(conditions, prefilledData['Condition']);
+    final matchedCondition =
+        _findIgnoreCase(conditions, prefilledData['Condition']);
     final matchedSize = _findIgnoreCase(sizes, prefilledData['Size']);
     final matchedType = _findIgnoreCase(types, prefilledData['Type']);
 
@@ -375,7 +385,7 @@ class _StepTwoForm extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-      title: Text(AppLocalizations.of(context).uploadItemStep2),
+        title: Text(AppLocalizations.of(context).uploadItemStep2),
         centerTitle: true,
       ),
       body: Padding(
@@ -408,11 +418,14 @@ class _StepTwoForm extends StatelessWidget {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      decoration: InputDecoration(labelText: AppLocalizations.of(context).brand),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? AppLocalizations.of(context).brandRequired : null,
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context).brand),
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context).brandRequired
+                          : null,
                       onChanged: (value) {
-                        formData['Brand'] = value; // Update formData on text change
+                        formData['Brand'] =
+                            value; // Update formData on text change
                       },
                       onFieldSubmitted: (value) {
                         formData['Brand'] = value;
@@ -429,19 +442,27 @@ class _StepTwoForm extends StatelessWidget {
                     if (textEditingValue.text.isEmpty) {
                       return const Iterable<String>.empty();
                     }
-                    final translatedColors = colors.map((color) => TranslationUtils.getColor(color, context)).toList();
+                    final translatedColors = colors
+                        .map((color) =>
+                            TranslationUtils.getColor(color, context))
+                        .toList();
                     return translatedColors.where((translatedColor) =>
-                        translatedColor.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                        translatedColor
+                            .toLowerCase()
+                            .contains(textEditingValue.text.toLowerCase()));
                   },
                   onSelected: (String selection) {
                     formData['Color'] = colors.firstWhere(
-                      (color) => TranslationUtils.getColor(color, context) == selection,
-                      orElse: () => selection);
+                        (color) =>
+                            TranslationUtils.getColor(color, context) ==
+                            selection,
+                        orElse: () => selection);
                   },
                   initialValue: TextEditingValue(
                     text: formData['Color'] != null
-                      ? TranslationUtils.getColor(formData['Color']!, context) // Show localized color
-                      : '',
+                        ? TranslationUtils.getColor(
+                            formData['Color']!, context) // Show localized color
+                        : '',
                   ),
                   fieldViewBuilder: (BuildContext context,
                       TextEditingController textEditingController,
@@ -450,9 +471,11 @@ class _StepTwoForm extends StatelessWidget {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      decoration: InputDecoration(labelText: AppLocalizations.of(context).color),
-                      validator: (value) =>
-                        value == null || value.isEmpty ? AppLocalizations.of(context).colorRequired : null,
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context).color),
+                      validator: (value) => value == null || value.isEmpty
+                          ? AppLocalizations.of(context).colorRequired
+                          : null,
                     );
                   },
                 ),
@@ -463,13 +486,17 @@ class _StepTwoForm extends StatelessWidget {
                   items: conditions
                       .map((condition) => DropdownMenuItem(
                             value: condition,
-                            child: Text(TranslationUtils.getCondition(condition, context)),
+                            child: Text(TranslationUtils.getCondition(
+                                condition, context)),
                           ))
                       .toList(),
                   value: formData['Condition'],
                   onChanged: (value) => formData['Condition'] = value,
-                  decoration: InputDecoration(labelText: AppLocalizations.of(context).condition),
-                  validator: (value) => value == null ? AppLocalizations.of(context).conditionRequired : null,
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).condition),
+                  validator: (value) => value == null
+                      ? AppLocalizations.of(context).conditionRequired
+                      : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -483,8 +510,11 @@ class _StepTwoForm extends StatelessWidget {
                       .toList(),
                   value: formData['Size'],
                   onChanged: (value) => formData['Size'] = value,
-                  decoration: InputDecoration(labelText: AppLocalizations.of(context).size),
-                  validator: (value) => value == null ? AppLocalizations.of(context).sizeRequired : null,
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).size),
+                  validator: (value) => value == null
+                      ? AppLocalizations.of(context).sizeRequired
+                      : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -493,19 +523,24 @@ class _StepTwoForm extends StatelessWidget {
                   items: types
                       .map((type) => DropdownMenuItem(
                             value: type,
-                            child: Text(TranslationUtils.getCategory(type, context)),
+                            child: Text(
+                                TranslationUtils.getCategory(type, context)),
                           ))
                       .toList(),
                   value: formData['Type'],
                   onChanged: (value) => formData['Type'] = value,
-                  decoration: InputDecoration(labelText: AppLocalizations.of(context).type),
-                  validator: (value) => value == null ? AppLocalizations.of(context).typeRequired : null,
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).type),
+                  validator: (value) => value == null
+                      ? AppLocalizations.of(context).typeRequired
+                      : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Description
                 TextFormField(
-                decoration: InputDecoration(labelText: AppLocalizations.of(context).description),
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).description),
                   maxLines: 3,
                   initialValue: formData['Description'],
                   onChanged: (value) => formData['Description'] = value,
@@ -514,7 +549,8 @@ class _StepTwoForm extends StatelessWidget {
 
                 // Price
                 TextFormField(
-                decoration: InputDecoration(labelText: AppLocalizations.of(context).price),
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).price),
                   keyboardType: TextInputType.number,
                   initialValue: formData['Price'].toString(),
                   onChanged: (value) {
@@ -522,14 +558,14 @@ class _StepTwoForm extends StatelessWidget {
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                    return AppLocalizations.of(context).priceRequired;
+                      return AppLocalizations.of(context).priceRequired;
                     }
                     final intValue = int.tryParse(value);
                     if (intValue == null) {
-                    return AppLocalizations.of(context).priceValidInteger;
+                      return AppLocalizations.of(context).priceValidInteger;
                     }
                     if (intValue <= 0) {
-                    return AppLocalizations.of(context).priceGreaterThanZero;
+                      return AppLocalizations.of(context).priceGreaterThanZero;
                     }
                     return null;
                   },
@@ -545,22 +581,27 @@ class _StepTwoForm extends StatelessWidget {
                         formData['Condition'] ?? 'New',
                         formData['Type'] ?? 'T-Shirts',
                       );
-                      final ratioPercent = ((formData['Price'] / estimated) * 100).round();
+                      final ratioPercent =
+                          ((formData['Price'] / estimated) * 100).round();
 
                       if (ratioPercent > 120) {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: Text(AppLocalizations.of(context).verifyYourPrice),
+                            title: Text(
+                                AppLocalizations.of(context).verifyYourPrice),
                             content: Text(
-                              AppLocalizations.of(context).priceVerificationMessage(ratioPercent, estimated),
+                              AppLocalizations.of(context)
+                                  .priceVerificationMessage(
+                                      ratioPercent, estimated),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(context);
                                 },
-                                child: Text(AppLocalizations.of(context).changePrice),
+                                child: Text(
+                                    AppLocalizations.of(context).changePrice),
                               ),
                               TextButton(
                                 onPressed: () async {
@@ -568,27 +609,37 @@ class _StepTwoForm extends StatelessWidget {
                                   showDialog(
                                     context: context,
                                     barrierDismissible: false,
-                                    builder: (_) =>
-                                        const Center(child: CircularProgressIndicator()),
+                                    builder: (_) => const Center(
+                                        child: CircularProgressIndicator()),
                                   );
                                   try {
-                                    await _uploadItemToFirebase(formData, context);
+                                    await _uploadItemToFirebase(
+                                        formData, context);
                                     images.clear();
                                     if (context.mounted) {
-                                      Navigator.of(context, rootNavigator: true).pop();
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(AppLocalizations.of(context).itemUploadedSuccess)),
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                AppLocalizations.of(context)
+                                                    .itemUploadedSuccess)),
                                       );
                                       Navigator.pop(context, true);
                                     }
                                   } catch (e) {
-                                    Navigator.of(context, rootNavigator: true).pop();
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error uploading item: $e')),
+                                      SnackBar(
+                                          content:
+                                              Text('Error uploading item: $e')),
                                     );
                                   }
                                 },
-                                child: Text(AppLocalizations.of(context).uploadItem),
+                                child: Text(
+                                    AppLocalizations.of(context).uploadItem),
                               ),
                             ],
                           ),
@@ -598,7 +649,8 @@ class _StepTwoForm extends StatelessWidget {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (_) => const Center(child: CircularProgressIndicator()),
+                          builder: (_) =>
+                              const Center(child: CircularProgressIndicator()),
                         );
 
                         try {
@@ -606,7 +658,9 @@ class _StepTwoForm extends StatelessWidget {
                           images.clear();
                           Navigator.of(context, rootNavigator: true).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(AppLocalizations.of(context).itemUploadedSuccess)),
+                            SnackBar(
+                                content: Text(AppLocalizations.of(context)
+                                    .itemUploadedSuccess)),
                           );
                           Navigator.pop(context, true);
                         } catch (e) {
@@ -618,7 +672,7 @@ class _StepTwoForm extends StatelessWidget {
                       }
                     }
                   },
-                child: Text(AppLocalizations.of(context).submit),
+                  child: Text(AppLocalizations.of(context).submit),
                 )
               ],
             ),
