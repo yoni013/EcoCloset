@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/pages/profile_page.dart';
 import '../generated/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class ItemPage extends StatelessWidget {
   final String itemId;
@@ -29,11 +30,11 @@ class ItemPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).itemDetails),
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
-
           if (true) //add condition if this is the seller
             IconButton(
               icon: const Icon(Icons.edit),
@@ -66,166 +67,350 @@ class ItemPage extends StatelessWidget {
           var itemData = snapshot.data!;
           var images = itemData['images'] as List<dynamic>? ?? [];
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (images.isEmpty)
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    if (images.isEmpty)
                       Container(
-                        height: 300,
-                        color: Colors.grey[200],
-                        child: const Center(child: Icon(Icons.broken_image, size: 48)),
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        color: Theme.of(context).colorScheme.surfaceVariant,
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       )
                     else
                       Container(
-                        height: 300,
+                        height: MediaQuery.of(context).size.height * 0.5,
                         child: PageView.builder(
                           itemCount: images.length,
                           itemBuilder: (context, index) {
-                            return CachedNetworkImage(
-                              imageUrl: images[index],
-                              fit: BoxFit.contain,
-                              placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                              errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                            return Hero(
+                              tag: 'item_$itemId',
+                              child: CachedNetworkImage(
+                                imageUrl: images[index],
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: Theme.of(context).colorScheme.surfaceVariant,
+                                  child: const Center(child: CircularProgressIndicator()),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Theme.of(context).colorScheme.surfaceVariant,
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 50,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         ),
                       ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        itemData['Brand'] ??
-                            AppLocalizations.of(context).unknownItem,
-                        style: const TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '\₪${itemData['Price'] ?? AppLocalizations.of(context).notAvailable}',
-                        style: const TextStyle(
-                            fontSize: 20,
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${AppLocalizations.of(context).condition}: ${TranslationUtils.getCondition(itemData['Condition'], context)}',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${AppLocalizations.of(context).size}: ${itemData['Size'] ?? 'N/A'}',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    AppLocalizations.of(context).description,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    itemData['Description'] ??
-                        AppLocalizations.of(context).noDescription,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[800]),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8.0,
-                    children: (itemData['Tags'] as List<dynamic>?)
-                            ?.map((tag) => Chip(label: Text(tag)))
-                            .toList() ??
-                        [],
-                  ),
-                  const Divider(height: 32),
-                  FutureBuilder<Map<String, dynamic>>(
-                    future: fetchSellerData(itemData['seller_id'] ?? ''),
-                    builder: (context, sellerSnapshot) {
-                      if (sellerSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.grey[200],
-                            child: const CircularProgressIndicator(),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Theme.of(context).colorScheme.surface,
+                              Theme.of(context).colorScheme.surface.withOpacity(0),
+                            ],
                           ),
-                          title:
-                              Text(AppLocalizations.of(context).loadingSeller),
-                        );
-                      } else if (sellerSnapshot.hasError ||
-                          !sellerSnapshot.hasData ||
-                          sellerSnapshot.data!.isEmpty) {
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.grey[200],
-                            child: const Icon(Icons.person, size: 32),
-                          ),
-                          title:
-                              Text(AppLocalizations.of(context).unknownSeller),
-                        );
-                      }
-
-                      var sellerData = sellerSnapshot.data!;
-                      return ListTile(
-                      leading: sellerData['profilePicUrl'] != null && sellerData['profilePicUrl'].isNotEmpty
-                          ? CircleAvatar(
-                              backgroundImage: CachedNetworkImageProvider(sellerData['profilePicUrl']),
-                            )
-                          : CircleAvatar(
-                              backgroundColor: Colors.grey[200],
-                              child: const Icon(Icons.person, size: 32),
-                            ),
-                        title: Text(sellerData['name'] ??
-                            AppLocalizations.of(context).unknownSeller),
-                        subtitle: Row(
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.star, color: Colors.yellow, size: 16),
-                            Text(
-                              '${(sellerData['average_rating'] != null) 
-                                  ? (sellerData['average_rating'] as num).toStringAsFixed(1) 
-                                  : 'N/A'} '
-                              '(${sellerData['num_of_reviewers'] ?? 0} ${AppLocalizations.of(context).reviews})',
+                            Expanded(
+                              child: Text(
+                                itemData['Brand'] ??
+                                    AppLocalizations.of(context).unknownItem,
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                '\₪${itemData['Price'] ?? AppLocalizations.of(context).notAvailable}',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
+                        ).animate().fadeIn(duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProfilePage(
-                                  viewedUserId: itemData['seller_id'] ?? ''),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildInfoChip(
+                              context,
+                              Icons.check_circle_outline,
+                              TranslationUtils.getCondition(itemData['Condition'], context),
                             ),
-                          );
-                        },
-                      );
-                    },
+                            _buildInfoChip(
+                              context,
+                              Icons.straighten,
+                              itemData['Size'] ?? 'N/A',
+                            ),
+                          ],
+                        ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          AppLocalizations.of(context).description,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          itemData['Description'] ??
+                              AppLocalizations.of(context).noDescription,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8.0,
+                          runSpacing: 8.0,
+                          children: (itemData['Tags'] as List<dynamic>?)
+                                  ?.map((tag) => Chip(
+                                        label: Text(tag),
+                                        backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                                        labelStyle: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                        ),
+                                      ))
+                                  .toList() ??
+                              [],
+                        ).animate().fadeIn(delay: 600.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                        const SizedBox(height: 24),
+                        Card(
+                          elevation: 0,
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: FutureBuilder<Map<String, dynamic>>(
+                            future: fetchSellerData(itemData['seller_id'] ?? ''),
+                            builder: (context, sellerSnapshot) {
+                              if (sellerSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const ListTile(
+                                  leading: CircleAvatar(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  title: Text('Loading...'),
+                                );
+                              } else if (sellerSnapshot.hasError ||
+                                  !sellerSnapshot.hasData ||
+                                  sellerSnapshot.data!.isEmpty) {
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Theme.of(context).colorScheme.surface,
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 32,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  title: Text(AppLocalizations.of(context).unknownSeller),
+                                );
+                              }
+
+                              var sellerData = sellerSnapshot.data!;
+                              return ListTile(
+                                contentPadding: const EdgeInsets.all(16),
+                                leading: sellerData['profilePicUrl'] != null && sellerData['profilePicUrl'].isNotEmpty
+                                    ? CircleAvatar(
+                                        radius: 24,
+                                        backgroundImage: CachedNetworkImageProvider(sellerData['profilePicUrl']),
+                                      )
+                                    : CircleAvatar(
+                                        radius: 24,
+                                        backgroundColor: Theme.of(context).colorScheme.surface,
+                                        child: Icon(
+                                          Icons.person,
+                                          size: 32,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                      ),
+                                title: Text(
+                                  sellerData['name'] ??
+                                      AppLocalizations.of(context).unknownSeller,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.star,
+                                      color: Theme.of(context).colorScheme.primary,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${(sellerData['average_rating'] != null) 
+                                          ? (sellerData['average_rating'] as num).toStringAsFixed(1) 
+                                          : 'N/A'} '
+                                      '(${sellerData['num_of_reviewers'] ?? 0} ${AppLocalizations.of(context).reviews})',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProfilePage(
+                                          viewedUserId: itemData['seller_id'] ?? ''),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ).animate().fadeIn(delay: 800.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  // Contact Seller action
+                                },
+                                icon: const Icon(Icons.message_outlined),
+                                label: Text(AppLocalizations.of(context).contactSeller),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  // Buy Now action
+                                },
+                                icon: const Icon(Icons.shopping_cart_outlined),
+                                label: Text(AppLocalizations.of(context).buyNow),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ).animate().fadeIn(delay: 1000.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          // Contact Seller action
-                        },
-                        child: Text(AppLocalizations.of(context).contactSeller),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Buy Now action
-                        },
-                        child: Text(AppLocalizations.of(context).buyNow),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

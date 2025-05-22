@@ -5,8 +5,8 @@ import 'package:eco_closet/settings/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/pages/item_page.dart';
-
 import 'package:eco_closet/generated/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class ProfilePage extends StatefulWidget {
   final String viewedUserId;
@@ -59,31 +59,80 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildReviewsList(List<Map<String, dynamic>> reviews) {
     return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(16.0),
       itemCount: reviews.length,
       itemBuilder: (context, index) {
         var review = reviews[index];
         return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ListTile(
-            leading: Column(
-              mainAxisSize: MainAxisSize.min,
+          margin: const EdgeInsets.only(bottom: 16.0),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          color: Theme.of(context).colorScheme.surfaceVariant,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.star, color: Colors.yellow, size: 24),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.star,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            review['rating'].toDouble().toStringAsFixed(1),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        review['seller_name'] ??
+                            AppLocalizations.of(context).anonymous_reviewer,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Text(
-                  review['rating']
-                      .toDouble()
-                      .toStringAsFixed(1), // Convert int to float format
-                  style: const TextStyle(color: Colors.black, fontSize: 15),
+                  review['content'] ?? AppLocalizations.of(context).noContent,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),
-            title: Text(
-                review['content'] ?? AppLocalizations.of(context).noContent),
-            subtitle: Text(review['seller_name'] ??
-                AppLocalizations.of(context).anonymous_reviewer),
           ),
-        );
+        ).animate(delay: (50 * index).ms).fadeIn(
+              duration: 600.ms,
+              curve: Curves.easeOutQuad,
+            ).slideY(
+              begin: 0.2,
+              end: 0,
+              duration: 600.ms,
+              curve: Curves.easeOutQuad,
+            );
       },
     );
   }
@@ -93,18 +142,42 @@ class _ProfilePageState extends State<ProfilePage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context).userReviews),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: _buildReviewsList(reviews),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context).close),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context).userReviews,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: _buildReviewsList(reviews),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -112,32 +185,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).profilePage),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsPage(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.room_preferences),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const PersonalSizesPreferences(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: fetchUserData(widget.viewedUserId),
         builder: (context, snapshot) {
@@ -154,82 +201,164 @@ class _ProfilePageState extends State<ProfilePage> {
           var averageRating = (userData['average_rating'] ?? 0).toDouble();
           var num_of_reviewers = (userData['num_of_reviewers'] ?? 0);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey[200],
-                      child: userData['profilePicUrl'] != null &&
-                              userData['profilePicUrl'].isNotEmpty
-                          ? ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: userData['profilePicUrl'],
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    const CircularProgressIndicator(),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.person, size: 50),
-                              ),
-                            )
-                          : const Icon(Icons.person, size: 50),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      userData['name'] ??
-                          AppLocalizations.of(context).unknownUser,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      userData['address'] ?? 'No address provided',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _showReviewsPopup,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.star,
-                              color: Colors.yellow, size: 20),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$averageRating (${num_of_reviewers.toString()})',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primaryContainer,
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, thickness: 1),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).searchItems,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.search),
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          children: [
+                            Hero(
+                              tag: 'profile_${widget.viewedUserId}',
+                              child: CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Theme.of(context).colorScheme.surface,
+                                child: userData['profilePicUrl'] != null &&
+                                        userData['profilePicUrl'].isNotEmpty
+                                    ? ClipOval(
+                                        child: CachedNetworkImage(
+                                          imageUrl: userData['profilePicUrl'],
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              const CircularProgressIndicator(),
+                                          errorWidget: (context, url, error) =>
+                                              Icon(
+                                                Icons.person,
+                                                size: 40,
+                                                color: Theme.of(context).colorScheme.onSurface,
+                                              ),
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.person,
+                                        size: 40,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userData['name'] ??
+                                        AppLocalizations.of(context).unknownUser,
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    userData['address'] ?? 'No address provided',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: _showReviewsPopup,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surface,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.star,
+                                            color: Theme.of(context).colorScheme.primary,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '$averageRating (${num_of_reviewers.toString()})',
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.settings),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const SettingsPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.room_preferences),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const PersonalSizesPreferences(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  onChanged: (value) {
-                    // Implement filtering logic here
-                  },
                 ),
               ),
-              const Divider(height: 1, thickness: 1),
-              Expanded(
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context).searchItems,
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                    ),
+                    onChanged: (value) {
+                      // Implement filtering logic here
+                    },
+                  ),
+                ),
+              ),
+              SliverFillRemaining(
                 child: FutureBuilder<Widget>(
                   future: _buildItemsWidget(),
                   builder: (context, snapshot) {
@@ -253,58 +382,119 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildItemsGrid(List<Map<String, dynamic>> items) {
     return GridView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 3 / 4,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         var item = items[index];
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ItemPage(itemId: item['id']),
-              ),
-            );
-          },
-          child: Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0)),
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ItemPage(itemId: item['id']),
+                ),
+              );
+            },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: item['images'] != null && item['images'].isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: item['images'][0],
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => const Icon(
-                              Icons.image_not_supported,
-                              size: 50,
-                              color: Colors.grey),
-                        )
-                      : const Center(
-                          child: Icon(Icons.image_not_supported,
-                              size: 50, color: Colors.grey),
+                  flex: 3,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: item['image_preview'],
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: const Center(child: CircularProgressIndicator()),
                         ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '\₪${item['Price'] ?? 'N/A'}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(item['Brand'] ??
-                      AppLocalizations.of(context).unknownBrand),
+                Expanded(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['Brand'] ?? 'Unknown',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item['Type'] ?? '',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-        );
+        ).animate(delay: (50 * index).ms).fadeIn(
+              duration: 600.ms,
+              curve: Curves.easeOutQuad,
+            ).slideY(
+              begin: 0.2,
+              end: 0,
+              duration: 600.ms,
+              curve: Curves.easeOutQuad,
+            );
       },
     );
   }

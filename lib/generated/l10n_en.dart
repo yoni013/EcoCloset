@@ -740,4 +740,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get anonymous_reviewer => 'Anonymous Reviewer';
+
+  @override
+  String get sizePreferencesInfo => 'Choose the sizes you usually wear to receive better recommendations for items that fit you.';
+
+  @override
+  String get sizePreferencesDescription => 'Select your size preferences to get better recommendations.';
+
+  @override
+  String get unauthorized => 'Unauthorized';
+
+  @override
+  String get unauthorizedAccess => 'Unauthorized Access';
+
+  @override
+  String get unauthorizedMessage => 'Your access is unauthorized. Please log in again to continue.';
+
+  @override
+  String get itemProperties => 'Item Properties';
+
+  @override
+  String get images => 'Images';
+
+  @override
+  String get coats => 'Coats';
+
+  @override
+  String get newCondition => 'New';
+
+  @override
+  String get likeNewCondition => 'Like New';
+
+  @override
+  String get goodCondition => 'Good Condition';
+
+  @override
+  String get fairCondition => 'Fair Condition';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get analyzingImages => 'Analyzing Images...';
+
+  @override
+  String get orderId => 'Order ID';
+
+  @override
+  String get searchHint => 'Search...';
+
+  @override
+  String get priceRange => 'Price Range';
+
+  @override
+  String select(String label) {
+    return 'select $label';
+  }
 }

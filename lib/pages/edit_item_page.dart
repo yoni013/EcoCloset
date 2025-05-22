@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // Example: If you need localization, import your localizations
 import '../generated/l10n.dart';
@@ -52,11 +53,11 @@ class _EditItemPageState extends State<EditItemPage> {
     // Pre-fill from widget.initialItemData
     _brandController =
         TextEditingController(text: widget.initialItemData['Brand'] ?? '');
-    _descriptionController =
-        TextEditingController(text: widget.initialItemData['Description'] ?? '');
+    _descriptionController = TextEditingController(
+        text: widget.initialItemData['Description'] ?? '');
     _priceController =
         TextEditingController(text: '${widget.initialItemData['Price'] ?? ''}');
-    _condition = widget.initialItemData['Condition'] ?? 'Used'; 
+    _condition = widget.initialItemData['Condition'] ?? 'Used';
     _isAvailable =
         (widget.initialItemData['status'] ?? 'Available') == 'Available';
 
@@ -130,15 +131,17 @@ class _EditItemPageState extends State<EditItemPage> {
     // Price logic (old price vs new price)
     final newPrice = double.tryParse(_priceController.text.trim()) ?? 0;
     final oldPriceValue = widget.initialItemData['oldPrice'];
-    final currentPriceValue =
-        (widget.initialItemData['Price'] is num) ? widget.initialItemData['Price'].toDouble() : null;
+    final currentPriceValue = (widget.initialItemData['Price'] is num)
+        ? widget.initialItemData['Price'].toDouble()
+        : null;
 
     double? updatedOldPrice;
     if (currentPriceValue != null) {
       // If new price is lower than the current price, we set oldPrice to the current price (if it isn't already higher)
       if (newPrice < currentPriceValue) {
         // If oldPrice doesn't exist or is less than currentPrice, set it
-        if (oldPriceValue == null || (oldPriceValue is num && oldPriceValue < currentPriceValue)) {
+        if (oldPriceValue == null ||
+            (oldPriceValue is num && oldPriceValue < currentPriceValue)) {
           updatedOldPrice = currentPriceValue;
         } else {
           // If oldPrice is already bigger, keep it
@@ -148,10 +151,10 @@ class _EditItemPageState extends State<EditItemPage> {
         // If the user increased the price or kept it the same, you may decide to clear the old price or keep it
         // For example, let's clear oldPrice if the price is now higher
         if (newPrice > currentPriceValue) {
-          updatedOldPrice = null; 
+          updatedOldPrice = null;
         } else {
           // same price
-          updatedOldPrice = oldPriceValue; 
+          updatedOldPrice = oldPriceValue;
         }
       }
     }
@@ -167,7 +170,8 @@ class _EditItemPageState extends State<EditItemPage> {
       // 1) If new images exist, upload them first to Firebase Storage
       List<String> newlyUploadedUrls = [];
       for (XFile img in _newImages) {
-        final fileName = 'items/${widget.itemId}/${DateTime.now().millisecondsSinceEpoch}_${img.name}';
+        final fileName =
+            'items/${widget.itemId}/${DateTime.now().millisecondsSinceEpoch}_${img.name}';
         final ref = FirebaseStorage.instance.ref().child(fileName);
         await ref.putFile(File(img.path));
         final downloadUrl = await ref.getDownloadURL();
@@ -223,237 +227,648 @@ class _EditItemPageState extends State<EditItemPage> {
     // We can only allow this page if the currentUser is the seller
     final sellerId = widget.initialItemData['seller_id'];
     if (currentUserId == null || currentUserId != sellerId) {
-      // If you want to handle unauthorized access more gracefully:
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Unauthorized'),
+          title: Text(
+            AppLocalizations.of(context).unauthorized,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          centerTitle: true,
+          elevation: 0,
         ),
-        body: const Center(
-          child: Text('You do not have permission to edit this item.'),
-        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).unauthorizedAccess,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppLocalizations.of(context).unauthorizedMessage,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ).animate().fadeIn(duration: 600.ms),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).editItem),
+        title: Text(
+          AppLocalizations.of(context).editItem,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
         centerTitle: true,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                // Item name / Brand
-                TextFormField(
-                  controller: _brandController,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).itemName,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return AppLocalizations.of(context).thisFieldIsRequired;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Description (multiline)
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).description,
-                  ),
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 16),
-
-                // Price
-                TextFormField(
-                  controller: _priceController,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).price,
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return AppLocalizations.of(context).thisFieldIsRequired;
-                    }
-                    final double? d = double.tryParse(value);
-                    if (d == null || d <= 0) {
-                      return AppLocalizations.of(context).invalidPrice;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Category dropdown
-                DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).category,
-                  ),
-                  value: _category,
-                  items: _possibleCategories
-                      .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _category = val;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context).thisFieldIsRequired;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Condition (dropdown)
-                DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).condition,
-                  ),
-                  value: _condition,
-                  items: <String>['New', 'Like New', 'Used', 'Refurbished']
-                      .map((cond) => DropdownMenuItem(value: cond, child: Text(cond)))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _condition = val;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Availability toggle
-                SwitchListTile(
-                  title: Text(_isAvailable
-                      ? AppLocalizations.of(context).available
-                      : AppLocalizations.of(context).soldOut),
-                  value: _isAvailable,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isAvailable = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Existing images (remote) with ability to reorder, remove, set main
-                Text(
-                  AppLocalizations.of(context).existingImages,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                if (_remoteImages.isEmpty)
-                  Text(AppLocalizations.of(context).noImagesAvailable)
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _remoteImages.length,
-                    itemBuilder: (context, index) {
-                      final imageUrl = _remoteImages[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        child: ListTile(
-                          leading: GestureDetector(
-                            onTap: () => _makeRemoteImageMain(index),
-                            child: SizedBox(
-                              width: 60,
-                              height: 60,
-                              child: CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (ctx, url) =>
-                                    const CircularProgressIndicator(),
-                                errorWidget: (ctx, url, err) =>
-                                    const Icon(Icons.error),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).itemDetails,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _brandController,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).itemName,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return AppLocalizations.of(context)
+                                    .thisFieldIsRequired;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _descriptionController,
+                            decoration: InputDecoration(
+                              labelText:
+                                  AppLocalizations.of(context).description,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                            ),
+                            maxLines: 4,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _priceController,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).price,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              prefixText: '\₪ ',
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return AppLocalizations.of(context)
+                                    .thisFieldIsRequired;
+                              }
+                              final double? d = double.tryParse(value);
+                              if (d == null || d <= 0) {
+                                return AppLocalizations.of(context)
+                                    .invalidPrice;
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).itemProperties,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).category,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                            ),
+                            value: _category,
+                            items: _possibleCategories
+                                .map((cat) => DropdownMenuItem(
+                                    value: cat, child: Text(cat)))
+                                .toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _category = val;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)
+                                    .thisFieldIsRequired;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).condition,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                            ),
+                            value: _condition,
+                            items: <String>[
+                              'New',
+                              'Like New',
+                              'Used',
+                              'Refurbished'
+                            ]
+                                .map((cond) => DropdownMenuItem(
+                                    value: cond, child: Text(cond)))
+                                .toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _condition = val;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          SwitchListTile(
+                            title: Text(
+                              _isAvailable
+                                  ? AppLocalizations.of(context).available
+                                  : AppLocalizations.of(context).soldOut,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            value: _isAvailable,
+                            onChanged: (bool value) {
+                              setState(() {
+                                _isAvailable = value;
+                              });
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).image,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_remoteImages.isEmpty && _newImages.isEmpty)
+                            Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 48,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    AppLocalizations.of(context)
+                                        .noImagesAvailable,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (_remoteImages.isNotEmpty) ...[
+                                  Text(
+                                    AppLocalizations.of(context).existingImages,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 3,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      childAspectRatio: 1,
+                                    ),
+                                    itemCount: _remoteImages.length,
+                                    itemBuilder: (context, index) {
+                                      final imageUrl = _remoteImages[index];
+                                      return Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Card(
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              side: BorderSide(
+                                                color: index == 0
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                    : Colors.transparent,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            clipBehavior: Clip.antiAlias,
+                                            child: CachedNetworkImage(
+                                              imageUrl: imageUrl,
+                                              fit: BoxFit.cover,
+                                              placeholder: (ctx, url) =>
+                                                  Container(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceVariant,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              ),
+                                              errorWidget: (ctx, url, err) =>
+                                                  Container(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceVariant,
+                                                child: Icon(
+                                                  Icons.error,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .error,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (index == 0)
+                                            Positioned(
+                                              top: 4,
+                                              left: 4,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primaryContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  AppLocalizations.of(context)
+                                                      .mainImage,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onPrimaryContainer,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close),
+                                              style: IconButton.styleFrom(
+                                                backgroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .surface,
+                                                foregroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                              ),
+                                              onPressed: () =>
+                                                  _removeRemoteImage(index),
+                                            ),
+                                          ),
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () =>
+                                                  _makeRemoteImageMain(index),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                          .animate(delay: (50 * index).ms)
+                                          .fadeIn(
+                                            duration: 600.ms,
+                                            curve: Curves.easeOutQuad,
+                                          )
+                                          .slideY(
+                                            begin: 0.2,
+                                            end: 0,
+                                            duration: 600.ms,
+                                            curve: Curves.easeOutQuad,
+                                          );
+                                    },
+                                  ),
+                                ],
+                                if (_newImages.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    AppLocalizations.of(context).newImages,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 3,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      childAspectRatio: 1,
+                                    ),
+                                    itemCount: _newImages.length,
+                                    itemBuilder: (context, index) {
+                                      final file = _newImages[index];
+                                      return Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Card(
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              side: BorderSide(
+                                                color: index == 0
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                    : Colors.transparent,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            clipBehavior: Clip.antiAlias,
+                                            child: Image.file(
+                                              File(file.path),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          if (index == 0)
+                                            Positioned(
+                                              top: 4,
+                                              left: 4,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primaryContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  AppLocalizations.of(context)
+                                                      .mainImage,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onPrimaryContainer,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close),
+                                              style: IconButton.styleFrom(
+                                                backgroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .surface,
+                                                foregroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                              ),
+                                              onPressed: () =>
+                                                  _removeNewImage(index),
+                                            ),
+                                          ),
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () =>
+                                                  _makeNewImageMain(index),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                          .animate(delay: (50 * index).ms)
+                                          .fadeIn(
+                                            duration: 600.ms,
+                                            curve: Curves.easeOutQuad,
+                                          )
+                                          .slideY(
+                                            begin: 0.2,
+                                            end: 0,
+                                            duration: 600.ms,
+                                            curve: Curves.easeOutQuad,
+                                          );
+                                    },
+                                  ),
+                                ],
+                              ],
+                            ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _pickImages,
+                            icon: const Icon(Icons.add_photo_alternate),
+                            label: Text(AppLocalizations.of(context).addImages),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           ),
-                          title: Text(index == 0
-                              ? AppLocalizations.of(context).mainImage
-                              : AppLocalizations.of(context).image),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _removeRemoteImage(index),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.close),
+                          label: Text(AppLocalizations.of(context).cancel),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                const SizedBox(height: 16),
-
-                // Newly added local images
-                Text(
-                  AppLocalizations.of(context).newImages,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _newImages.isEmpty
-                    ? Text(AppLocalizations.of(context).none)
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _newImages.length,
-                        itemBuilder: (context, index) {
-                          final XFile file = _newImages[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: GestureDetector(
-                                onTap: () => _makeNewImageMain(index),
-                                child: SizedBox(
-                                  width: 60,
-                                  height: 60,
-                                  child: Image.file(File(file.path), fit: BoxFit.cover),
-                                ),
-                              ),
-                              title: Text(index == 0
-                                  ? AppLocalizations.of(context).mainImage
-                                  : AppLocalizations.of(context).image),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _removeNewImage(index),
-                              ),
-                            ),
-                          );
-                        },
                       ),
-                const SizedBox(height: 16),
-
-                // Button to pick more images
-                ElevatedButton.icon(
-                  onPressed: _pickImages,
-                  icon: const Icon(Icons.add),
-                  label: Text(AppLocalizations.of(context).addImages),
-                ),
-                const SizedBox(height: 24),
-
-                // Buttons: Cancel, Save
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context); // discard changes
-                      },
-                      child: Text(AppLocalizations.of(context).cancel),
-                    ),
-                    ElevatedButton(
-                      onPressed: _saveChanges,
-                      child: Text(AppLocalizations.of(context).saveChanges),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saveChanges,
+                          icon: const Icon(Icons.save),
+                          label: Text(AppLocalizations.of(context).saveChanges),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 600.ms, duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                ],
+              ),
             ),
           ),
         ),

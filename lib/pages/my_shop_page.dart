@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../generated/l10n.dart';
 import 'item_page.dart';
+import 'package:eco_closet/utils/translation_metadata.dart';
 
 class MyOrdersPage extends StatefulWidget {
   const MyOrdersPage({Key? key}) : super(key: key);
@@ -32,13 +34,14 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   bool _showIncomingScrollUp = false;
   bool _showOutgoingScrollUp = false;
 
+  bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
     // 2 tabs: Incoming & Outgoing
     _tabController = TabController(length: 2, vsync: this);
-    fetchIncomingOrders();
-    fetchOutgoingOrders();
+    _fetchOrders();
 
     // Listen to vertical scroll controllers so we know when to display the "go up" button
     _incomingScrollController.addListener(() {
@@ -88,98 +91,65 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   }
 
   /// Incoming Orders => current user is the Buyer
-  Future<void> fetchIncomingOrders() async {
+  Future<void> _fetchOrders() async {
+    setState(() => isLoading = true);
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
     try {
-      final snapshot = await FirebaseFirestore.instance
+      // Fetch incoming orders
+      final incomingSnapshot = await FirebaseFirestore.instance
           .collection('Orders')
-          .where('BuyerID', isEqualTo: userId)
+          .where('buyerId', isEqualTo: userId)
           .get();
 
-      final List<Map<String, dynamic>> fetched = [];
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final sellerId = data['SellerID'] as String? ?? '';
-        final itemId = data['ItemID'] as String? ?? '';
-        final price = data['FinalPrice'] ?? 0;
-        final status = data['Status'] ?? 'Pending';
-
-        final sellerName = await fetchUserName(sellerId);
-        final itemImageUrl = doc['Preview'];
-
-        fetched.add({
-          'orderId': doc.id,
-          'itemImage': itemImageUrl,
-          'sellerName': sellerName,
-          'price': price,
-          'status': status,
-          'itemId': itemId,
-        });
-      }
-
-      if (mounted) {
-        setState(() {
-          incomingOrders = fetched;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching incoming orders: $e');
-    }
-  }
-
-  /// Outgoing Orders => current user is the Seller
-  Future<void> fetchOutgoingOrders() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-
-    try {
-      final snapshot = await FirebaseFirestore.instance
+      // Fetch outgoing orders
+      final outgoingSnapshot = await FirebaseFirestore.instance
           .collection('Orders')
-          .where('SellerID', isEqualTo: userId)
+          .where('sellerId', isEqualTo: userId)
           .get();
 
-      final List<Map<String, dynamic>> fetched = [];
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final buyerId = data['BuyerID'] as String? ?? '';
-        final itemId = data['ItemID'] as String? ?? '';
-        final price = data['FinalPrice'] ?? 0;
-        final status = data['Status'] ?? 'Pending';
+      // Process incoming orders
+      incomingOrders = await Future.wait(
+        incomingSnapshot.docs.map((doc) async {
+          final data = doc.data();
+          final sellerName = await fetchUserName(data['sellerId']);
+          return {
+            ...data,
+            'id': doc.id,
+            'sellerName': sellerName,
+          };
+        }),
+      );
 
-        final buyerName = await fetchUserName(buyerId);
-        final itemImageUrl = doc['Preview'];
+      // Process outgoing orders
+      outgoingOrders = await Future.wait(
+        outgoingSnapshot.docs.map((doc) async {
+          final data = doc.data();
+          final buyerName = await fetchUserName(data['buyerId']);
+          return {
+            ...data,
+            'id': doc.id,
+            'buyerName': buyerName,
+          };
+        }),
+      );
 
-        fetched.add({
-          'orderId': doc.id,
-          'itemImage': itemImageUrl,
-          'buyerName': buyerName,
-          'price': price,
-          'status': status,
-          'itemId': itemId,
-        });
-      }
-
-      if (mounted) {
-        setState(() {
-          outgoingOrders = fetched;
-        });
-      }
+      setState(() => isLoading = false);
     } catch (e) {
-      debugPrint('Error fetching outgoing orders: $e');
+      debugPrint('Error fetching orders: $e');
+      setState(() => isLoading = false);
     }
   }
 
   // (Optional) function if you want to update status
-  Future<void> updateOrderStatus(
-      String orderId, String newStatus, bool incoming) async {
+  Future<void> _updateOrderStatus(String orderId, String newStatus) async {
     try {
       await FirebaseFirestore.instance
           .collection('Orders')
           .doc(orderId)
-          .update({'Status': newStatus});
-      incoming ? fetchIncomingOrders() : fetchOutgoingOrders();
+          .update({'status': newStatus});
+      await _fetchOrders();
     } catch (e) {
       debugPrint('Error updating order status: $e');
     }
@@ -187,215 +157,205 @@ class _MyOrdersPageState extends State<MyOrdersPage>
 
   // ------------------ BUILD INCOMING TABLE ------------------
   Widget _buildIncomingOrdersTable() {
-    // "Incoming" = I am the buyer
-    // In real code, you'd fetch from Firestore or similar
     if (incomingOrders.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context).noIncomingOrders));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context).noIncomingOrders,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 600.ms);
     }
 
-    // Wrapping in a Stack so we can position a "Scroll Up" button
-    return Stack(
-      children: [
-        // Scrollable DataTable2
-        DataTable2(
-          // Attach controllers for vertical & horizontal scroll
-          scrollController: _incomingScrollController,
-          horizontalScrollController: _incomingHorizontalController,
-
-          // Sizing
-          columnSpacing: 12,
-          horizontalMargin: 12,
-          minWidth: 600,
-
-          // Define columns
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: SingleChildScrollView(
+        controller: _incomingScrollController,
+        child: DataTable(
           columns: [
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).item), size: ColumnSize.S, fixedWidth: 50),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).seller), size: ColumnSize.S, fixedWidth: 100),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).price),
-                numeric: true,
-                size: ColumnSize.S,
-                fixedWidth: 100),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).status), size: ColumnSize.S, fixedWidth: 100),
+            DataColumn(label: Text(AppLocalizations.of(context).orderId)),
+            DataColumn(label: Text(AppLocalizations.of(context).seller)),
+            DataColumn(label: Text(AppLocalizations.of(context).item)),
+            DataColumn(label: Text(AppLocalizations.of(context).price)),
+            DataColumn(label: Text(AppLocalizations.of(context).status)),
           ],
-
-          // Generate rows from data
           rows: incomingOrders.map((order) {
-            final itemImage = order['itemImage'] as String?;
-            final sellerName = order['sellerName'] as String;
-            final price = order['price'] as num;
-            final status = order['status'] as String;
-
-            return DataRow(cells: [
-              DataCell(
-                GestureDetector(
-                  onTap: () {
-                    // Open ItemPage when tapped
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ItemPage(itemId: order['itemId']),
+            return DataRow(
+              cells: [
+                DataCell(Text(order['id'])),
+                DataCell(Text(order['sellerName'] ?? 'Unknown')),
+                DataCell(Text(order['itemName'] ?? 'Unknown')),
+                DataCell(Text('\₪${order['price'] ?? '0'}')),
+                DataCell(
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(order['status']).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      TranslationUtils.getOrderStatus(order['status'], context),
+                      style: TextStyle(
+                        color: _getStatusColor(order['status']),
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
-                  child: itemImage != null && itemImage.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: itemImage,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
-                        )
-                      : const Icon(Icons.image_not_supported),
+                    ),
+                  ),
                 ),
-              ),
-              DataCell(Text(sellerName)),
-              DataCell(Text('\₪${price.toStringAsFixed(0)}')),
-              DataCell(Text(status)),
-            ]);
+              ],
+            );
           }).toList(),
         ),
-        // Optional: "Scroll up" button in bottom-right
-        if (_showIncomingScrollUp)
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: OutlinedButton(
-              onPressed: () {
-                _incomingScrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.all(Colors.grey[800]),
-                foregroundColor: WidgetStateProperty.all(Colors.white),
-              ),
-              child: const Text('↑ Go Up ↑'),
-            ),
-          ),
-      ],
-    );
+      ),
+    ).animate().fadeIn(duration: 600.ms);
   }
 
   // ------------------ BUILD OUTGOING TABLE ------------------
   Widget _buildOutgoingOrdersTable() {
-    // "Outgoing" = I am the seller
     if (outgoingOrders.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context).noOutgoingOrders));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context).noOutgoingOrders,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 600.ms);
     }
 
-    return Stack(
-      children: [
-        DataTable2(
-          scrollController: _outgoingScrollController,
-          horizontalScrollController: _outgoingHorizontalController,
-          columnSpacing: 12,
-          horizontalMargin: 12,
-          minWidth: 600,
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: SingleChildScrollView(
+        controller: _outgoingScrollController,
+        child: DataTable(
           columns: [
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).item), size: ColumnSize.S, fixedWidth: 50),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).buyer), size: ColumnSize.S, fixedWidth: 80),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).price),
-                numeric: true,
-                size: ColumnSize.S,
-                fixedWidth: 50),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).status), size: ColumnSize.S, fixedWidth: 80),
-            DataColumn2(
-                label: Text(AppLocalizations.of(context).actions), size: ColumnSize.S, fixedWidth: 70),
+            DataColumn(label: Text(AppLocalizations.of(context).orderId)),
+            DataColumn(label: Text(AppLocalizations.of(context).buyer)),
+            DataColumn(label: Text(AppLocalizations.of(context).item)),
+            DataColumn(label: Text(AppLocalizations.of(context).price)),
+            DataColumn(label: Text(AppLocalizations.of(context).status)),
+            DataColumn(label: Text(AppLocalizations.of(context).actions)),
           ],
           rows: outgoingOrders.map((order) {
-            final itemImage = order['itemImage'] as String?;
-            final buyerName = order['buyerName'] as String;
-            final price = order['price'] as num;
-            final status = order['status'] as String;
-
-            return DataRow(cells: [
-              DataCell(
-                GestureDetector(
-                  onTap: () {
-                    // Open ItemPage when tapped
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ItemPage(itemId: order['itemId']),
+            return DataRow(
+              cells: [
+                DataCell(Text(order['id'])),
+                DataCell(Text(order['buyerName'] ?? 'Unknown')),
+                DataCell(Text(order['itemName'] ?? 'Unknown')),
+                DataCell(Text('\₪${order['price'] ?? '0'}')),
+                DataCell(
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(order['status']).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      TranslationUtils.getOrderStatus(order['status'], context),
+                      style: TextStyle(
+                        color: _getStatusColor(order['status']),
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
-                  child: itemImage != null && itemImage.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: itemImage,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
-                        )
-                      : const Icon(Icons.image_not_supported),
+                    ),
+                  ),
                 ),
-              ),
-              DataCell(Text(buyerName)),
-              DataCell(Text('\₪${price.toStringAsFixed(0)}')),
-              DataCell(Text(status)),
-              DataCell(PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'approve') {
-                    updateOrderStatus(order['orderId'], 'Approved', false);
-                  } else if (value == 'decline') {
-                    updateOrderStatus(order['orderId'], 'Declined', false);
-                  } else if (value == 'shipped') {
-                    updateOrderStatus(order['orderId'], 'Shipped', false);
-                  }
-                },
-                itemBuilder: (context) {
-                  final List<PopupMenuEntry<String>> options = [];
-                  if (order['status'] == 'Pending') {
-                    options.add(const PopupMenuItem(
-                        value: 'approve', child: Text('Approve')));
-                    options.add(const PopupMenuItem(
-                        value: 'decline', child: Text('Decline')));
-                  } else if (order['Status'] == 'Approved') {
-                    options.add(const PopupMenuItem(
-                        value: 'shipped', child: Text('Mark as Shipped')));
-                  }
-                  return options;
-                },
-                icon: const Icon(Icons.more_vert),
-              )),
-            ]);
+                DataCell(
+                  PopupMenuButton<String>(
+                    onSelected: (value) => _updateOrderStatus(order['id'], value),
+                    itemBuilder: (context) => [
+                      if (order['status'] == 'Pending')
+                        PopupMenuItem(
+                          value: 'Approved',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context).approve),
+                            ],
+                          ),
+                        ),
+                      if (order['status'] == 'Pending')
+                        PopupMenuItem(
+                          value: 'Declined',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.cancel_outlined,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context).decline),
+                            ],
+                          ),
+                        ),
+                      if (order['status'] == 'Approved')
+                        PopupMenuItem(
+                          value: 'Shipped',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.local_shipping_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context).markAsShipped),
+                            ],
+                          ),
+                        ),
+                    ],
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            );
           }).toList(),
         ),
-        // Optional "Scroll up" button
-        if (_showOutgoingScrollUp)
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: OutlinedButton(
-              onPressed: () {
-                _outgoingScrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.all(Colors.grey[800]),
-                foregroundColor: WidgetStateProperty.all(Colors.white),
-              ),
-              child: const Text('↑ Go Up ↑'),
-            ),
-          ),
-      ],
-    );
+      ),
+    ).animate().fadeIn(duration: 600.ms);
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'declined':
+        return Colors.red;
+      case 'shipped':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
   }
 
   // ------------------ MAIN BUILD ------------------
@@ -403,25 +363,84 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).myOrders),
+        title: Text(
+          AppLocalizations.of(context).myOrders,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        centerTitle: true,
+        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: AppLocalizations.of(context).incomingOrders),
-            Tab(text: AppLocalizations.of(context).outgoingOrders),
+            Tab(
+              icon: const Icon(Icons.shopping_bag_outlined),
+              text: AppLocalizations.of(context).incomingOrders,
+            ),
+            Tab(
+              icon: const Icon(Icons.store_outlined),
+              text: AppLocalizations.of(context).outgoingOrders,
+            ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // 1) INCOMING ORDERS
-          _buildIncomingOrdersTable(),
-
-          // 2) OUTGOING ORDERS
-          _buildOutgoingOrdersTable(),
-        ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).loading,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 600.ms)
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildIncomingOrdersTable(),
+                  _buildOutgoingOrdersTable(),
+                ],
+              ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          final controller = _tabController.index == 0
+              ? _incomingScrollController
+              : _outgoingScrollController;
+          controller.animateTo(
+            0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        },
+        child: const Icon(Icons.arrow_upward),
+      ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+            begin: 0.2,
+            end: 0,
+            duration: 600.ms,
+            curve: Curves.easeOutQuad,
+          ),
     );
   }
 }

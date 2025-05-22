@@ -25,7 +25,8 @@ class TranslationUtils {
       'Swimwear': AppLocalizations.of(context).categorySwimwear,
     };
 
-    return categoryMap[category] ?? category; // Fallback to English if not found
+    return categoryMap[category] ??
+        category; // Fallback to English if not found
   }
 
   /// Translates a color name based on the app's locale.
@@ -68,6 +69,58 @@ class TranslationUtils {
       'Damaged (Repair Needed)': AppLocalizations.of(context).conditionDamaged,
     };
 
-    return conditionMap[condition] ?? condition; // Fallback to English if not found
+    return conditionMap[condition] ??
+        condition; // Fallback to English if not found
+  }
+
+  static String getItemType(String type, BuildContext context) {
+    switch (type.toLowerCase()) {
+      case 'coats':
+        return AppLocalizations.of(context).coats;
+      case 'sweaters':
+        return AppLocalizations.of(context).sweaters;
+      case 't-shirts':
+        return AppLocalizations.of(context).tShirts;
+      case 'pants':
+        return AppLocalizations.of(context).pants;
+      case 'shoes':
+        return AppLocalizations.of(context).shoes;
+      default:
+        return type;
+    }
+  }
+
+  static String getItemCondition(String condition, BuildContext context) {
+    switch (condition.toLowerCase()) {
+      case 'new':
+        return AppLocalizations.of(context).newCondition;
+      case 'like new':
+        return AppLocalizations.of(context).likeNewCondition;
+      case 'good':
+        return AppLocalizations.of(context).goodCondition;
+      case 'fair':
+        return AppLocalizations.of(context).fairCondition;
+      case 'poor':
+        return AppLocalizations.of(context).goodCondition;
+      default:
+        return condition;
+    }
+  }
+
+  static String getOrderStatus(String status, BuildContext context) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return AppLocalizations.of(context).pending;
+      case 'approved':
+        return AppLocalizations.of(context).approved;
+      case 'declined':
+        return AppLocalizations.of(context).declined;
+      case 'shipped':
+        return AppLocalizations.of(context).shipped;
+      case 'delivered':
+        return AppLocalizations.of(context).delivered;
+      default:
+        return status;
+    }
   }
 }

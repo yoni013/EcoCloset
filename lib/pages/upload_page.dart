@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'dart:convert';
 import 'package:eco_closet/generated/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class UploadItemPage extends StatefulWidget {
   @override
@@ -172,128 +173,261 @@ class _UploadItemPageState extends State<UploadItemPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).uploadItemStep1),
+        title: Text(
+          AppLocalizations.of(context).uploadItemStep1,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
         centerTitle: true,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Tips
-            Text(
-              AppLocalizations.of(context).photoTips,
-              style: TextStyle(
-                  fontStyle: FontStyle.italic, color: Colors.grey[700]),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(24),
+              ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              AppLocalizations.of(context).mainImageInstructions,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            child: Column(
+              children: [
+                Text(
+                  AppLocalizations.of(context).photoTips,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ).animate().fadeIn(duration: 600.ms),
+                const SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context).mainImageInstructions,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ).animate().fadeIn(delay: 200.ms, duration: 600.ms),
+              ],
             ),
-            const SizedBox(height: 12),
-
-            // Images in a Grid
-            Expanded(
-              child: GridView.builder(
-                itemCount: _images.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // 2 columns
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemBuilder: (context, index) {
-                  final image = _images[index];
-                  return Stack(
-                    alignment: Alignment.topRight,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: _images.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  size: 64,
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  AppLocalizations.of(context).pickImages,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(duration: 600.ms)
+                        : GridView.builder(
+                            itemCount: _images.length,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.75,
+                            ),
+                            itemBuilder: (context, index) {
+                              final image = _images[index];
+                              return Card(
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.file(
+                                      File(image.path),
+                                      fit: BoxFit.cover,
+                                    ),
+                                    if (index == 0)
+                                      Positioned(
+                                        top: 8,
+                                        left: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.primaryContainer,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            AppLocalizations.of(context).mainImage,
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close),
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: Theme.of(context).colorScheme.surface,
+                                          foregroundColor: Theme.of(context).colorScheme.error,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _images.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () => _makeImageMain(index),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: index == 0
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ).animate(delay: (50 * index).ms).fadeIn(
+                                    duration: 600.ms,
+                                    curve: Curves.easeOutQuad,
+                                  ).slideY(
+                                    begin: 0.2,
+                                    end: 0,
+                                    duration: 600.ms,
+                                    curve: Curves.easeOutQuad,
+                                  );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => _makeImageMain(index),
-                        child: AspectRatio(
-                          aspectRatio: 3 / 4, // Force a portrait box
-                          child: Container(
-                            color: Colors.grey[300],
-                            child: Image.file(
-                              File(image.path),
-                              fit: BoxFit.contain,
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _pickImageSource,
+                          icon: const Icon(Icons.add_photo_alternate),
+                          label: Text(AppLocalizations.of(context).pickImages),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () {
-                          setState(() {
-                            _images.removeAt(index);
-                          });
-                        },
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _pickImageSource,
-              child: Text(AppLocalizations.of(context).pickImages),
-            ),
-            const SizedBox(height: 16),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _images.isNotEmpty
+                              ? () async {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      elevation: 0,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const CircularProgressIndicator(),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            AppLocalizations.of(context).analyzingImages,
+                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
 
-            ElevatedButton(
-              onPressed: _images.isNotEmpty
-                  ? () async {
-                      // 1) Show a loading screen while calling Gemini
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) =>
-                            const Center(child: CircularProgressIndicator()),
-                      );
+                                  try {
+                                    final metadata = await _callGemini();
+                                    Navigator.of(context, rootNavigator: true).pop();
 
-                      try {
-                        final metadata = await _callGemini();
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => _StepTwoForm(
+                                          images: _images,
+                                          brands: _brands,
+                                          colors: _colors,
+                                          conditions: _conditions,
+                                          sizes: _sizes,
+                                          types: _types,
+                                          prefilledData: metadata,
+                                        ),
+                                      ),
+                                    );
 
-                        // Hide the loading dialog
-                        Navigator.of(context, rootNavigator: true).pop();
-
-                        // 2) Navigate to Step2 and wait for the result
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => _StepTwoForm(
-                              images: _images,
-                              brands: _brands,
-                              colors: _colors,
-                              conditions: _conditions,
-                              sizes: _sizes,
-                              types: _types,
-                              prefilledData: metadata,
+                                    if (result == true) {
+                                      setState(() {});
+                                    }
+                                  } catch (e) {
+                                    Navigator.of(context, rootNavigator: true).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error processing images: $e'),
+                                        backgroundColor: Theme.of(context).colorScheme.error,
+                                      ),
+                                    );
+                                  }
+                                }
+                              : null,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: Text(AppLocalizations.of(context).next),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                        );
-
-                        // 3) If Step2 returned true => images cleared, rebuild Step1
-                        if (result == true) {
-                          setState(() {
-                            // `_images` is already empty, but we need to rebuild
-                          });
-                        }
-                      } catch (e) {
-                        // Hide the loading dialog if an error occurs
-                        Navigator.of(context, rootNavigator: true).pop();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  'Error processing images with Gemini: $e')),
-                        );
-                      }
-                    }
-                  : null,
-              child: Text(AppLocalizations.of(context).next),
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

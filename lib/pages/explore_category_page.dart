@@ -9,6 +9,7 @@ import 'package:eco_closet/utils/firestore_cache_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:eco_closet/generated/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class CategoryItemsPage extends StatefulWidget {
   final String category;
@@ -36,7 +37,6 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
 
   late FirestoreCacheProvider cacheProvider;
 
-
   @override
   void initState() {
     super.initState();
@@ -54,7 +54,9 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
 
   Future<void> fetchFilteredItems(FirestoreCacheProvider cacheProvider) async {
     setState(() => _isLoading = true);
-    var query = FirebaseFirestore.instance.collection('Items').where('status', isEqualTo: 'Available');
+    var query = FirebaseFirestore.instance
+        .collection('Items')
+        .where('status', isEqualTo: 'Available');
 
     if (filters['type'] != null && (filters['type'] as List).isNotEmpty) {
       query = query.where('Type', whereIn: List<String>.from(filters['type']));
@@ -63,13 +65,17 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
       query = query.where('Size', whereIn: List<String>.from(filters['size']));
     }
     if (filters['brand'] != null && (filters['brand'] as List).isNotEmpty) {
-      query = query.where('Brand', whereIn: List<String>.from(filters['brand']));
+      query =
+          query.where('Brand', whereIn: List<String>.from(filters['brand']));
     }
     if (filters['color'] != null && (filters['color'] as List).isNotEmpty) {
-      query = query.where('Color', whereIn: List<String>.from(filters['color']));
+      query =
+          query.where('Color', whereIn: List<String>.from(filters['color']));
     }
-    if (filters['condition'] != null && (filters['condition'] as List).isNotEmpty) {
-      query = query.where('Condition', whereIn: List<String>.from(filters['condition']));
+    if (filters['condition'] != null &&
+        (filters['condition'] as List).isNotEmpty) {
+      query = query.where('Condition',
+          whereIn: List<String>.from(filters['condition']));
     }
     // if (filters['priceRange'] != null) {
     //   query = query.where(
@@ -105,9 +111,18 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
     setState(() {
       searchFilteredItems = items
           .where((item) =>
-              (item['Brand'] ?? '').toString().toLowerCase().contains(_searchText.toLowerCase()) ||
-              (item['Type'] ?? '').toString().toLowerCase().contains(_searchText.toLowerCase()) ||
-              (item['Color'] ?? '').toString().toLowerCase().contains(_searchText.toLowerCase()))
+              (item['Brand'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchText.toLowerCase()) ||
+              (item['Type'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchText.toLowerCase()) ||
+              (item['Color'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchText.toLowerCase()))
           .toList();
     });
   }
@@ -170,10 +185,8 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
   }
 
   Future<Map<String, dynamic>> _fetchUserSizes(String userId) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(userId)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
 
     if (!doc.exists) return {};
     return doc.data()?['Sizes'] ?? {};
@@ -181,11 +194,16 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
-        title: Text( '${AppLocalizations.of(context).explore} ${TranslationUtils.getCategory(widget.category, context)}',),
+        title: Text(
+          '${AppLocalizations.of(context).explore} ${TranslationUtils.getCategory(widget.category, context)}',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
         centerTitle: true,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_alt),
@@ -201,36 +219,83 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'Price (Low to High)',
-                child: Text(AppLocalizations.of(context).sortByPriceLowToHigh,
-                    style: TextStyle(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_upward,
+                      color: sortBy == 'Price (Low to High)'
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context).sortByPriceLowToHigh,
+                      style: TextStyle(
                         fontWeight: sortBy == 'Price (Low to High)'
                             ? FontWeight.bold
-                            : FontWeight.normal)),
+                            : FontWeight.normal,
+                        color: sortBy == 'Price (Low to High)'
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'Price (High to Low)',
-                child: Text(AppLocalizations.of(context).sortByPriceHighToLow,
-                    style: TextStyle(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_downward,
+                      color: sortBy == 'Price (High to Low)'
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context).sortByPriceHighToLow,
+                      style: TextStyle(
                         fontWeight: sortBy == 'Price (High to Low)'
                             ? FontWeight.bold
-                            : FontWeight.normal)),
+                            : FontWeight.normal,
+                        color: sortBy == 'Price (High to Low)'
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'Recommended',
-                child: Text(
-                  AppLocalizations.of(context).sortByRecommended,
-                  style: TextStyle(
-                    fontWeight: sortBy == 'Recommended'
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: sortBy == 'Recommended'
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context).sortByRecommended,
+                      style: TextStyle(
+                        fontWeight: sortBy == 'Recommended'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: sortBy == 'Recommended'
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-
             ],
             icon: const Icon(Icons.sort),
           ),
-          TextButton(
+          TextButton.icon(
             onPressed: () async {
               if (!isForMeActive) {
                 final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -250,63 +315,135 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
                 });
               }
             },
-            child: Text(
+            icon: Icon(
+              Icons.person,
+              color: isForMeActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
+            ),
+            label: Text(
               AppLocalizations.of(context).forMe,
               style: TextStyle(
                 color: isForMeActive
-                    ? Colors.brown
-                    : Colors.black,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: isForMeActive ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),
         ],
       ),
-            body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context).search,
-                suffixIcon: const Icon(Icons.search),
-              ),
-              onChanged: (val) {
-                setState(() {
-                  _searchText = val;
-                });
-                _filterItemsBySearch();
-              },
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              Theme.of(context).colorScheme.surface,
+            ],
           ),
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : searchFilteredItems.isEmpty
-                  ? Center(child: Text(AppLocalizations.of(context).noItemsMatch))
-                  : Expanded(
-                      child: _buildGridViewOfItems(),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).search,
+                  hintText: AppLocalizations.of(context).searchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surface,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _searchText = val;
+                  });
+                  _filterItemsBySearch();
+                },
+              ),
+            ).animate().fadeIn(duration: 600.ms).slideY(
+                  begin: 0.2,
+                  end: 0,
+                  duration: 600.ms,
+                  curve: Curves.easeOutQuad,
+                ),
+            _isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          AppLocalizations.of(context).loading,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
+                      ],
                     ),
-        ],
+                  ).animate().fadeIn(duration: 600.ms)
+                : searchFilteredItems.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              AppLocalizations.of(context).noItemsMatch,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ).animate().fadeIn(duration: 600.ms)
+                    : Expanded(
+                        child: _buildGridViewOfItems(),
+                      ),
+          ],
+        ),
       ),
     );
   }
 
-
   Widget _buildGridViewOfItems() {
     return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 3 / 4,
-          ),
-          itemCount: searchFilteredItems.length,
-          itemBuilder: (context, index) {
-            var item = searchFilteredItems[index];
+      padding: const EdgeInsets.all(16.0),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 3 / 4,
+        ),
+        itemCount: searchFilteredItems.length,
+        itemBuilder: (context, index) {
+          var item = searchFilteredItems[index];
 
-            return GestureDetector(
+          return GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
@@ -318,54 +455,124 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
               child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(16.0),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: item['imageUrl'] != null && item['imageUrl'].isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: item['imageUrl'],
-                              placeholder: (context, url) => const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => const Icon(Icons.broken_image),
-                              fit: BoxFit.cover,
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8.0),
-                                color: Colors.grey[200],
-                              ),
-                              child: const Icon(Icons.broken_image),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(16.0),
                             ),
+                            child: item['imageUrl'] != null &&
+                                    item['imageUrl'].isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: item['imageUrl'],
+                                    placeholder: (context, url) => Center(
+                                      child: CircularProgressIndicator(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceVariant,
+                                      ),
+                                      child: const Icon(Icons.broken_image),
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceVariant,
+                                    ),
+                                    child: const Icon(Icons.broken_image),
+                                  ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '\₪${item['Price'] ?? 'N/A'}',
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(12.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             item['Brand'] ?? 'Unknown',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '\₪${item['Price'] ?? 'N/A'}',
-                            style: const TextStyle(
-                              color: Colors.green,
-                            ),
+                            item['Type'] ?? '',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            );
+              )
+                  .animate(delay: (50 * index).ms)
+                  .fadeIn(
+                    duration: 600.ms,
+                    curve: Curves.easeOutQuad,
+                  )
+                  .slideY(
+                    begin: 0.2,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutQuad,
+                  ));
         },
       ),
     );
@@ -409,79 +616,162 @@ class _FilterPopupState extends State<FilterPopup> {
       'brand': List<String>.from(widget.currentFilters['brand'] ?? []),
       'color': List<String>.from(widget.currentFilters['color'] ?? []),
       'condition': List<String>.from(widget.currentFilters['condition'] ?? []),
-      'priceRange': widget.currentFilters['priceRange'] ?? const RangeValues(0, 300),
+      'priceRange':
+          widget.currentFilters['priceRange'] ?? const RangeValues(0, 300),
     };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context).filter)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMultiselectField(
-              label: AppLocalizations.of(context).type,
-              options: widget.types,
-              initialValues: localFilters['type'],
-              onConfirm: (values) => localFilters['type'] = values,
-              type: 'category',
-            ),
-            _buildMultiselectField(
-              label: AppLocalizations.of(context).size,
-              options: widget.sizes,
-              initialValues: localFilters['size'],
-              onConfirm: (values) => localFilters['size'] = values,
-              type: '',
-            ),
-            _buildMultiselectField(
-              label: AppLocalizations.of(context).brand,
-              options: widget.brands,
-              initialValues: localFilters['brand'],
-              onConfirm: (values) => localFilters['brand'] = values,
-              type: '',
-            ),
-            _buildMultiselectField(
-              label: AppLocalizations.of(context).color,
-              options: widget.colors,
-              initialValues: localFilters['color'],
-              onConfirm: (values) => localFilters['color'] = values,
-              type: 'color',
-            ),
-            _buildMultiselectField(
-              label: AppLocalizations.of(context).condition,
-              options: widget.conditions,
-              initialValues: localFilters['condition'],
-              onConfirm: (values) => localFilters['condition'] = values,
-              type: 'condition',
-            ),
-            const SizedBox(height: 16),
-            RangeSlider(
-              values: localFilters['priceRange'],
-              min: 0,
-              max: 1000,
-              divisions: 100,
-              labels: RangeLabels(
-                '₪${localFilters['priceRange'].start.round()}',
-                '₪${localFilters['priceRange'].end.round()}',
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context).filter,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-              onChanged: (range) {
-                setState(() {
-                  localFilters['priceRange'] = range;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                widget.onApply(localFilters);
-                Navigator.pop(context);
-              },
-              child: Text(AppLocalizations.of(context).apply),
-            ),
-          ],
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).priceRange,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 16),
+                      RangeSlider(
+                        values: localFilters['priceRange'],
+                        min: 0,
+                        max: 1000,
+                        divisions: 100,
+                        labels: RangeLabels(
+                          '₪${localFilters['priceRange'].start.round()}',
+                          '₪${localFilters['priceRange'].end.round()}',
+                        ),
+                        onChanged: (range) {
+                          setState(() {
+                            localFilters['priceRange'] = range;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate().fadeIn(duration: 600.ms).slideY(
+                    begin: 0.2,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutQuad,
+                  ),
+              const SizedBox(height: 16),
+              _buildMultiselectField(
+                label: AppLocalizations.of(context).type,
+                options: widget.types,
+                initialValues: localFilters['type'],
+                onConfirm: (values) => localFilters['type'] = values,
+                type: 'category',
+              ),
+              _buildMultiselectField(
+                label: AppLocalizations.of(context).size,
+                options: widget.sizes,
+                initialValues: localFilters['size'],
+                onConfirm: (values) => localFilters['size'] = values,
+                type: '',
+              ),
+              _buildMultiselectField(
+                label: AppLocalizations.of(context).brand,
+                options: widget.brands,
+                initialValues: localFilters['brand'],
+                onConfirm: (values) => localFilters['brand'] = values,
+                type: '',
+              ),
+              _buildMultiselectField(
+                label: AppLocalizations.of(context).color,
+                options: widget.colors,
+                initialValues: localFilters['color'],
+                onConfirm: (values) => localFilters['color'] = values,
+                type: 'color',
+              ),
+              _buildMultiselectField(
+                label: AppLocalizations.of(context).condition,
+                options: widget.conditions,
+                initialValues: localFilters['condition'],
+                onConfirm: (values) => localFilters['condition'] = values,
+                type: 'condition',
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.close),
+                      label: Text(AppLocalizations.of(context).cancel),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        widget.onApply(localFilters);
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.check),
+                      label: Text(AppLocalizations.of(context).apply),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                    begin: 0.2,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutQuad,
+                  ),
+            ],
+          ),
         ),
       ),
     );
@@ -496,37 +786,80 @@ class _FilterPopupState extends State<FilterPopup> {
   }) {
     final items = options.map((option) {
       String translatedOption = option;
-
-      // Apply the correct translation function
       if (type == 'category') {
         translatedOption = TranslationUtils.getCategory(option, context);
       } else if (type == 'color') {
         translatedOption = TranslationUtils.getColor(option, context);
       } else if (type == 'condition') {
         translatedOption = TranslationUtils.getCondition(option, context);
-      } else {
-        translatedOption = option;
       }
-
       return MultiSelectItem<String>(option, translatedOption);
     }).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: MultiSelectDialogField<String>(
-        title: Text(label),
-        items: items,
-        searchable: true,
-        initialValue: initialValues,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(4.0),
-        ),
-        buttonText: Text(label),
-        onConfirm: (selectedValues) {
-          onConfirm(selectedValues);
-        },
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-    );
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            MultiSelectDialogField<String>(
+              title: Text(label),
+              items: items,
+              searchable: true,
+              initialValue: initialValues,
+              buttonText: Text(
+                AppLocalizations.of(context).select(label),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              buttonIcon: const Icon(Icons.arrow_drop_down),
+              selectedItemsTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              searchTextStyle: Theme.of(context).textTheme.bodyLarge,
+              itemsTextStyle: Theme.of(context).textTheme.bodyLarge,
+              chipDisplay: MultiSelectChipDisplay(
+                chipColor: Theme.of(context).colorScheme.primaryContainer,
+                textStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onConfirm: onConfirm,
+            ),
+          ],
+        ),
+      ),
+    )
+        .animate(delay: (50 * options.indexOf(options.first)).ms)
+        .fadeIn(
+          duration: 600.ms,
+          curve: Curves.easeOutQuad,
+        )
+        .slideY(
+          begin: 0.2,
+          end: 0,
+          duration: 600.ms,
+          curve: Curves.easeOutQuad,
+        );
   }
 }

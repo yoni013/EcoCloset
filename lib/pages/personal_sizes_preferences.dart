@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 
@@ -93,7 +94,6 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
 
   /// Builds a MultiSelectDialogField for a given category
   Widget _buildMultiselectField(String category) {
-    // Convert each available size into a MultiSelectItem for the dialog
     final items = availableSizes[category]!
         .map((size) => MultiSelectItem<String>(size, size))
         .toList();
@@ -106,61 +106,260 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
       'Shoes': AppLocalizations.of(context).categoryShoes,
     }[category] ?? category;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: MultiSelectDialogField<String>(
-        title: Text(categoryLocalized),
-        // The list of items to display in the multi-select dialog
-        items: items,
-        // Show a search bar in the dialog (optional)
-        searchable: true,
-        // Pre-select currently chosen sizes
-        initialValue: userSizes[category]?.toList() ?? [],
-        // How the field looks on the main form
-        buttonText: Text(AppLocalizations.of(context).selectSizes(categoryLocalized)),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(4.0),
-        ),
-        onConfirm: (List<String> selectedValues) {
-          setState(() {
-            userSizes[category] = selectedValues.toSet();
-          });
-        },
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-    );
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _getCategoryIcon(category),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  categoryLocalized,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            MultiSelectDialogField<String>(
+              title: Text(categoryLocalized),
+              items: items,
+              searchable: true,
+              initialValue: userSizes[category]?.toList() ?? [],
+              buttonText: Text(
+                AppLocalizations.of(context).selectSizes(categoryLocalized),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              buttonIcon: const Icon(Icons.arrow_drop_down),
+              selectedItemsTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              searchTextStyle: Theme.of(context).textTheme.bodyLarge,
+              itemsTextStyle: Theme.of(context).textTheme.bodyLarge,
+              chipDisplay: MultiSelectChipDisplay(
+                chipColor: Theme.of(context).colorScheme.primaryContainer,
+                textStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onConfirm: (List<String> selectedValues) {
+                setState(() {
+                  userSizes[category] = selectedValues.toSet();
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    ).animate(delay: (50 * availableSizes.keys.toList().indexOf(category)).ms).fadeIn(
+          duration: 600.ms,
+          curve: Curves.easeOutQuad,
+        ).slideY(
+          begin: 0.2,
+          end: 0,
+          duration: 600.ms,
+          curve: Curves.easeOutQuad,
+        );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Coats':
+        return Icons.checkroom;
+      case 'Sweaters':
+        return Icons.dry_cleaning;
+      case 'T-Shirts':
+        return Icons.checkroom_outlined;
+      case 'Pants':
+        return Icons.accessibility_new;
+      case 'Shoes':
+        return Icons.shopping_bag;
+      default:
+        return Icons.category;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).sizePreferences),
+        title: Text(
+          AppLocalizations.of(context).sizePreferences,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        centerTitle: true,
+        elevation: 0,
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    children: availableSizes.keys.map((category) {
-                      return _buildMultiselectField(category);
-                    }).toList(),
-                  ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).loading,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await updateUserSizes();
-                      Navigator.pop(
-                          context); // <-- Returns to the previous screen
-                    },
-                    child: Text(AppLocalizations.of(context).savePreferences),
+              ).animate().fadeIn(duration: 600.ms)
+            : Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      AppLocalizations.of(context).sizePreferencesInfo,
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  AppLocalizations.of(context).sizePreferencesDescription,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ).animate().fadeIn(duration: 600.ms).slideY(
+                              begin: 0.2,
+                              end: 0,
+                              duration: 600.ms,
+                              curve: Curves.easeOutQuad,
+                            ),
+                        const SizedBox(height: 16),
+                        ...availableSizes.keys.map((category) {
+                          return Column(
+                            children: [
+                              _buildMultiselectField(category),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
                   ),
-                )
-              ],
-            ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.close),
+                            label: Text(AppLocalizations.of(context).cancel),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              await updateUserSizes();
+                              if (mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                            icon: const Icon(Icons.save),
+                            label: Text(AppLocalizations.of(context).savePreferences),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                ],
+              ),
+      ),
     );
   }
 }

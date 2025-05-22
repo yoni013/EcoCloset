@@ -1552,6 +1552,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Anonymous Reviewer'**
   String get anonymous_reviewer;
+
+  /// No description provided for @sizePreferencesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the sizes you usually wear to receive better recommendations for items that fit you.'**
+  String get sizePreferencesInfo;
+
+  /// No description provided for @sizePreferencesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your size preferences to get better recommendations.'**
+  String get sizePreferencesDescription;
+
+  /// No description provided for @unauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized'**
+  String get unauthorized;
+
+  /// No description provided for @unauthorizedAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized Access'**
+  String get unauthorizedAccess;
+
+  /// No description provided for @unauthorizedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your access is unauthorized. Please log in again to continue.'**
+  String get unauthorizedMessage;
+
+  /// No description provided for @itemProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Properties'**
+  String get itemProperties;
+
+  /// No description provided for @images.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get images;
+
+  /// No description provided for @coats.
+  ///
+  /// In en, this message translates to:
+  /// **'Coats'**
+  String get coats;
+
+  /// No description provided for @newCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get newCondition;
+
+  /// No description provided for @likeNewCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Like New'**
+  String get likeNewCondition;
+
+  /// No description provided for @goodCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Condition'**
+  String get goodCondition;
+
+  /// No description provided for @fairCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair Condition'**
+  String get fairCondition;
+
+  /// No description provided for @delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get delivered;
+
+  /// No description provided for @analyzingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing Images...'**
+  String get analyzingImages;
+
+  /// No description provided for @orderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get orderId;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get searchHint;
+
+  /// No description provided for @priceRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Range'**
+  String get priceRange;
+
+  /// No description provided for @select.
+  ///
+  /// In en, this message translates to:
+  /// **'select {label}'**
+  String select(String label);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

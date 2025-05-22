@@ -283,5 +283,36 @@
   "addImages": "Add Images",
   "cancel": "Cancel",
   "saveChanges": "Save Changes",
-  "anonymous_reviewer": "Anonymous Reviewer"
+  "anonymous_reviewer": "Anonymous Reviewer",
+  "sizePreferencesInfo": "Size Preferences",
+  "sizePreferencesDescription": "Select your preferred sizes for each category to help us find the perfect fit for you.",
+  "unauthorized": "Unauthorized",
+  "unauthorizedAccess": "Unauthorized Access",
+  "unauthorizedMessage": "You do not have permission to edit this item.",
+  "itemProperties": "Item Properties",
+  "images": "Images",
+  "coats": "Coats",
+  "newCondition": "New",
+  "likeNewCondition": "Like New",
+  "goodCondition": "Good Condition",
+  "fairCondition": "Fair Condition",
+  "delivered": "Delivered",
+  "analyzingImages": "Analyzing Images...",
+  "sizePreferencesDescription": "Select your size preferences to get better recommendations.",
+  "sizePreferencesInfo": "Choose the sizes you usually wear to receive better recommendations for items that fit you.",
+  "orderId": "Order ID",
+  "searchHint": "Search...",
+  "priceRange": "Price Range",
+  "select": "select {label}",
+  "@select": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "itemProperties": "Item Properties",
+  "unauthorized": "Unauthorized",
+  "unauthorizedAccess": "Unauthorized Access",
+  "unauthorizedMessage": "Your access is unauthorized. Please log in again to continue."
 }
