@@ -10,6 +10,7 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
+import 'package:eco_closet/utils/image_handler.dart';
 
 
 class ProfileSettingsPage extends StatefulWidget {
@@ -128,7 +129,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       if (_profileImage != null) {
         final ref = FirebaseStorage.instance
             .ref()
-            .child('profilePictures')
+            .child('profile_pics')
             .child('${user.uid}.jpg');
         await ref.putFile(_profileImage!);
         photoURL = await ref.getDownloadURL();
@@ -139,7 +140,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         if (_nameController.text != _original_name) 'name': _nameController.text.trim(),
         if (_addressController.text != _original_address) 'address': _addressController.text.trim(),
         if (_selectedBrands != _original_brands) 'likedBrands': _selectedBrands,
-        if (photoURL != null && should_update_photo!) 'profilePhotoURL': photoURL,
+        if (photoURL != null && should_update_photo!) 'profilePicUrl': photoURL,
         if (_latitude != null) 'latitude': _latitude,
         if (_longitude != null) 'longitude': _longitude,
       });
@@ -246,7 +247,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                                   )
                                 : _profilePhotoUrl != null
                                     // Otherwise, if a URL exists, display the network image.
-                                    ? CachedNetworkImage(
+                                    ? ImageHandler.buildCachedNetworkImage(
                                         imageUrl: _profilePhotoUrl!,
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) =>

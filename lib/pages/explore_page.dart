@@ -100,7 +100,7 @@ class ExplorePage extends StatelessWidget {
                               child: Text(
                                 (cat['name'] != null && cat['name']!.isNotEmpty)
                                     ? cat['name']!
-                                    : 'Shop All',
+                                    : AppLocalizations.of(context).shopAll,
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                                       fontWeight: FontWeight.bold,

@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'l10n.dart';
 
 // ignore_for_file: type=lint
@@ -148,7 +150,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorReauthentication => 'Re-authentication error.';
 
   @override
-  String get errorGeneric => 'An error occurred.';
+  String get errorGeneric => 'An error occurred';
 
   @override
   String get errorSomethingWentWrong => 'Something went wrong.';
@@ -318,10 +320,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get takePhoto => 'Take Photo';
 
   @override
-  String get selectFromGallery => 'Select From Gallery';
+  String get selectFromGallery => 'Select from Gallery';
 
   @override
-  String get maxImagesAllowed => 'Maximum 6 images allowed.';
+  String get maxImagesAllowed => 'Maximum 6 images allowed';
 
   @override
   String get pickImages => 'Pick Images';
@@ -506,9 +508,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get itemUploadSuccess => 'Item uploaded successfully!';
 
   @override
-  String errorUploadingItem(Object error) {
-    return 'Error uploading item: $error';
-  }
+  String get errorUploadingItem => 'Error uploading item';
 
   @override
   String get itemDetails => 'Item Details';
@@ -814,4 +814,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suggestionsApplied => 'AI suggestions applied successfully';
+
+  @override
+  String get changesSavedSuccessfully => 'Changes saved successfully!';
+
+  @override
+  String get errorSavingChanges => 'Error saving changes';
+
+  @override
+  String get failedToFetchDropdownData => 'Failed to fetch dropdown data';
+
+  @override
+  String get errorProcessingImages => 'Error processing images';
+
+  @override
+  String get photo => 'photo';
+
+  @override
+  String get photos => 'photos';
+
+  @override
+  String get itemNotFound => 'Item not found';
+
+  @override
+  String get itemUpdatedSuccessfully => 'Item updated successfully!';
+
+  @override
+  String get savingChanges => 'Saving Changes...';
+
+  @override
+  String get basicInformation => 'Basic Information';
+
+  @override
+  String get priceAndAvailability => 'Price & Availability';
+
+  @override
+  String get itemIsAvailable => 'Item is currently available for purchase';
+
+  @override
+  String get itemIsSoldOut => 'Item is marked as sold out';
 }

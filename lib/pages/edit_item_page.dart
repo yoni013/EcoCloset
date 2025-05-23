@@ -6,18 +6,16 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
-// Example: If you need localization, import your localizations
 import '../generated/l10n.dart';
+import '../utils/fetch_item_metadata.dart';
+import '../utils/translation_metadata.dart';
 
 class EditItemPage extends StatefulWidget {
   final String itemId;
-  final Map<String, dynamic> initialItemData;
 
   const EditItemPage({
     Key? key,
     required this.itemId,
-    required this.initialItemData,
   }) : super(key: key);
 
   @override
@@ -27,48 +25,49 @@ class EditItemPage extends StatefulWidget {
 class _EditItemPageState extends State<EditItemPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // We will store the updated fields here
+  // Controllers for form fields
   late TextEditingController _brandController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
-  String? _condition;
-  bool _isAvailable = true; // For availability status
 
-  // If you have categories or types:
-  String? _category;
-  List<String> _possibleCategories = ['Tops', 'Pants', 'Shoes']; // Example
+  // Form data
+  String? _selectedColor;
+  String? _selectedCondition;
+  String? _selectedSize;
+  String? _selectedType;
+  bool _isAvailable = true;
 
-  // We also need to manage images
-  List<String> _remoteImages = []; // Existing URLs
-  List<XFile> _newImages = []; // Newly selected local images
+  // Dropdown data
+  List<String> _brands = [];
+  List<String> _colors = [];
+  List<String> _conditions = [];
+  List<String> _sizes = [];
+  List<String> _types = [];
+
+  // Image management
+  List<String> _remoteImages = [];
+  List<XFile> _newImages = [];
   final ImagePicker _picker = ImagePicker();
 
-  // A helper function to get the user id
+  // Loading and validation states
+  bool _isLoading = true;
+  bool _isDataLoaded = false;
+  Map<String, dynamic>? _itemData;
+
+  // Helper to get current user ID
   String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+    _loadInitialData();
+  }
 
-    // Pre-fill from widget.initialItemData
-    _brandController =
-        TextEditingController(text: widget.initialItemData['Brand'] ?? '');
-    _descriptionController = TextEditingController(
-        text: widget.initialItemData['Description'] ?? '');
-    _priceController =
-        TextEditingController(text: '${widget.initialItemData['Price'] ?? ''}');
-    _condition = widget.initialItemData['Condition'] ?? 'Used';
-    _isAvailable =
-        (widget.initialItemData['status'] ?? 'Available') == 'Available';
-
-    // If there's a category or a type
-    _category = widget.initialItemData['Category'] ?? null;
-
-    // The existing remote images from Firestore
-    final images = widget.initialItemData['images'];
-    if (images != null && images is List) {
-      _remoteImages = images.cast<String>();
-    }
+  void _initializeControllers() {
+    _brandController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _priceController = TextEditingController();
   }
 
   @override
@@ -79,17 +78,144 @@ class _EditItemPageState extends State<EditItemPage> {
     super.dispose();
   }
 
-  /// Pick an image from camera or gallery
-  Future<void> _pickImages() async {
-    final List<XFile>? pickedFiles = await _picker.pickMultiImage(
-      imageQuality: 50,
-    );
-    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+  /// Load dropdown data and item data concurrently
+  Future<void> _loadInitialData() async {
+    try {
+      // Load metadata if not already loaded
+      if (Utils.brands.isEmpty) {
+        await Utils.loadMetadata();
+      }
+
+      // Load dropdown data and item data concurrently
+      await Future.wait([
+        _fetchDropdownData(),
+        _fetchItemData(),
+      ]);
+
       setState(() {
-        // Append new images
-        _newImages.addAll(pickedFiles);
+        _isLoading = false;
+        _isDataLoaded = true;
       });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context).errorGeneric}: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
+  }
+
+  /// Fetch dropdown data from Utils
+  Future<void> _fetchDropdownData() async {
+    _brands = Utils.brands;
+    _colors = Utils.colors;
+    _conditions = Utils.conditions;
+    _sizes = Utils.sizes;
+    _types = Utils.types;
+  }
+
+  /// Fetch complete item data from Firestore
+  Future<void> _fetchItemData() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('Items')
+        .doc(widget.itemId)
+        .get();
+
+    if (!doc.exists) {
+      throw Exception(AppLocalizations.of(context).itemNotFound);
+    }
+
+    _itemData = doc.data()!;
+    
+    // Pre-fill form fields
+    _brandController.text = _itemData?['Brand'] ?? '';
+    _descriptionController.text = _itemData?['Description'] ?? '';
+    _priceController.text = '${_itemData?['Price'] ?? ''}';
+    
+    _selectedColor = _itemData?['Color'];
+    _selectedCondition = _itemData?['Condition'];
+    _selectedSize = _itemData?['Size'];
+    _selectedType = _itemData?['Type'];
+    _isAvailable = (_itemData?['status'] ?? 'Available') == 'Available';
+
+    // Handle existing images
+    final images = _itemData?['images'];
+    if (images != null && images is List) {
+      _remoteImages = images.cast<String>();
+    }
+  }
+
+  /// Pick new images from camera or gallery
+  Future<void> _pickImages() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text(AppLocalizations.of(context).takePhoto),
+              onTap: () async {
+                Navigator.pop(context);
+                if (_getTotalImagesCount() >= 6) {
+                  _showMaxImagesError();
+                  return;
+                }
+                final XFile? cameraImage = await _picker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 50,
+                );
+                if (cameraImage != null) {
+                  setState(() {
+                    _newImages.add(cameraImage);
+                  });
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(AppLocalizations.of(context).selectFromGallery),
+              onTap: () async {
+                Navigator.pop(context);
+                final availableSlots = 6 - _getTotalImagesCount();
+                if (availableSlots <= 0) {
+                  _showMaxImagesError();
+                  return;
+                }
+                
+                final List<XFile>? pickedFiles = await _picker.pickMultiImage(
+                  imageQuality: 50,
+                  limit: availableSlots,
+                );
+                
+                if (pickedFiles != null && pickedFiles.isNotEmpty) {
+                  setState(() {
+                    _newImages.addAll(pickedFiles);
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int _getTotalImagesCount() => _remoteImages.length + _newImages.length;
+
+  void _showMaxImagesError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).maxImagesAllowed)),
+    );
   }
 
   /// Remove a remote image
@@ -122,110 +248,278 @@ class _EditItemPageState extends State<EditItemPage> {
     });
   }
 
-  /// Submit updated data to Firestore
+  /// Helper function to find matching dropdown value ignoring case
+  String? _findIgnoreCase(List<String> list, String? value) {
+    if (value == null) return null;
+    final normalizedValue = value.trim().toLowerCase();
+    for (final item in list) {
+      if (item.trim().toLowerCase() == normalizedValue) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  /// Save all changes to Firestore
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // Price logic (old price vs new price)
+    // Price validation and old price logic
     final newPrice = double.tryParse(_priceController.text.trim()) ?? 0;
-    final oldPriceValue = widget.initialItemData['oldPrice'];
-    final currentPriceValue = (widget.initialItemData['Price'] is num)
-        ? widget.initialItemData['Price'].toDouble()
+    final oldPriceValue = _itemData?['oldPrice'];
+    final currentPriceValue = (_itemData?['Price'] is num)
+        ? (_itemData?['Price'] as num).toDouble()
         : null;
 
     double? updatedOldPrice;
     if (currentPriceValue != null) {
-      // If new price is lower than the current price, we set oldPrice to the current price (if it isn't already higher)
       if (newPrice < currentPriceValue) {
-        // If oldPrice doesn't exist or is less than currentPrice, set it
         if (oldPriceValue == null ||
             (oldPriceValue is num && oldPriceValue < currentPriceValue)) {
           updatedOldPrice = currentPriceValue;
         } else {
-          // If oldPrice is already bigger, keep it
           updatedOldPrice = oldPriceValue;
         }
+      } else if (newPrice > currentPriceValue) {
+        updatedOldPrice = null; // Clear old price if price increased
       } else {
-        // If the user increased the price or kept it the same, you may decide to clear the old price or keep it
-        // For example, let's clear oldPrice if the price is now higher
-        if (newPrice > currentPriceValue) {
-          updatedOldPrice = null;
-        } else {
-          // same price
-          updatedOldPrice = oldPriceValue;
-        }
+        updatedOldPrice = oldPriceValue; // Keep existing if same price
       }
     }
 
-    // Start a loading indicator
+    // Show loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context).savingChanges,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
 
     try {
-      // 1) If new images exist, upload them first to Firebase Storage
+      // Upload new images to Firebase Storage
       List<String> newlyUploadedUrls = [];
       for (XFile img in _newImages) {
-        final fileName =
-            'items/${widget.itemId}/${DateTime.now().millisecondsSinceEpoch}_${img.name}';
+        final fileName = 'items/${widget.itemId}/${DateTime.now().millisecondsSinceEpoch}_${img.name}';
         final ref = FirebaseStorage.instance.ref().child(fileName);
         await ref.putFile(File(img.path));
         final downloadUrl = await ref.getDownloadURL();
         newlyUploadedUrls.add(downloadUrl);
       }
 
-      // 2) Combine remote and newly uploaded images
-      // Make sure the order is maintained with the "main" images at index 0
+      // Combine remote and newly uploaded images
       List<String> finalImageList = [..._remoteImages, ...newlyUploadedUrls];
 
-      // 3) Prepare the data to update in Firestore
-      // Only the seller should be able to do this, so we can add a check or assume this page is only accessible if user is the seller
+      // Prepare update data
       final updateData = {
         'Brand': _brandController.text.trim(),
+        'Color': _selectedColor,
+        'Condition': _selectedCondition,
+        'Size': _selectedSize,
+        'Type': _selectedType,
         'Description': _descriptionController.text.trim(),
         'Price': newPrice,
-        'Condition': _condition ?? 'Used',
-        'Category': _category,
         'images': finalImageList,
         'status': _isAvailable ? 'Available' : 'Sold Out',
+        'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // If we have a computed oldPrice
+      // Handle old price
       if (updatedOldPrice != null) {
         updateData['oldPrice'] = updatedOldPrice;
       } else {
-        // Optionally remove oldPrice field if you want
         updateData['oldPrice'] = FieldValue.delete();
       }
 
-      // 4) Update Firestore
+      // Update Firestore
       await FirebaseFirestore.instance
           .collection('Items')
           .doc(widget.itemId)
           .update(updateData);
 
-      Navigator.of(context, rootNavigator: true).pop(); // remove loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Changes saved successfully!')),
-      );
-
-      Navigator.pop(context); // pop EditItemPage
+      Navigator.of(context, rootNavigator: true).pop(); // Remove loading
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).itemUpdatedSuccessfully),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+        Navigator.pop(context, true); // Return to previous page with success result
+      }
     } catch (e) {
-      Navigator.of(context, rootNavigator: true).pop(); // remove loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving changes: $e')),
-      );
+      Navigator.of(context, rootNavigator: true).pop(); // Remove loading
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context).errorSavingChanges}: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
+  }
+
+  Widget _buildBrandAutocomplete() {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<String>.empty();
+        }
+        return _brands.where((option) => option
+            .toLowerCase()
+            .contains(textEditingValue.text.toLowerCase()));
+      },
+      onSelected: (String selection) {
+        _brandController.text = selection;
+      },
+      fieldViewBuilder: (BuildContext context,
+          TextEditingController textEditingController,
+          FocusNode focusNode,
+          VoidCallback onFieldSubmitted) {
+        // Sync the autocomplete controller with our main controller
+        textEditingController.text = _brandController.text;
+        textEditingController.selection = _brandController.selection;
+        
+        return TextFormField(
+          controller: textEditingController,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context).brand,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            filled: true,
+            prefixIcon: const Icon(Icons.search),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return AppLocalizations.of(context).brandRequired;
+            }
+            return null;
+          },
+          onChanged: (value) {
+            _brandController.text = value;
+          },
+          onFieldSubmitted: (value) {
+            _brandController.text = value;
+            onFieldSubmitted();
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildColorAutocomplete() {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<String>.empty();
+        }
+        final translatedColors = _colors
+            .map((color) => TranslationUtils.getColor(color, context))
+            .toList();
+        return translatedColors.where((translatedColor) => translatedColor
+            .toLowerCase()
+            .contains(textEditingValue.text.toLowerCase()));
+      },
+      onSelected: (String selection) {
+        // Find the original color value
+        _selectedColor = _colors.firstWhere(
+          (color) => TranslationUtils.getColor(color, context) == selection,
+          orElse: () => selection,
+        );
+      },
+      fieldViewBuilder: (BuildContext context,
+          TextEditingController textEditingController,
+          FocusNode focusNode,
+          VoidCallback onFieldSubmitted) {
+        // Set initial value as translated color
+        if (_selectedColor != null) {
+          textEditingController.text = TranslationUtils.getColor(_selectedColor!, context);
+        }
+        
+        return TextFormField(
+          controller: textEditingController,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context).color,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            filled: true,
+            prefixIcon: const Icon(Icons.palette),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return AppLocalizations.of(context).colorRequired;
+            }
+            return null;
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // We can only allow this page if the currentUser is the seller
-    final sellerId = widget.initialItemData['seller_id'];
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context).editItem),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_isDataLoaded || _itemData == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context).editItem),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).errorGeneric,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Authorization check
+    final sellerId = _itemData?['seller_id'];
     if (currentUserId == null || currentUserId != sellerId) {
       return Scaffold(
         appBar: AppBar(
@@ -298,6 +592,7 @@ class _EditItemPageState extends State<EditItemPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Basic Information Card
                   Card(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -309,7 +604,7 @@ class _EditItemPageState extends State<EditItemPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context).itemDetails,
+                            AppLocalizations.of(context).basicInformation,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
@@ -318,60 +613,21 @@ class _EditItemPageState extends State<EditItemPage> {
                                 ),
                           ),
                           const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _brandController,
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).itemName,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return AppLocalizations.of(context)
-                                    .thisFieldIsRequired;
-                              }
-                              return null;
-                            },
-                          ),
+                          _buildBrandAutocomplete(),
+                          const SizedBox(height: 16),
+                          _buildColorAutocomplete(),
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _descriptionController,
                             decoration: InputDecoration(
-                              labelText:
-                                  AppLocalizations.of(context).description,
+                              labelText: AppLocalizations.of(context).description,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               filled: true,
+                              prefixIcon: const Icon(Icons.description),
                             ),
-                            maxLines: 4,
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _priceController,
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).price,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              prefixText: '\₪ ',
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return AppLocalizations.of(context)
-                                    .thisFieldIsRequired;
-                              }
-                              final double? d = double.tryParse(value);
-                              if (d == null || d <= 0) {
-                                return AppLocalizations.of(context)
-                                    .invalidPrice;
-                              }
-                              return null;
-                            },
+                            maxLines: 3,
                           ),
                         ],
                       ),
@@ -383,6 +639,8 @@ class _EditItemPageState extends State<EditItemPage> {
                         curve: Curves.easeOutQuad,
                       ),
                   const SizedBox(height: 16),
+
+                  // Item Properties Card
                   Card(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -405,26 +663,57 @@ class _EditItemPageState extends State<EditItemPage> {
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).category,
+                              labelText: AppLocalizations.of(context).type,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               filled: true,
+                              prefixIcon: const Icon(Icons.category),
                             ),
-                            value: _category,
-                            items: _possibleCategories
-                                .map((cat) => DropdownMenuItem(
-                                    value: cat, child: Text(cat)))
+                            value: _selectedType,
+                            items: _types
+                                .map((type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(TranslationUtils.getCategory(type, context)),
+                                    ))
                                 .toList(),
                             onChanged: (val) {
                               setState(() {
-                                _category = val;
+                                _selectedType = val;
                               });
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)
-                                    .thisFieldIsRequired;
+                                return AppLocalizations.of(context).typeRequired;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).size,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              prefixIcon: const Icon(Icons.straighten),
+                            ),
+                            value: _selectedSize,
+                            items: _sizes
+                                .map((size) => DropdownMenuItem(
+                                      value: size,
+                                      child: Text(size),
+                                    ))
+                                .toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedSize = val;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context).sizeRequired;
                               }
                               return null;
                             },
@@ -437,21 +726,80 @@ class _EditItemPageState extends State<EditItemPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               filled: true,
+                              prefixIcon: const Icon(Icons.verified),
                             ),
-                            value: _condition,
-                            items: <String>[
-                              'New',
-                              'Like New',
-                              'Used',
-                              'Refurbished'
-                            ]
-                                .map((cond) => DropdownMenuItem(
-                                    value: cond, child: Text(cond)))
+                            value: _selectedCondition,
+                            items: _conditions
+                                .map((condition) => DropdownMenuItem(
+                                      value: condition,
+                                      child: Text(TranslationUtils.getCondition(condition, context)),
+                                    ))
                                 .toList(),
                             onChanged: (val) {
                               setState(() {
-                                _condition = val;
+                                _selectedCondition = val;
                               });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context).conditionRequired;
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
+                        begin: 0.2,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOutQuad,
+                      ),
+                  const SizedBox(height: 16),
+
+                  // Price and Availability Card
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).priceAndAvailability,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _priceController,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).price,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              prefixText: '₪ ',
+                              prefixIcon: const Icon(Icons.monetization_on),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return AppLocalizations.of(context).priceRequired;
+                              }
+                              final double? d = double.tryParse(value);
+                              if (d == null || d <= 0) {
+                                return AppLocalizations.of(context).priceGreaterThanZero;
+                              }
+                              return null;
                             },
                           ),
                           const SizedBox(height: 16),
@@ -460,7 +808,15 @@ class _EditItemPageState extends State<EditItemPage> {
                               _isAvailable
                                   ? AppLocalizations.of(context).available
                                   : AppLocalizations.of(context).soldOut,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            subtitle: Text(
+                              _isAvailable
+                                  ? AppLocalizations.of(context).itemIsAvailable
+                                  : AppLocalizations.of(context).itemIsSoldOut,
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                             value: _isAvailable,
                             onChanged: (bool value) {
@@ -475,13 +831,15 @@ class _EditItemPageState extends State<EditItemPage> {
                         ],
                       ),
                     ),
-                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
+                  ).animate().fadeIn(delay: 300.ms, duration: 600.ms).slideY(
                         begin: 0.2,
                         end: 0,
                         duration: 600.ms,
                         curve: Curves.easeOutQuad,
                       ),
                   const SizedBox(height: 16),
+
+                  // Images Card
                   Card(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -492,14 +850,25 @@ class _EditItemPageState extends State<EditItemPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            AppLocalizations.of(context).image,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context).images,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              Chip(
+                                label: Text('${_getTotalImagesCount()}/6'),
+                                backgroundColor: _getTotalImagesCount() >= 6
+                                    ? Theme.of(context).colorScheme.errorContainer
+                                    : Theme.of(context).colorScheme.primaryContainer,
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
                           if (_remoteImages.isEmpty && _newImages.isEmpty)
@@ -516,8 +885,7 @@ class _EditItemPageState extends State<EditItemPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)
-                                        .noImagesAvailable,
+                                    AppLocalizations.of(context).noImagesAvailable,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -547,8 +915,7 @@ class _EditItemPageState extends State<EditItemPage> {
                                   const SizedBox(height: 8),
                                   GridView.builder(
                                     shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
+                                    physics: const NeverScrollableScrollPhysics(),
                                     gridDelegate:
                                         const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 3,
@@ -565,13 +932,10 @@ class _EditItemPageState extends State<EditItemPage> {
                                           Card(
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(12),
                                               side: BorderSide(
                                                 color: index == 0
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .primary
+                                                    ? Theme.of(context).colorScheme.primary
                                                     : Colors.transparent,
                                                 width: 2,
                                               ),
@@ -580,26 +944,21 @@ class _EditItemPageState extends State<EditItemPage> {
                                             child: CachedNetworkImage(
                                               imageUrl: imageUrl,
                                               fit: BoxFit.cover,
-                                              placeholder: (ctx, url) =>
-                                                  Container(
+                                              placeholder: (ctx, url) => Container(
                                                 color: Theme.of(context)
                                                     .colorScheme
                                                     .surfaceVariant,
                                                 child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(),
+                                                  child: CircularProgressIndicator(),
                                                 ),
                                               ),
-                                              errorWidget: (ctx, url, err) =>
-                                                  Container(
+                                              errorWidget: (ctx, url, err) => Container(
                                                 color: Theme.of(context)
                                                     .colorScheme
                                                     .surfaceVariant,
                                                 child: Icon(
                                                   Icons.error,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .error,
+                                                  color: Theme.of(context).colorScheme.error,
                                                 ),
                                               ),
                                             ),
@@ -609,8 +968,7 @@ class _EditItemPageState extends State<EditItemPage> {
                                               top: 4,
                                               left: 4,
                                               child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
+                                                padding: const EdgeInsets.symmetric(
                                                   horizontal: 8,
                                                   vertical: 4,
                                                 ),
@@ -618,12 +976,10 @@ class _EditItemPageState extends State<EditItemPage> {
                                                   color: Theme.of(context)
                                                       .colorScheme
                                                       .primaryContainer,
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                                  borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: Text(
-                                                  AppLocalizations.of(context)
-                                                      .mainImage,
+                                                  AppLocalizations.of(context).mainImage,
                                                   style: TextStyle(
                                                     color: Theme.of(context)
                                                         .colorScheme
@@ -640,43 +996,26 @@ class _EditItemPageState extends State<EditItemPage> {
                                             child: IconButton(
                                               icon: const Icon(Icons.close),
                                               style: IconButton.styleFrom(
-                                                backgroundColor:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .surface,
-                                                foregroundColor:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .error,
-                                                padding:
-                                                    const EdgeInsets.all(4),
+                                                backgroundColor: Theme.of(context)
+                                                    .colorScheme
+                                                    .surface,
+                                                foregroundColor: Theme.of(context)
+                                                    .colorScheme
+                                                    .error,
+                                                padding: const EdgeInsets.all(4),
                                               ),
-                                              onPressed: () =>
-                                                  _removeRemoteImage(index),
+                                              onPressed: () => _removeRemoteImage(index),
                                             ),
                                           ),
                                           Material(
                                             color: Colors.transparent,
                                             child: InkWell(
-                                              onTap: () =>
-                                                  _makeRemoteImageMain(index),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              onTap: () => _makeRemoteImageMain(index),
+                                              borderRadius: BorderRadius.circular(12),
                                             ),
                                           ),
                                         ],
-                                      )
-                                          .animate(delay: (50 * index).ms)
-                                          .fadeIn(
-                                            duration: 600.ms,
-                                            curve: Curves.easeOutQuad,
-                                          )
-                                          .slideY(
-                                            begin: 0.2,
-                                            end: 0,
-                                            duration: 600.ms,
-                                            curve: Curves.easeOutQuad,
-                                          );
+                                      );
                                     },
                                   ),
                                 ],
@@ -694,8 +1033,7 @@ class _EditItemPageState extends State<EditItemPage> {
                                   const SizedBox(height: 8),
                                   GridView.builder(
                                     shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
+                                    physics: const NeverScrollableScrollPhysics(),
                                     gridDelegate:
                                         const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 3,
@@ -712,13 +1050,10 @@ class _EditItemPageState extends State<EditItemPage> {
                                           Card(
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(12),
                                               side: BorderSide(
-                                                color: index == 0
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .primary
+                                                color: _remoteImages.isEmpty && index == 0
+                                                    ? Theme.of(context).colorScheme.primary
                                                     : Colors.transparent,
                                                 width: 2,
                                               ),
@@ -729,13 +1064,12 @@ class _EditItemPageState extends State<EditItemPage> {
                                               fit: BoxFit.cover,
                                             ),
                                           ),
-                                          if (index == 0)
+                                          if (_remoteImages.isEmpty && index == 0)
                                             Positioned(
                                               top: 4,
                                               left: 4,
                                               child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
+                                                padding: const EdgeInsets.symmetric(
                                                   horizontal: 8,
                                                   vertical: 4,
                                                 ),
@@ -743,12 +1077,10 @@ class _EditItemPageState extends State<EditItemPage> {
                                                   color: Theme.of(context)
                                                       .colorScheme
                                                       .primaryContainer,
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                                  borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: Text(
-                                                  AppLocalizations.of(context)
-                                                      .mainImage,
+                                                  AppLocalizations.of(context).mainImage,
                                                   style: TextStyle(
                                                     color: Theme.of(context)
                                                         .colorScheme
@@ -765,43 +1097,26 @@ class _EditItemPageState extends State<EditItemPage> {
                                             child: IconButton(
                                               icon: const Icon(Icons.close),
                                               style: IconButton.styleFrom(
-                                                backgroundColor:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .surface,
-                                                foregroundColor:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .error,
-                                                padding:
-                                                    const EdgeInsets.all(4),
+                                                backgroundColor: Theme.of(context)
+                                                    .colorScheme
+                                                    .surface,
+                                                foregroundColor: Theme.of(context)
+                                                    .colorScheme
+                                                    .error,
+                                                padding: const EdgeInsets.all(4),
                                               ),
-                                              onPressed: () =>
-                                                  _removeNewImage(index),
+                                              onPressed: () => _removeNewImage(index),
                                             ),
                                           ),
                                           Material(
                                             color: Colors.transparent,
                                             child: InkWell(
-                                              onTap: () =>
-                                                  _makeNewImageMain(index),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              onTap: () => _makeNewImageMain(index),
+                                              borderRadius: BorderRadius.circular(12),
                                             ),
                                           ),
                                         ],
-                                      )
-                                          .animate(delay: (50 * index).ms)
-                                          .fadeIn(
-                                            duration: 600.ms,
-                                            curve: Curves.easeOutQuad,
-                                          )
-                                          .slideY(
-                                            begin: 0.2,
-                                            end: 0,
-                                            duration: 600.ms,
-                                            curve: Curves.easeOutQuad,
-                                          );
+                                      );
                                     },
                                   ),
                                 ],
@@ -809,7 +1124,7 @@ class _EditItemPageState extends State<EditItemPage> {
                             ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            onPressed: _pickImages,
+                            onPressed: _getTotalImagesCount() < 6 ? _pickImages : null,
                             icon: const Icon(Icons.add_photo_alternate),
                             label: Text(AppLocalizations.of(context).addImages),
                             style: ElevatedButton.styleFrom(
@@ -829,6 +1144,8 @@ class _EditItemPageState extends State<EditItemPage> {
                         curve: Curves.easeOutQuad,
                       ),
                   const SizedBox(height: 24),
+
+                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
@@ -861,7 +1178,7 @@ class _EditItemPageState extends State<EditItemPage> {
                         ),
                       ),
                     ],
-                  ).animate().fadeIn(delay: 600.ms, duration: 600.ms).slideY(
+                  ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideY(
                         begin: 0.2,
                         end: 0,
                         duration: 600.ms,

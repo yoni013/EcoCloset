@@ -229,9 +229,12 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
     // Upload the file
     await storageRef.putFile(File(_pickedImage!.path));
 
+    // Get the download URL and store it
+    final downloadUrl = await storageRef.getDownloadURL();
+    
     // Store in onboarding data
     setState(() {
-      widget.onboardingData.profilePicUrl = imageName;
+      widget.onboardingData.profilePicUrl = downloadUrl;
     });
   }
 

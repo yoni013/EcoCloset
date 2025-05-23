@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:eco_closet/pages/item_page.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -60,7 +61,11 @@ class _HomepageState extends State<Homepage> {
           .where('status', isEqualTo: 'Available')
           .get();
 
-      final allItems = querySnapshot.docs.map((doc) => doc.data()).toList();
+      final allItems = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
       if (mounted) {
         setState(() {
           filteredItems = allItems.where((item) {
@@ -85,7 +90,11 @@ class _HomepageState extends State<Homepage> {
 
     if (mounted) {
       setState(() {
-        trendingItems = querySnapshot.docs.map((doc) => doc.data()).toList();
+        trendingItems = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
         isLoading = false;
       });
     }
@@ -104,7 +113,12 @@ class _HomepageState extends State<Homepage> {
       ),
       child: InkWell(
         onTap: () {
-          // Add navigation to item details
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ItemPage(itemId: item['id']),
+            ),
+          );
         },
         child: Container(
           width: MediaQuery.of(context).size.width * 0.4,
@@ -206,7 +220,7 @@ class _HomepageState extends State<Homepage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-          "Home",
+          AppLocalizations.of(context).home,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),

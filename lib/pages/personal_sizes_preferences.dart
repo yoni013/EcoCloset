@@ -123,11 +123,13 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  categoryLocalized,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                Expanded(
+                  child: Text(
+                    categoryLocalized,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
               ],
             ),
@@ -265,11 +267,13 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                                       color: Theme.of(context).colorScheme.primary,
                                     ),
                                     const SizedBox(width: 12),
-                                    Text(
-                                      AppLocalizations.of(context).sizePreferencesInfo,
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                    Expanded(
+                                      child: Text(
+                                        AppLocalizations.of(context).sizePreferencesInfo,
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
                                     ),
                                   ],
                                 ),

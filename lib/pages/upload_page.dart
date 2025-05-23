@@ -51,7 +51,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch dropdown data: $e')),
+        SnackBar(content: Text('${AppLocalizations.of(context).failedToFetchDropdownData}: $e')),
       );
     }
   }
@@ -142,7 +142,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
     );
 
     final model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-lite',
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: jsonSchema,
@@ -196,7 +196,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
       };
     } catch (e) {
       debugPrint('Error in Gemini analysis: $e');
-      throw Exception('Failed to analyze images: ${e.toString()}');
+      throw Exception('${AppLocalizations.of(context).errorProcessingImages}: ${e.toString()}');
     }
   }
 
@@ -466,7 +466,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content:
-                                            Text('Error processing images: $e'),
+                                            Text('${AppLocalizations.of(context).errorProcessingImages}: $e'),
                                         backgroundColor:
                                             Theme.of(context).colorScheme.error,
                                       ),
@@ -891,7 +891,7 @@ class _StepTwoForm extends StatelessWidget {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                           content:
-                                              Text('Error uploading item: $e')),
+                                              Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
                                     );
                                   }
                                 },
@@ -923,7 +923,7 @@ class _StepTwoForm extends StatelessWidget {
                         } catch (e) {
                           Navigator.of(context, rootNavigator: true).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error uploading item: $e')),
+                            SnackBar(content: Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
                           );
                         }
                       }

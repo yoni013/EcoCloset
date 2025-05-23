@@ -49,6 +49,7 @@ app.*.map.json
 .packages
 
 /android/build/
+/ios/**
 /ios/Pods/
 /ios/Runner.xcworkspace/
 /ios/Flutter/Flutter.framework/

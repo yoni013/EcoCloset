@@ -2,20 +2,30 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eco_closet/pages/edit_item_page.dart';
 import 'package:eco_closet/utils/translation_metadata.dart';
+import 'package:eco_closet/widgets/full_screen_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/pages/profile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:eco_closet/utils/image_handler.dart';
 
-class ItemPage extends StatelessWidget {
+class ItemPage extends StatefulWidget {
   final String itemId;
 
   ItemPage({required this.itemId});
 
+  @override
+  State<ItemPage> createState() => _ItemPageState();
+}
+
+class _ItemPageState extends State<ItemPage> {
+  int _currentImageIndex = 0;
+
   Future<Map<String, dynamic>> fetchItemData() async {
     var documentSnapshot =
-        await FirebaseFirestore.instance.collection('Items').doc(itemId).get();
+        await FirebaseFirestore.instance.collection('Items').doc(widget.itemId).get();
     return documentSnapshot.data() ?? {};
   }
 
@@ -27,29 +37,77 @@ class ItemPage extends StatelessWidget {
     return documentSnapshot.data() ?? {};
   }
 
+  void _openFullScreenViewer(List<dynamic> images, int index) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            FullScreenImageViewer(
+          images: images.cast<String>(),
+          initialIndex: index,
+          heroTag: 'item_${widget.itemId}_$index',
+        ),
+        transitionDuration: const Duration(milliseconds: 200),
+        reverseTransitionDuration: const Duration(milliseconds: 150),
+        opaque: false,
+        barrierColor: Colors.transparent,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = 0.8;
+          const end = 1.0;
+          const curve = Curves.easeOutCubic;
+
+          var scaleAnimation = Tween(begin: begin, end: end).animate(
+            CurvedAnimation(parent: animation, curve: curve),
+          );
+
+          var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          );
+
+          return ScaleTransition(
+            scale: scaleAnimation,
+            child: FadeTransition(
+              opacity: fadeAnimation,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          if (true) //add condition if this is the seller
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditItemPage(
-                      itemId: itemId,
-                      initialItemData: {}, // send the item's data
-                    ),
-                  ),
+          FutureBuilder<Map<String, dynamic>>(
+            future: fetchItemData(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && 
+                  currentUserId != null && 
+                  snapshot.data!['seller_id'] == currentUserId) {
+                return IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditItemPage(
+                          itemId: widget.itemId,
+                        ),
+                      ),
+                    );
+                  },
                 );
-              },
-            ),
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -87,45 +145,89 @@ class ItemPage extends StatelessWidget {
                     else
                       Container(
                         height: MediaQuery.of(context).size.height * 0.5,
-                        child: PageView.builder(
-                          itemCount: images.length,
-                          itemBuilder: (context, index) {
-                            return Hero(
-                              tag: 'item_$itemId',
-                              child: CachedNetworkImage(
-                                imageUrl: images[index],
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Theme.of(context).colorScheme.surfaceVariant,
-                                  child: const Center(child: CircularProgressIndicator()),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Theme.of(context).colorScheme.surfaceVariant,
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    size: 50,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        child: Stack(
+                          children: [
+                            PageView.builder(
+                              itemCount: images.length,
+                              onPageChanged: (index) {
+                                _currentImageIndex = index;
+                              },
+                              itemBuilder: (context, index) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    _openFullScreenViewer(images, index);
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    child: Hero(
+                                      tag: 'item_${widget.itemId}_$index',
+                                      child: CachedNetworkImage(
+                                        imageUrl: images[index],
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: Theme.of(context).colorScheme.surfaceVariant,
+                                          child: const Center(child: CircularProgressIndicator()),
+                                        ),
+                                        errorWidget: (context, url, error) => Container(
+                                          color: Theme.of(context).colorScheme.surfaceVariant,
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            size: 50,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            // Image counter (if more than one image)
+                            if (images.length > 1)
+                              Positioned(
+                                bottom: 16,
+                                right: 16,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    images.length == 1 
+                                        ? '1 ${AppLocalizations.of(context).photo}'
+                                        : '${images.length} ${AppLocalizations.of(context).photos}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ),
-                            );
-                          },
+                          ],
                         ),
                       ),
                     Positioned(
                       bottom: 0,
                       left: 0,
                       right: 0,
-                      child: Container(
-                        height: 100,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Theme.of(context).colorScheme.surface,
-                              Theme.of(context).colorScheme.surface.withOpacity(0),
-                            ],
+                      child: IgnorePointer(
+                        child: Container(
+                          height: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Theme.of(context).colorScheme.surface,
+                                Theme.of(context).colorScheme.surface.withOpacity(0),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -251,11 +353,11 @@ class ItemPage extends StatelessWidget {
                             builder: (context, sellerSnapshot) {
                               if (sellerSnapshot.connectionState ==
                                   ConnectionState.waiting) {
-                                return const ListTile(
+                                return ListTile(
                                   leading: CircleAvatar(
                                     child: CircularProgressIndicator(),
                                   ),
-                                  title: Text('Loading...'),
+                                  title: Text(AppLocalizations.of(context).loading),
                                 );
                               } else if (sellerSnapshot.hasError ||
                                   !sellerSnapshot.hasData ||
@@ -276,20 +378,16 @@ class ItemPage extends StatelessWidget {
                               var sellerData = sellerSnapshot.data!;
                               return ListTile(
                                 contentPadding: const EdgeInsets.all(16),
-                                leading: sellerData['profilePicUrl'] != null && sellerData['profilePicUrl'].isNotEmpty
-                                    ? CircleAvatar(
-                                        radius: 24,
-                                        backgroundImage: CachedNetworkImageProvider(sellerData['profilePicUrl']),
-                                      )
-                                    : CircleAvatar(
-                                        radius: 24,
-                                        backgroundColor: Theme.of(context).colorScheme.surface,
-                                        child: Icon(
-                                          Icons.person,
-                                          size: 32,
-                                          color: Theme.of(context).colorScheme.onSurface,
-                                        ),
-                                      ),
+                                leading: ImageHandler.buildProfilePicture(
+                                  profilePicUrl: sellerData['profilePicUrl'],
+                                  userId: itemData['seller_id'] ?? '',
+                                  radius: 24,
+                                  fallbackIcon: Icon(
+                                    Icons.person,
+                                    size: 32,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
                                 title: Text(
                                   sellerData['name'] ??
                                       AppLocalizations.of(context).unknownSeller,

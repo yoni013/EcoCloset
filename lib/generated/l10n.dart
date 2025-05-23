@@ -380,7 +380,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:
-  /// **'An error occurred.'**
+  /// **'An error occurred'**
   String get errorGeneric;
 
   /// No description provided for @errorSomethingWentWrong.
@@ -716,13 +716,13 @@ abstract class AppLocalizations {
   /// No description provided for @selectFromGallery.
   ///
   /// In en, this message translates to:
-  /// **'Select From Gallery'**
+  /// **'Select from Gallery'**
   String get selectFromGallery;
 
   /// No description provided for @maxImagesAllowed.
   ///
   /// In en, this message translates to:
-  /// **'Maximum 6 images allowed.'**
+  /// **'Maximum 6 images allowed'**
   String get maxImagesAllowed;
 
   /// No description provided for @pickImages.
@@ -1088,8 +1088,8 @@ abstract class AppLocalizations {
   /// No description provided for @errorUploadingItem.
   ///
   /// In en, this message translates to:
-  /// **'Error uploading item: {error}'**
-  String errorUploadingItem(Object error);
+  /// **'Error uploading item'**
+  String get errorUploadingItem;
 
   /// No description provided for @itemDetails.
   ///
@@ -1696,6 +1696,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI suggestions applied successfully'**
   String get suggestionsApplied;
+
+  /// No description provided for @changesSavedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved successfully!'**
+  String get changesSavedSuccessfully;
+
+  /// No description provided for @errorSavingChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving changes'**
+  String get errorSavingChanges;
+
+  /// No description provided for @failedToFetchDropdownData.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to fetch dropdown data'**
+  String get failedToFetchDropdownData;
+
+  /// No description provided for @errorProcessingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Error processing images'**
+  String get errorProcessingImages;
+
+  /// No description provided for @photo.
+  ///
+  /// In en, this message translates to:
+  /// **'photo'**
+  String get photo;
+
+  /// No description provided for @photos.
+  ///
+  /// In en, this message translates to:
+  /// **'photos'**
+  String get photos;
+
+  /// No description provided for @itemNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Item not found'**
+  String get itemNotFound;
+
+  /// No description provided for @itemUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Item updated successfully!'**
+  String get itemUpdatedSuccessfully;
+
+  /// No description provided for @savingChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving Changes...'**
+  String get savingChanges;
+
+  /// No description provided for @basicInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Information'**
+  String get basicInformation;
+
+  /// No description provided for @priceAndAvailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Price & Availability'**
+  String get priceAndAvailability;
+
+  /// No description provided for @itemIsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Item is currently available for purchase'**
+  String get itemIsAvailable;
+
+  /// No description provided for @itemIsSoldOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Item is marked as sold out'**
+  String get itemIsSoldOut;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
