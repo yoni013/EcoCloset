@@ -136,7 +136,8 @@ class _EditItemPageState extends State<EditItemPage> {
     // Pre-fill form fields
     _brandController.text = _itemData?['Brand'] ?? '';
     _descriptionController.text = _itemData?['Description'] ?? '';
-    _priceController.text = '${_itemData?['Price'] ?? ''}';
+    final priceValue = _itemData?['Price'];
+    _priceController.text = priceValue != null ? '${(priceValue is num ? priceValue.toInt() : priceValue)}' : '';
     
     _selectedColor = _itemData?['Color'];
     _selectedCondition = _itemData?['Condition'];
@@ -267,25 +268,25 @@ class _EditItemPageState extends State<EditItemPage> {
     }
 
     // Price validation and old price logic
-    final newPrice = double.tryParse(_priceController.text.trim()) ?? 0;
+    final newPrice = int.tryParse(_priceController.text.trim()) ?? 0;
     final oldPriceValue = _itemData?['oldPrice'];
     final currentPriceValue = (_itemData?['Price'] is num)
-        ? (_itemData?['Price'] as num).toDouble()
+        ? (_itemData?['Price'] as num).toInt()
         : null;
 
-    double? updatedOldPrice;
+    int? updatedOldPrice;
     if (currentPriceValue != null) {
       if (newPrice < currentPriceValue) {
         if (oldPriceValue == null ||
             (oldPriceValue is num && oldPriceValue < currentPriceValue)) {
           updatedOldPrice = currentPriceValue;
         } else {
-          updatedOldPrice = oldPriceValue;
+          updatedOldPrice = oldPriceValue is num ? oldPriceValue.toInt() : oldPriceValue;
         }
       } else if (newPrice > currentPriceValue) {
         updatedOldPrice = null; // Clear old price if price increased
       } else {
-        updatedOldPrice = oldPriceValue; // Keep existing if same price
+        updatedOldPrice = oldPriceValue is num ? oldPriceValue.toInt() : oldPriceValue; // Keep existing if same price
       }
     }
 
@@ -362,7 +363,13 @@ class _EditItemPageState extends State<EditItemPage> {
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        Navigator.pop(context, true); // Return to previous page with success result
+        // Return detailed update information so the previous page can refresh
+        Navigator.pop(context, {
+          'success': true,
+          'itemId': widget.itemId,
+          'updatedData': updateData,
+          'needsRefresh': true,
+        });
       }
     } catch (e) {
       Navigator.of(context, rootNavigator: true).pop(); // Remove loading
@@ -584,549 +591,596 @@ class _EditItemPageState extends State<EditItemPage> {
             ],
           ),
         ),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Basic Information Card
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).basicInformation,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildBrandAutocomplete(),
-                          const SizedBox(height: 16),
-                          _buildColorAutocomplete(),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _descriptionController,
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).description,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              prefixIcon: const Icon(Icons.description),
-                            ),
-                            maxLines: 3,
-                          ),
-                        ],
+        child: GestureDetector(
+          onTap: () {
+            // Dismiss keyboard when tapping outside text fields
+            FocusScope.of(context).unfocus();
+          },
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Basic Information Card
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ),
-                  ).animate().fadeIn(duration: 600.ms).slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutQuad,
-                      ),
-                  const SizedBox(height: 16),
-
-                  // Item Properties Card
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).itemProperties,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).type,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              prefixIcon: const Icon(Icons.category),
-                            ),
-                            value: _selectedType,
-                            items: _types
-                                .map((type) => DropdownMenuItem(
-                                      value: type,
-                                      child: Text(TranslationUtils.getCategory(type, context)),
-                                    ))
-                                .toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedType = val;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context).typeRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).size,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              prefixIcon: const Icon(Icons.straighten),
-                            ),
-                            value: _selectedSize,
-                            items: _sizes
-                                .map((size) => DropdownMenuItem(
-                                      value: size,
-                                      child: Text(size),
-                                    ))
-                                .toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedSize = val;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context).sizeRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).condition,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              prefixIcon: const Icon(Icons.verified),
-                            ),
-                            value: _selectedCondition,
-                            items: _conditions
-                                .map((condition) => DropdownMenuItem(
-                                      value: condition,
-                                      child: Text(TranslationUtils.getCondition(condition, context)),
-                                    ))
-                                .toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedCondition = val;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context).conditionRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutQuad,
-                      ),
-                  const SizedBox(height: 16),
-
-                  // Price and Availability Card
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).priceAndAvailability,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _priceController,
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context).price,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              prefixText: '₪ ',
-                              prefixIcon: const Icon(Icons.monetization_on),
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return AppLocalizations.of(context).priceRequired;
-                              }
-                              final double? d = double.tryParse(value);
-                              if (d == null || d <= 0) {
-                                return AppLocalizations.of(context).priceGreaterThanZero;
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          SwitchListTile(
-                            title: Text(
-                              _isAvailable
-                                  ? AppLocalizations.of(context).available
-                                  : AppLocalizations.of(context).soldOut,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).basicInformation,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
                                   ),
                             ),
-                            subtitle: Text(
-                              _isAvailable
-                                  ? AppLocalizations.of(context).itemIsAvailable
-                                  : AppLocalizations.of(context).itemIsSoldOut,
-                              style: Theme.of(context).textTheme.bodySmall,
+                            const SizedBox(height: 16),
+                            _buildBrandAutocomplete(),
+                            const SizedBox(height: 16),
+                            _buildColorAutocomplete(),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _descriptionController,
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context).description,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                prefixIcon: const Icon(Icons.description),
+                              ),
+                              maxLines: 3,
                             ),
-                            value: _isAvailable,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _isAvailable = value;
-                              });
-                            },
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ).animate().fadeIn(delay: 300.ms, duration: 600.ms).slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutQuad,
-                      ),
-                  const SizedBox(height: 16),
+                    ).animate().fadeIn(duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                    const SizedBox(height: 16),
 
-                  // Images Card
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context).images,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                    // Item Properties Card
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).itemProperties,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context).type,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                prefixIcon: const Icon(Icons.category),
+                              ),
+                              value: _selectedType,
+                              items: _types
+                                  .map((type) => DropdownMenuItem(
+                                        value: type,
+                                        child: Text(TranslationUtils.getCategory(type, context)),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedType = val;
+                                });
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context).typeRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context).size,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                prefixIcon: const Icon(Icons.straighten),
+                              ),
+                              value: _selectedSize,
+                              items: _sizes
+                                  .map((size) => DropdownMenuItem(
+                                        value: size,
+                                        child: Text(size),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedSize = val;
+                                });
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context).sizeRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context).condition,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                prefixIcon: const Icon(Icons.verified),
+                              ),
+                              value: _selectedCondition,
+                              items: _conditions
+                                  .map((condition) => DropdownMenuItem(
+                                        value: condition,
+                                        child: Text(TranslationUtils.getCondition(condition, context)),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedCondition = val;
+                                });
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context).conditionRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                    const SizedBox(height: 16),
+
+                    // Price and Availability Card
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).priceAndAvailability,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _priceController,
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context).price,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                prefixText: '₪ ',
+                                prefixIcon: const Icon(Icons.monetization_on),
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return AppLocalizations.of(context).priceRequired;
+                                }
+                                final int? d = int.tryParse(value);
+                                if (d == null || d <= 0) {
+                                  return AppLocalizations.of(context).priceGreaterThanZero;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            SwitchListTile(
+                              title: Text(
+                                _isAvailable
+                                    ? AppLocalizations.of(context).available
+                                    : AppLocalizations.of(context).soldOut,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
                                     ),
                               ),
-                              Chip(
-                                label: Text('${_getTotalImagesCount()}/6'),
-                                backgroundColor: _getTotalImagesCount() >= 6
-                                    ? Theme.of(context).colorScheme.errorContainer
-                                    : Theme.of(context).colorScheme.primaryContainer,
+                              subtitle: Text(
+                                _isAvailable
+                                    ? AppLocalizations.of(context).itemIsAvailable
+                                    : AppLocalizations.of(context).itemIsSoldOut,
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          if (_remoteImages.isEmpty && _newImages.isEmpty)
-                            Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.add_photo_alternate_outlined,
-                                    size: 48,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withOpacity(0.5),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    AppLocalizations.of(context).noImagesAvailable,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                  ),
-                                ],
+                              value: _isAvailable,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  _isAvailable = value;
+                                });
+                              },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            )
-                          else
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 300.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                    const SizedBox(height: 16),
+
+                    // Images Card
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                if (_remoteImages.isNotEmpty) ...[
-                                  Text(
-                                    AppLocalizations.of(context).existingImages,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      childAspectRatio: 1,
-                                    ),
-                                    itemCount: _remoteImages.length,
-                                    itemBuilder: (context, index) {
-                                      final imageUrl = _remoteImages[index];
-                                      return Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Card(
-                                            elevation: 0,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                              side: BorderSide(
-                                                color: index == 0
-                                                    ? Theme.of(context).colorScheme.primary
-                                                    : Colors.transparent,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            clipBehavior: Clip.antiAlias,
-                                            child: CachedNetworkImage(
-                                              imageUrl: imageUrl,
-                                              fit: BoxFit.cover,
-                                              placeholder: (ctx, url) => Container(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .surfaceVariant,
-                                                child: const Center(
-                                                  child: CircularProgressIndicator(),
-                                                ),
-                                              ),
-                                              errorWidget: (ctx, url, err) => Container(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .surfaceVariant,
-                                                child: Icon(
-                                                  Icons.error,
-                                                  color: Theme.of(context).colorScheme.error,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          if (index == 0)
-                                            Positioned(
-                                              top: 4,
-                                              left: 4,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primaryContainer,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  AppLocalizations.of(context).mainImage,
-                                                  style: TextStyle(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onPrimaryContainer,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 10,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          Positioned(
-                                            top: 4,
-                                            right: 4,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.close),
-                                              style: IconButton.styleFrom(
-                                                backgroundColor: Theme.of(context)
-                                                    .colorScheme
-                                                    .surface,
-                                                foregroundColor: Theme.of(context)
-                                                    .colorScheme
-                                                    .error,
-                                                padding: const EdgeInsets.all(4),
-                                              ),
-                                              onPressed: () => _removeRemoteImage(index),
-                                            ),
-                                          ),
-                                          Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () => _makeRemoteImageMain(index),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
-                                if (_newImages.isNotEmpty) ...[
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    AppLocalizations.of(context).newImages,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      childAspectRatio: 1,
-                                    ),
-                                    itemCount: _newImages.length,
-                                    itemBuilder: (context, index) {
-                                      final file = _newImages[index];
-                                      return Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Card(
-                                            elevation: 0,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                              side: BorderSide(
-                                                color: _remoteImages.isEmpty && index == 0
-                                                    ? Theme.of(context).colorScheme.primary
-                                                    : Colors.transparent,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            clipBehavior: Clip.antiAlias,
-                                            child: Image.file(
-                                              File(file.path),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                          if (_remoteImages.isEmpty && index == 0)
-                                            Positioned(
-                                              top: 4,
-                                              left: 4,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primaryContainer,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  AppLocalizations.of(context).mainImage,
-                                                  style: TextStyle(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onPrimaryContainer,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 10,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          Positioned(
-                                            top: 4,
-                                            right: 4,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.close),
-                                              style: IconButton.styleFrom(
-                                                backgroundColor: Theme.of(context)
-                                                    .colorScheme
-                                                    .surface,
-                                                foregroundColor: Theme.of(context)
-                                                    .colorScheme
-                                                    .error,
-                                                padding: const EdgeInsets.all(4),
-                                              ),
-                                              onPressed: () => _removeNewImage(index),
-                                            ),
-                                          ),
-                                          Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () => _makeNewImageMain(index),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
+                                Text(
+                                  AppLocalizations.of(context).images,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                Chip(
+                                  label: Text('${_getTotalImagesCount()}/6'),
+                                  backgroundColor: _getTotalImagesCount() >= 6
+                                      ? Theme.of(context).colorScheme.errorContainer
+                                      : Theme.of(context).colorScheme.primaryContainer,
+                                ),
                               ],
                             ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _getTotalImagesCount() < 6 ? _pickImages : null,
-                            icon: const Icon(Icons.add_photo_alternate),
-                            label: Text(AppLocalizations.of(context).addImages),
+                            const SizedBox(height: 16),
+                            if (_remoteImages.isEmpty && _newImages.isEmpty)
+                              Center(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 48,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      AppLocalizations.of(context).noImagesAvailable,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_remoteImages.isNotEmpty) ...[
+                                    Text(
+                                      AppLocalizations.of(context).existingImages,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 8,
+                                        mainAxisSpacing: 8,
+                                        childAspectRatio: 1,
+                                      ),
+                                      itemCount: _remoteImages.length,
+                                      itemBuilder: (context, index) {
+                                        final imageUrl = _remoteImages[index];
+                                        return Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Card(
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                                side: BorderSide(
+                                                  color: index == 0
+                                                      ? Theme.of(context).colorScheme.primary
+                                                      : Colors.transparent,
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              clipBehavior: Clip.antiAlias,
+                                              child: CachedNetworkImage(
+                                                imageUrl: imageUrl,
+                                                fit: BoxFit.cover,
+                                                placeholder: (ctx, url) => Container(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceVariant,
+                                                  child: const Center(
+                                                    child: CircularProgressIndicator(),
+                                                  ),
+                                                ),
+                                                errorWidget: (ctx, url, err) => Container(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceVariant,
+                                                  child: Icon(
+                                                    Icons.error,
+                                                    color: Theme.of(context).colorScheme.error,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            if (index == 0)
+                                              Positioned(
+                                                top: 4,
+                                                left: 4,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primaryContainer,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    AppLocalizations.of(context).mainImage,
+                                                    style: TextStyle(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onPrimaryContainer,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: IconButton(
+                                                icon: const Icon(Icons.close),
+                                                style: IconButton.styleFrom(
+                                                  backgroundColor: Theme.of(context)
+                                                      .colorScheme
+                                                      .surface,
+                                                  foregroundColor: Theme.of(context)
+                                                      .colorScheme
+                                                      .error,
+                                                  padding: const EdgeInsets.all(4),
+                                                ),
+                                                onPressed: () => _removeRemoteImage(index),
+                                              ),
+                                            ),
+                                            Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () => _makeRemoteImageMain(index),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                  if (_newImages.isNotEmpty) ...[
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      AppLocalizations.of(context).newImages,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 8,
+                                        mainAxisSpacing: 8,
+                                        childAspectRatio: 1,
+                                      ),
+                                      itemCount: _newImages.length,
+                                      itemBuilder: (context, index) {
+                                        final file = _newImages[index];
+                                        return Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Card(
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                                side: BorderSide(
+                                                  color: _remoteImages.isEmpty && index == 0
+                                                      ? Theme.of(context).colorScheme.primary
+                                                      : Colors.transparent,
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              clipBehavior: Clip.antiAlias,
+                                              child: Image.file(
+                                                File(file.path),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                            if (_remoteImages.isEmpty && index == 0)
+                                              Positioned(
+                                                top: 4,
+                                                left: 4,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primaryContainer,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    AppLocalizations.of(context).mainImage,
+                                                    style: TextStyle(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onPrimaryContainer,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: IconButton(
+                                                icon: const Icon(Icons.close),
+                                                style: IconButton.styleFrom(
+                                                  backgroundColor: Theme.of(context)
+                                                      .colorScheme
+                                                      .surface,
+                                                  foregroundColor: Theme.of(context)
+                                                      .colorScheme
+                                                      .error,
+                                                  padding: const EdgeInsets.all(4),
+                                                ),
+                                                onPressed: () => _removeNewImage(index),
+                                              ),
+                                            ),
+                                            Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () => _makeNewImageMain(index),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _getTotalImagesCount() < 6 ? _pickImages : null,
+                              icon: const Icon(Icons.add_photo_alternate),
+                              label: Text(AppLocalizations.of(context).addImages),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                    const SizedBox(height: 24),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.close),
+                            label: Text(AppLocalizations.of(context).cancel),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _saveChanges,
+                            icon: const Icon(Icons.save),
+                            label: Text(AppLocalizations.of(context).saveChanges),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -1134,57 +1188,16 @@ class _EditItemPageState extends State<EditItemPage> {
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutQuad,
-                      ),
-                  const SizedBox(height: 24),
-
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.close),
-                          label: Text(AppLocalizations.of(context).cancel),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _saveChanges,
-                          icon: const Icon(Icons.save),
-                          label: Text(AppLocalizations.of(context).saveChanges),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                      ],
+                    ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
                         ),
-                      ),
-                    ],
-                  ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutQuad,
-                      ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

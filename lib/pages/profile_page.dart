@@ -172,7 +172,7 @@ class _ProfilePageState extends State<ProfilePage> {
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 200,
+                expandedHeight: 150,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
@@ -372,13 +372,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadItems() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
     items = await fetchSellerItems(widget.viewedUserId);
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _showReviewsPopup() async {
@@ -504,6 +507,11 @@ class _ProfilePageState extends State<ProfilePage> {
             );
       },
     );
+  }
+
+  // Public method to refresh items from external calls
+  void refreshItems() {
+    _refreshItems();
   }
 }
 

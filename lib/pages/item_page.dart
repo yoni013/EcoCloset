@@ -22,6 +22,13 @@ class ItemPage extends StatefulWidget {
 
 class _ItemPageState extends State<ItemPage> {
   int _currentImageIndex = 0;
+  late Future<Map<String, dynamic>> _itemDataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _itemDataFuture = fetchItemData();
+  }
 
   Future<Map<String, dynamic>> fetchItemData() async {
     var documentSnapshot =
@@ -75,6 +82,92 @@ class _ItemPageState extends State<ItemPage> {
     );
   }
 
+  Future<void> _createPurchaseRequest(Map<String, dynamic> itemData) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseLoginToPurchase),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    // // Check if user is trying to buy their own item
+    // if (currentUser.uid == itemData['seller_id']) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text(AppLocalizations.of(context).cannotPurchaseOwnItem),
+    //       backgroundColor: Theme.of(context).colorScheme.error,
+    //     ),
+    //   );
+    //   return;
+    // }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Create the order in Firestore
+      await FirebaseFirestore.instance.collection('Orders').add({
+        'buyerId': currentUser.uid,
+        'sellerId': itemData['seller_id'],
+        'itemId': widget.itemId,
+        'itemName': itemData['item_name'] ?? 'Unknown Item',
+        'price': itemData['Price'] ?? 0,
+        'status': 'Pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'sellerAddress': '', // Will be filled when seller accepts
+        'availableTimeSlots': [],
+        'selectedTimeSlot': null,
+        'buyerMessage': '',
+        'sellerMessage': '',
+        'declineReason': null,
+        'cancellationReason': null,
+        'itemImage': (itemData['images'] as List?)?.isNotEmpty == true 
+            ? itemData['images'][0] 
+            : null,
+      });
+
+      // Close loading dialog
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).purchaseRequestSent),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+    } catch (e) {
+      // Close loading dialog
+      Navigator.of(context, rootNavigator: true).pop();
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context).errorCreatingPurchaseRequest}: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  void _refreshItemData() {
+    setState(() {
+      _itemDataFuture = fetchItemData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -86,15 +179,15 @@ class _ItemPageState extends State<ItemPage> {
         elevation: 0,
         actions: [
           FutureBuilder<Map<String, dynamic>>(
-            future: fetchItemData(),
+            future: _itemDataFuture,
             builder: (context, snapshot) {
               if (snapshot.hasData && 
                   currentUserId != null && 
                   snapshot.data!['seller_id'] == currentUserId) {
                 return IconButton(
                   icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => EditItemPage(
@@ -102,6 +195,11 @@ class _ItemPageState extends State<ItemPage> {
                         ),
                       ),
                     );
+                    
+                    // Refresh the item data if the edit was successful
+                    if (result != null && result['needsRefresh'] == true) {
+                      _refreshItemData();
+                    }
                   },
                 );
               }
@@ -111,7 +209,7 @@ class _ItemPageState extends State<ItemPage> {
         ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
-        future: fetchItemData(),
+        future: _itemDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -280,21 +378,34 @@ class _ItemPageState extends State<ItemPage> {
                           curve: Curves.easeOutQuad,
                         ),
                         const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _buildInfoChip(
-                              context,
-                              Icons.check_circle_outline,
-                              TranslationUtils.getCondition(itemData['Condition'], context),
-                            ),
-                            _buildInfoChip(
-                              context,
-                              Icons.straighten,
-                              itemData['Size'] ?? 'N/A',
-                            ),
-                          ],
+                        FutureBuilder<Map<String, dynamic>>(
+                          future: fetchSellerData(itemData['seller_id'] ?? ''),
+                          builder: (context, sellerSnapshot) {
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildInfoChip(
+                                  context,
+                                  Icons.check_circle_outline,
+                                  TranslationUtils.getCondition(itemData['Condition'], context),
+                                ),
+                                _buildInfoChip(
+                                  context,
+                                  Icons.straighten,
+                                  itemData['Size'] ?? 'N/A',
+                                ),
+                                if (sellerSnapshot.hasData && 
+                                    sellerSnapshot.data!['address'] != null &&
+                                    sellerSnapshot.data!['address'].toString().isNotEmpty)
+                                  _buildInfoChip(
+                                    context,
+                                    Icons.location_on_outlined,
+                                    sellerSnapshot.data!['address'],
+                                  ),
+                              ],
+                            );
+                          },
                         ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(
                           begin: 0.2,
                           end: 0,
@@ -433,40 +544,19 @@ class _ItemPageState extends State<ItemPage> {
                           curve: Curves.easeOutQuad,
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  // Contact Seller action
-                                },
-                                icon: const Icon(Icons.message_outlined),
-                                label: Text(AppLocalizations.of(context).contactSeller),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _createPurchaseRequest(itemData);
+                          },
+                          icon: const Icon(Icons.shopping_cart_outlined),
+                          label: Text(AppLocalizations.of(context).buyNow),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            minimumSize: const Size(double.infinity, 0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  // Buy Now action
-                                },
-                                icon: const Icon(Icons.shopping_cart_outlined),
-                                label: Text(AppLocalizations.of(context).buyNow),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ).animate().fadeIn(delay: 1000.ms, duration: 600.ms).slideY(
                           begin: 0.2,
                           end: 0,

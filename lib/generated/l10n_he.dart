@@ -601,7 +601,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get errorFetchingOrders => 'שגיאה בטעינת הזמנות: ';
 
   @override
-  String get errorUpdatingStatus => 'שגיאה בעדכון סטטוס הזמנה: ';
+  String get errorUpdatingStatus => 'שגיאה בעדכון סטטוס ההזמנה: ';
 
   @override
   String get errorFetchingBuyer => 'שגיאה בטעינת שם הקונה: ';
@@ -853,4 +853,154 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get itemIsSoldOut => 'הפריט מסומן כאזל מהמלאי';
+
+  @override
+  String get purchaseRequest => 'בקשת רכישה';
+
+  @override
+  String get purchaseRequestSent => 'בקשת הרכישה נשלחה! המוכר יקבל התראה.';
+
+  @override
+  String get cannotPurchaseOwnItem => 'אינך יכול לרכוש את הפריט שלך';
+
+  @override
+  String get pleaseLoginToPurchase => 'אנא התחבר כדי לבצע רכישה';
+
+  @override
+  String get errorCreatingPurchaseRequest => 'שגיאה ביצירת בקשת רכישה';
+
+  @override
+  String get selectAvailableHours => 'בחר שעות זמינות';
+
+  @override
+  String get selectPickupTime => 'בחר זמן איסוף';
+
+  @override
+  String get availableTimeSlots => 'חלונות זמן זמינים';
+
+  @override
+  String get noAvailableTimeSlots => 'אין חלונות זמן זמינים';
+
+  @override
+  String get timeSlotSelected => 'חלון הזמן נבחר בהצלחה';
+
+  @override
+  String get orderAccepted => 'ההזמנה אושרה';
+
+  @override
+  String get orderDeclined => 'ההזמנה נדחתה';
+
+  @override
+  String get acceptOrder => 'אשר הזמנה';
+
+  @override
+  String get declineOrder => 'דחה הזמנה';
+
+  @override
+  String get reasonForDeclining => 'סיבה לדחייה (אופציונלי)';
+
+  @override
+  String get declineReasonHint => 'אנא הסבר מדוע אתה דוחה הזמנה זו';
+
+  @override
+  String get awaitingSellerResponse => 'ממתין לתגובת המוכר';
+
+  @override
+  String get awaitingBuyerTimeSelection => 'ממתין לבחירת זמן הקונה';
+
+  @override
+  String get timeSlotConfirmed => 'חלון הזמן אושר';
+
+  @override
+  String get orderCompleted => 'ההזמנה הושלמה';
+
+  @override
+  String get orderCancelled => 'ההזמנה בוטלה';
+
+  @override
+  String get cancelOrder => 'בטל הזמנה';
+
+  @override
+  String get cancelOrderConfirmation => 'האם אתה בטוח שברצונך לבטל הזמנה זו?';
+
+  @override
+  String get cancellationReason => 'סיבת ביטול';
+
+  @override
+  String get cancellationReasonHint => 'אנא הסבר מדוע אתה מבטל הזמנה זו';
+
+  @override
+  String get next72Hours => '72 השעות הבאות';
+
+  @override
+  String get selectTimeSlots => 'בחר חלונות זמן';
+
+  @override
+  String get saveAvailability => 'שמור זמינות';
+
+  @override
+  String get timeSlotUnavailable => 'חלון זמן זה אינו זמין יותר';
+
+  @override
+  String get selectDate => 'בחר תאריך';
+
+  @override
+  String get selectTime => 'בחר שעה';
+
+  @override
+  String get today => 'היום';
+
+  @override
+  String get tomorrow => 'מחר';
+
+  @override
+  String get dayAfterTomorrow => 'מחרתיים';
+
+  @override
+  String get morning => 'בוקר';
+
+  @override
+  String get afternoon => 'אחר הצהריים';
+
+  @override
+  String get evening => 'ערב';
+
+  @override
+  String get pickupAddress => 'כתובת איסוף';
+
+  @override
+  String get orderDetails => 'פרטי הזמנה';
+
+  @override
+  String get buyerInfo => 'מידע על הקונה';
+
+  @override
+  String get sellerInfo => 'מידע על המוכר';
+
+  @override
+  String get confirm => 'אישור';
+
+  @override
+  String get tapToView => 'הקש לצפייה';
+
+  @override
+  String get newStatus => 'חדש!';
+
+  @override
+  String get markAsReadyForPickup => 'סמן כמוכן לאיסוף';
+
+  @override
+  String get acknowledgeTimeSlot => 'אשר חלון זמן';
+
+  @override
+  String get timeSlotAcknowledged => 'חלון הזמן אושר';
+
+  @override
+  String get orderMarkedAsReady => 'ההזמנה סומנה כמוכנה לאיסוף';
+
+  @override
+  String get pickupTime => 'זמן איסוף';
+
+  @override
+  String get refresh => 'רענן';
 }

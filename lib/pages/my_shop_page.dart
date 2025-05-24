@@ -1,12 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:data_table_2/data_table_2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../generated/l10n.dart';
 import 'item_page.dart';
 import 'package:eco_closet/utils/translation_metadata.dart';
+import '../widgets/time_availability_selector.dart';
+import '../widgets/buyer_time_selector.dart';
 
 class MyOrdersPage extends StatefulWidget {
   const MyOrdersPage({Key? key}) : super(key: key);
@@ -46,19 +47,19 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     // Listen to vertical scroll controllers so we know when to display the "go up" button
     _incomingScrollController.addListener(() {
       if (_incomingScrollController.position.pixels > 50 &&
-          !_showIncomingScrollUp) {
+          !_showIncomingScrollUp && mounted) {
         setState(() => _showIncomingScrollUp = true);
       } else if (_incomingScrollController.position.pixels < 50 &&
-          _showIncomingScrollUp) {
+          _showIncomingScrollUp && mounted) {
         setState(() => _showIncomingScrollUp = false);
       }
     });
     _outgoingScrollController.addListener(() {
       if (_outgoingScrollController.position.pixels > 50 &&
-          !_showOutgoingScrollUp) {
+          !_showOutgoingScrollUp && mounted) {
         setState(() => _showOutgoingScrollUp = true);
       } else if (_outgoingScrollController.position.pixels < 50 &&
-          _showOutgoingScrollUp) {
+          _showOutgoingScrollUp && mounted) {
         setState(() => _showOutgoingScrollUp = false);
       }
     });
@@ -92,6 +93,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
 
   /// Incoming Orders => current user is the Buyer
   Future<void> _fetchOrders() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
@@ -135,10 +137,33 @@ class _MyOrdersPageState extends State<MyOrdersPage>
         }),
       );
 
-      setState(() => isLoading = false);
+      // Sort both lists by createdAt in descending order (most recent first)
+      incomingOrders.sort((a, b) {
+        final aCreatedAt = a['createdAt'] as Timestamp?;
+        final bCreatedAt = b['createdAt'] as Timestamp?;
+        if (aCreatedAt == null && bCreatedAt == null) return 0;
+        if (aCreatedAt == null) return 1;
+        if (bCreatedAt == null) return -1;
+        return bCreatedAt.compareTo(aCreatedAt);
+      });
+
+      outgoingOrders.sort((a, b) {
+        final aCreatedAt = a['createdAt'] as Timestamp?;
+        final bCreatedAt = b['createdAt'] as Timestamp?;
+        if (aCreatedAt == null && bCreatedAt == null) return 0;
+        if (aCreatedAt == null) return 1;
+        if (bCreatedAt == null) return -1;
+        return bCreatedAt.compareTo(aCreatedAt);
+      });
+
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     } catch (e) {
       debugPrint('Error fetching orders: $e');
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -153,6 +178,224 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     } catch (e) {
       debugPrint('Error updating order status: $e');
     }
+  }
+
+  // Enhanced function to handle order actions
+  Future<void> _handleOrderAction(String orderId, String action, Map<String, dynamic> order) async {
+    try {
+      switch (action) {
+        case 'Accept':
+          await _acceptOrder(orderId, order);
+          break;
+        case 'Decline':
+          await _declineOrder(orderId);
+          break;
+        case 'SetAvailability':
+          await _setTimeAvailability(orderId);
+          break;
+        case 'SelectTime':
+          await _selectPickupTime(orderId, order);
+          break;
+        case 'AcknowledgeTime':
+          await _acknowledgeTimeSlot(orderId);
+          break;
+        case 'Cancel':
+          await _cancelOrder(orderId);
+          break;
+        default:
+          await _updateOrderStatus(orderId, action);
+      }
+    } catch (e) {
+      debugPrint('Error handling order action: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _acceptOrder(String orderId, Map<String, dynamic> order) async {
+    // Get seller's address from Users collection
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.uid)
+        .get();
+    
+    final sellerAddress = userDoc.data()?['address'] ?? '';
+
+    await FirebaseFirestore.instance
+        .collection('Orders')
+        .doc(orderId)
+        .update({
+      'status': 'awaiting_seller_response',
+      'sellerAddress': sellerAddress,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // Navigate to time availability selector
+    _setTimeAvailability(orderId);
+  }
+
+  Future<void> _declineOrder(String orderId) async {
+    String? declineReason;
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context).declineOrder),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(AppLocalizations.of(context).reasonForDeclining),
+            const SizedBox(height: 16),
+            TextField(
+              onChanged: (value) {
+                declineReason = value;
+              },
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context).declineReasonHint,
+                border: const OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('Orders')
+                  .doc(orderId)
+                  .update({
+                'status': 'declined',
+                'declineReason': declineReason ?? '',
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+              Navigator.of(context).pop();
+              await _fetchOrders();
+            },
+            child: Text(AppLocalizations.of(context).decline),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setTimeAvailability(String orderId) async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TimeAvailabilitySelector(
+          orderId: orderId,
+          onTimeSlotsSaved: (timeSlots) {
+            _fetchOrders(); // Refresh the orders
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectPickupTime(String orderId, Map<String, dynamic> order) async {
+    final availableTimeSlots = List<Map<String, dynamic>>.from(
+      order['availableTimeSlots'] ?? []
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BuyerTimeSelector(
+          orderId: orderId,
+          availableTimeSlots: availableTimeSlots,
+          onTimeSlotSelected: (selectedTimeSlot) {
+            _fetchOrders(); // Refresh the orders
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cancelOrder(String orderId) async {
+    String? cancellationReason;
+    bool confirmed = false;
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context).cancelOrder),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(AppLocalizations.of(context).cancelOrderConfirmation),
+            const SizedBox(height: 16),
+            TextField(
+              onChanged: (value) {
+                cancellationReason = value;
+              },
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context).cancellationReasonHint,
+                border: const OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context).no),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              confirmed = true;
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text(AppLocalizations.of(context).yes),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed) {
+      await FirebaseFirestore.instance
+          .collection('Orders')
+          .doc(orderId)
+          .update({
+        'status': 'cancelled',
+        'cancellationReason': cancellationReason ?? '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      await _fetchOrders();
+    }
+  }
+
+  Future<void> _acknowledgeTimeSlot(String orderId) async {
+    await FirebaseFirestore.instance
+        .collection('Orders')
+        .doc(orderId)
+        .update({
+      'lastAction': 'seller_acknowledged',
+      'sellerAcknowledgedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).timeSlotAcknowledged),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
+
+    await _fetchOrders();
   }
 
   // ------------------ BUILD INCOMING TABLE ------------------
@@ -183,40 +426,106 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       margin: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         controller: _incomingScrollController,
-        child: DataTable(
-          columns: [
-            DataColumn(label: Text(AppLocalizations.of(context).orderId)),
-            DataColumn(label: Text(AppLocalizations.of(context).seller)),
-            DataColumn(label: Text(AppLocalizations.of(context).item)),
-            DataColumn(label: Text(AppLocalizations.of(context).price)),
-            DataColumn(label: Text(AppLocalizations.of(context).status)),
-          ],
-          rows: incomingOrders.map((order) {
-            return DataRow(
-              cells: [
-                DataCell(Text(order['id'])),
-                DataCell(Text(order['sellerName'] ?? 'Unknown')),
-                DataCell(Text(order['itemName'] ?? 'Unknown')),
-                DataCell(Text('\₪${order['price'] ?? '0'}')),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(order['status']).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      TranslationUtils.getOrderStatus(order['status'], context),
-                      style: TextStyle(
-                        color: _getStatusColor(order['status']),
-                        fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          controller: _incomingHorizontalController,
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 24,
+            columns: [
+              DataColumn(label: Text(AppLocalizations.of(context).item)),
+              DataColumn(label: Text(AppLocalizations.of(context).seller)),
+              DataColumn(label: Text(AppLocalizations.of(context).price)),
+              DataColumn(label: Text(AppLocalizations.of(context).status)),
+              DataColumn(label: Text(AppLocalizations.of(context).pickupTime)),
+              DataColumn(label: Text(AppLocalizations.of(context).actions)),
+            ],
+            rows: incomingOrders.map((order) {
+              return DataRow(
+                cells: [
+                  DataCell(
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ItemPage(itemId: order['itemId']),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        child: order['itemImage'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: CachedNetworkImage(
+                                  imageUrl: order['itemImage'],
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: Theme.of(context).colorScheme.surfaceVariant,
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 20,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Icon(
+                                  Icons.image,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            );
-          }).toList(),
+                  DataCell(Text(order['sellerName'] ?? 'Unknown')),
+                  DataCell(Text('\₪${(order['price'] ?? 0).toInt()}')),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(order['status']).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        TranslationUtils.getOrderStatus(order['status'], context),
+                        style: TextStyle(
+                          color: _getStatusColor(order['status']),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    _buildPickupTimeCell(order),
+                  ),
+                  DataCell(
+                    PopupMenuButton<String>(
+                      onSelected: (value) => _handleOrderAction(order['id'], value, order),
+                      itemBuilder: (context) => _buildBuyerActionMenu(order),
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
     ).animate().fadeIn(duration: 600.ms);
@@ -250,97 +559,390 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       margin: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         controller: _outgoingScrollController,
-        child: DataTable(
-          columns: [
-            DataColumn(label: Text(AppLocalizations.of(context).orderId)),
-            DataColumn(label: Text(AppLocalizations.of(context).buyer)),
-            DataColumn(label: Text(AppLocalizations.of(context).item)),
-            DataColumn(label: Text(AppLocalizations.of(context).price)),
-            DataColumn(label: Text(AppLocalizations.of(context).status)),
-            DataColumn(label: Text(AppLocalizations.of(context).actions)),
-          ],
-          rows: outgoingOrders.map((order) {
-            return DataRow(
-              cells: [
-                DataCell(Text(order['id'])),
-                DataCell(Text(order['buyerName'] ?? 'Unknown')),
-                DataCell(Text(order['itemName'] ?? 'Unknown')),
-                DataCell(Text('\₪${order['price'] ?? '0'}')),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(order['status']).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      TranslationUtils.getOrderStatus(order['status'], context),
-                      style: TextStyle(
-                        color: _getStatusColor(order['status']),
-                        fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          controller: _outgoingHorizontalController,
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 24,
+            columns: [
+              DataColumn(label: Text(AppLocalizations.of(context).item)),
+              DataColumn(label: Text(AppLocalizations.of(context).buyer)),
+              DataColumn(label: Text(AppLocalizations.of(context).price)),
+              DataColumn(label: Text(AppLocalizations.of(context).status)),
+              DataColumn(label: Text(AppLocalizations.of(context).pickupTime)),
+              DataColumn(label: Text(AppLocalizations.of(context).actions)),
+            ],
+            rows: outgoingOrders.map((order) {
+              return DataRow(
+                cells: [
+                  DataCell(
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ItemPage(itemId: order['itemId']),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        child: order['itemImage'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: CachedNetworkImage(
+                                  imageUrl: order['itemImage'],
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: Theme.of(context).colorScheme.surfaceVariant,
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 20,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Icon(
+                                  Icons.image,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                       ),
                     ),
                   ),
-                ),
-                DataCell(
-                  PopupMenuButton<String>(
-                    onSelected: (value) => _updateOrderStatus(order['id'], value),
-                    itemBuilder: (context) => [
-                      if (order['status'] == 'Pending')
-                        PopupMenuItem(
-                          value: 'Approved',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.check_circle_outline,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(AppLocalizations.of(context).approve),
-                            ],
-                          ),
+                  DataCell(Text(order['buyerName'] ?? 'Unknown')),
+                  DataCell(Text('\₪${(order['price'] ?? 0).toInt()}')),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(order['status']).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        TranslationUtils.getOrderStatus(order['status'], context),
+                        style: TextStyle(
+                          color: _getStatusColor(order['status']),
+                          fontWeight: FontWeight.bold,
                         ),
-                      if (order['status'] == 'Pending')
-                        PopupMenuItem(
-                          value: 'Declined',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.cancel_outlined,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(AppLocalizations.of(context).decline),
-                            ],
-                          ),
-                        ),
-                      if (order['status'] == 'Approved')
-                        PopupMenuItem(
-                          value: 'Shipped',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.local_shipping_outlined,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(AppLocalizations.of(context).markAsShipped),
-                            ],
-                          ),
-                        ),
-                    ],
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          }).toList(),
+                  DataCell(
+                    _buildPickupTimeCell(order),
+                  ),
+                  DataCell(
+                    PopupMenuButton<String>(
+                      onSelected: (value) => _handleOrderAction(order['id'], value, order),
+                      itemBuilder: (context) => _buildOrderActionMenu(order),
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
     ).animate().fadeIn(duration: 600.ms);
+  }
+
+  Widget _buildPickupTimeCell(Map<String, dynamic> order) {
+    final selectedTimeSlot = order['selectedTimeSlot'];
+    final lastAction = order['lastAction'];
+    final isNewBuyerAction = lastAction == 'buyer_selected_time';
+    
+    if (selectedTimeSlot != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: isNewBuyerAction 
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+              : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(6),
+          border: isNewBuyerAction 
+              ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isNewBuyerAction ? Icons.notification_important : Icons.schedule,
+                  size: 12,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    isNewBuyerAction ? AppLocalizations.of(context).newStatus : AppLocalizations.of(context).timeSlotConfirmed.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              selectedTimeSlot['formatted'] ?? 'N/A',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: isNewBuyerAction ? FontWeight.w600 : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (isNewBuyerAction)
+              Text(
+                AppLocalizations.of(context).timeSlotSelected,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontStyle: FontStyle.italic,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
+      );
+    } else if (order['status'] == 'awaiting_buyer_time_selection') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.hourglass_empty,
+                  size: 12,
+                  color: Colors.orange.shade700,
+                ),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    AppLocalizations.of(context).loading.replaceAll('...', ''),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              AppLocalizations.of(context).awaitingBuyerTimeSelection,
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.orange.shade600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    } else if (order['status'] == 'time_slot_confirmed') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          AppLocalizations.of(context).timeSlotConfirmed,
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w500,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Text(
+          '-',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+  }
+
+  List<PopupMenuEntry<String>> _buildOrderActionMenu(Map<String, dynamic> order) {
+    List<PopupMenuEntry<String>> menuItems = [];
+
+    switch (order['status']) {
+      case 'Pending':
+        menuItems.addAll([
+          PopupMenuItem(
+            value: 'Accept',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(AppLocalizations.of(context).acceptOrder),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'Decline',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.cancel_outlined,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(width: 8),
+                Text(AppLocalizations.of(context).declineOrder),
+              ],
+            ),
+          ),
+        ]);
+        break;
+      case 'awaiting_seller_response':
+        menuItems.add(
+          PopupMenuItem(
+            value: 'SetAvailability',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.schedule,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(AppLocalizations.of(context).selectAvailableHours),
+              ],
+            ),
+          ),
+        );
+        break;
+      case 'time_slot_confirmed':
+        break;
+    }
+
+    // Add acknowledge action for new buyer confirmations
+    if (order['lastAction'] == 'buyer_selected_time') {
+      menuItems.add(
+        PopupMenuItem(
+          value: 'AcknowledgeTime',
+          child: Row(
+            children: [
+              Icon(
+                Icons.visibility,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context).acknowledgeTimeSlot),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Add cancel option for all active orders
+    if (!['cancelled', 'completed', 'declined'].contains(order['status'])) {
+      menuItems.add(
+        PopupMenuItem(
+          value: 'Cancel',
+          child: Row(
+            children: [
+              Icon(
+                Icons.close,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context).cancelOrder),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return menuItems;
+  }
+
+  List<PopupMenuEntry<String>> _buildBuyerActionMenu(Map<String, dynamic> order) {
+    List<PopupMenuEntry<String>> menuItems = [];
+
+    switch (order['status']) {
+      case 'awaiting_buyer_time_selection':
+        menuItems.add(
+          PopupMenuItem(
+            value: 'SelectTime',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(AppLocalizations.of(context).selectPickupTime),
+              ],
+            ),
+          ),
+        );
+        break;
+    }
+
+    // Add cancel option for all active orders
+    if (!['cancelled', 'completed', 'declined'].contains(order['status'])) {
+      menuItems.add(
+        PopupMenuItem(
+          value: 'Cancel',
+          child: Row(
+            children: [
+              Icon(
+                Icons.close,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context).cancelOrder),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return menuItems;
   }
 
   Color _getStatusColor(String status) {
@@ -348,11 +950,19 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       case 'pending':
         return Colors.orange;
       case 'approved':
+      case 'awaiting_buyer_time_selection':
+        return Colors.blue;
+      case 'time_slot_confirmed':
+      case 'ready_for_pickup':
         return Colors.green;
       case 'declined':
+      case 'cancelled':
         return Colors.red;
       case 'shipped':
-        return Colors.blue;
+      case 'awaiting_seller_response':
+        return Colors.indigo;
+      case 'completed':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
@@ -371,6 +981,13 @@ class _MyOrdersPageState extends State<MyOrdersPage>
         ),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchOrders,
+            tooltip: AppLocalizations.of(context).refresh,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -417,6 +1034,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
               ).animate().fadeIn(duration: 600.ms)
             : TabBarView(
                 controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _buildIncomingOrdersTable(),
                   _buildOutgoingOrdersTable(),

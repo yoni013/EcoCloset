@@ -135,9 +135,6 @@ class _UploadItemPageState extends State<UploadItemPage> {
         'Type': Schema.string(
             description:
                 'Type of the item one of this list: Activewear,Belts,Coats,Dresses,Gloves,Hats,Jeans,Jumpsuits,Overalls,Pants,Scarves,Shirts,Shoes,Shorts,Skirts,Sleepwear,Sweaters,Swimwear'),
-        'Description': Schema.string(
-            description:
-                'A detailed description of the item based on visual analysis in maximum 7 words in low level language'),
       },
     );
 
@@ -158,14 +155,12 @@ class _UploadItemPageState extends State<UploadItemPage> {
     }
 
     final prompt = TextPart(
-      '''Analyze the provided images of the clothing item and extract detailed metadata:
+      '''Analyze the provided images of the clothing item and extract the following metadata:
       1. Identify the brand if visible on tags or labels
       2. Determine the exact color(s)
       3. Assess the condition based on visible wear, stains, or damage
       4. Identify the size from tags or labels
       5. Determine the type of clothing item
-      6. Write a detailed description including material, style, and notable features
-      7. Estimate a fair market price based on brand, condition, and type
       
       Focus on accuracy and provide specific details when possible.''',
     );
@@ -191,8 +186,6 @@ class _UploadItemPageState extends State<UploadItemPage> {
         'Condition': decoded['Condition']?.toString() ?? '',
         'Size': decoded['Size']?.toString() ?? '',
         'Type': decoded['Type']?.toString() ?? '',
-        'Description': decoded['Description']?.toString() ?? '',
-        'EstimatedPrice': decoded['EstimatedPrice']?.toString() ?? '',
       };
     } catch (e) {
       debugPrint('Error in Gemini analysis: $e');
@@ -585,61 +578,6 @@ class _StepTwoForm extends StatelessWidget {
       'Price': prefilledData['EstimatedPrice'] ?? '',
     };
 
-    // Add a method to show AI suggestions
-    void _showAISuggestions() {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.of(context).aiSuggestions),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (prefilledData['Description']?.isNotEmpty ?? false) ...[
-                  Text(
-                    AppLocalizations.of(context).suggestedDescription,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(prefilledData['Description'] ?? ''),
-                  const SizedBox(height: 16),
-                ],
-                if (prefilledData['EstimatedPrice']?.isNotEmpty ?? false) ...[
-                  Text(
-                    AppLocalizations.of(context).suggestedPrice,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text('${prefilledData['EstimatedPrice']} ₪'),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context).close),
-            ),
-            TextButton(
-              onPressed: () {
-                // Apply AI suggestions
-                formData['Description'] = prefilledData['Description'] ?? '';
-                formData['Price'] = prefilledData['EstimatedPrice'] ?? '';
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text(
-                          AppLocalizations.of(context).suggestionsApplied)),
-                );
-              },
-              child: Text(AppLocalizations.of(context).applySuggestions),
-            ),
-          ],
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).uploadItemStep2),
@@ -890,8 +828,7 @@ class _StepTwoForm extends StatelessWidget {
                                         .pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                          content:
-                                              Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
+                                          content: Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
                                     );
                                   }
                                 },
@@ -931,14 +868,6 @@ class _StepTwoForm extends StatelessWidget {
                   },
                   child: Text(AppLocalizations.of(context).submit),
                 ),
-
-                // Add a button to show AI suggestions before the submit button
-                ElevatedButton.icon(
-                  onPressed: _showAISuggestions,
-                  icon: const Icon(Icons.auto_awesome),
-                  label: Text(AppLocalizations.of(context).viewAISuggestions),
-                ),
-                const SizedBox(height: 16),
               ],
             ),
           ),

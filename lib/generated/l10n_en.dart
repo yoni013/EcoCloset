@@ -853,4 +853,154 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get itemIsSoldOut => 'Item is marked as sold out';
+
+  @override
+  String get purchaseRequest => 'Purchase Request';
+
+  @override
+  String get purchaseRequestSent => 'Purchase request sent! The seller will be notified.';
+
+  @override
+  String get cannotPurchaseOwnItem => 'You cannot purchase your own item';
+
+  @override
+  String get pleaseLoginToPurchase => 'Please log in to make a purchase';
+
+  @override
+  String get errorCreatingPurchaseRequest => 'Error creating purchase request';
+
+  @override
+  String get selectAvailableHours => 'Select Available Hours';
+
+  @override
+  String get selectPickupTime => 'Select Pickup Time';
+
+  @override
+  String get availableTimeSlots => 'Available Time Slots';
+
+  @override
+  String get noAvailableTimeSlots => 'No available time slots';
+
+  @override
+  String get timeSlotSelected => 'Time slot selected successfully';
+
+  @override
+  String get orderAccepted => 'Order Accepted';
+
+  @override
+  String get orderDeclined => 'Order Declined';
+
+  @override
+  String get acceptOrder => 'Accept Order';
+
+  @override
+  String get declineOrder => 'Decline Order';
+
+  @override
+  String get reasonForDeclining => 'Reason for declining (optional)';
+
+  @override
+  String get declineReasonHint => 'Please explain why you\'re declining this order';
+
+  @override
+  String get awaitingSellerResponse => 'Awaiting Seller Response';
+
+  @override
+  String get awaitingBuyerTimeSelection => 'Awaiting Buyer Time Selection';
+
+  @override
+  String get timeSlotConfirmed => 'Time Slot Confirmed';
+
+  @override
+  String get orderCompleted => 'Order Completed';
+
+  @override
+  String get orderCancelled => 'Order Cancelled';
+
+  @override
+  String get cancelOrder => 'Cancel Order';
+
+  @override
+  String get cancelOrderConfirmation => 'Are you sure you want to cancel this order?';
+
+  @override
+  String get cancellationReason => 'Cancellation Reason';
+
+  @override
+  String get cancellationReasonHint => 'Please explain why you\'re cancelling this order';
+
+  @override
+  String get next72Hours => 'Next 72 Hours';
+
+  @override
+  String get selectTimeSlots => 'Select Time Slots';
+
+  @override
+  String get saveAvailability => 'Save Availability';
+
+  @override
+  String get timeSlotUnavailable => 'This time slot is no longer available';
+
+  @override
+  String get selectDate => 'Select Date';
+
+  @override
+  String get selectTime => 'Select Time';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get tomorrow => 'Tomorrow';
+
+  @override
+  String get dayAfterTomorrow => 'Day After Tomorrow';
+
+  @override
+  String get morning => 'Morning';
+
+  @override
+  String get afternoon => 'Afternoon';
+
+  @override
+  String get evening => 'Evening';
+
+  @override
+  String get pickupAddress => 'Pickup Address';
+
+  @override
+  String get orderDetails => 'Order Details';
+
+  @override
+  String get buyerInfo => 'Buyer Information';
+
+  @override
+  String get sellerInfo => 'Seller Information';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get tapToView => 'Tap to view';
+
+  @override
+  String get newStatus => 'NEW!';
+
+  @override
+  String get markAsReadyForPickup => 'Mark as Ready for Pickup';
+
+  @override
+  String get acknowledgeTimeSlot => 'Acknowledge Time Slot';
+
+  @override
+  String get timeSlotAcknowledged => 'Time slot acknowledged';
+
+  @override
+  String get orderMarkedAsReady => 'Order marked as ready for pickup';
+
+  @override
+  String get pickupTime => 'Pickup Time';
+
+  @override
+  String get refresh => 'Refresh';
 }

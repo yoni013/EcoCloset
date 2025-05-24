@@ -95,6 +95,30 @@ class _PersistentBottomBarScaffoldState
         onTap: (index) {
           if (_selectedTab == index) {
             widget.items[index].navigatorkey?.currentState?.popUntil((route) => route.isFirst);
+            
+            // If profile tab is double-tapped, refresh the items
+            if (index == 4) {
+              // Get the profile navigator's context and find ProfilePage widget
+              final navigatorState = widget.items[4].navigatorkey?.currentState;
+              if (navigatorState != null) {
+                final context = navigatorState.context;
+                // Find ProfilePage in the widget tree and call refresh
+                void visitElements(Element element) {
+                  if (element.widget is ProfilePage) {
+                    final state = element as StatefulElement;
+                    try {
+                      (state.state as dynamic).refreshItems();
+                    } catch (e) {
+                      // Ignore if method doesn't exist
+                    }
+                    return;
+                  }
+                  element.visitChildElements(visitElements);
+                }
+                context.visitChildElements(visitElements);
+              }
+            }
+            
             setState(() {});
           } else {
             setState(() {

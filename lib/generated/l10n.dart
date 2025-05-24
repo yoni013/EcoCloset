@@ -1774,6 +1774,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Item is marked as sold out'**
   String get itemIsSoldOut;
+
+  /// No description provided for @purchaseRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Request'**
+  String get purchaseRequest;
+
+  /// No description provided for @purchaseRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase request sent! The seller will be notified.'**
+  String get purchaseRequestSent;
+
+  /// No description provided for @cannotPurchaseOwnItem.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot purchase your own item'**
+  String get cannotPurchaseOwnItem;
+
+  /// No description provided for @pleaseLoginToPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in to make a purchase'**
+  String get pleaseLoginToPurchase;
+
+  /// No description provided for @errorCreatingPurchaseRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating purchase request'**
+  String get errorCreatingPurchaseRequest;
+
+  /// No description provided for @selectAvailableHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Available Hours'**
+  String get selectAvailableHours;
+
+  /// No description provided for @selectPickupTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Pickup Time'**
+  String get selectPickupTime;
+
+  /// No description provided for @availableTimeSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Time Slots'**
+  String get availableTimeSlots;
+
+  /// No description provided for @noAvailableTimeSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'No available time slots'**
+  String get noAvailableTimeSlots;
+
+  /// No description provided for @timeSlotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Time slot selected successfully'**
+  String get timeSlotSelected;
+
+  /// No description provided for @orderAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Accepted'**
+  String get orderAccepted;
+
+  /// No description provided for @orderDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Declined'**
+  String get orderDeclined;
+
+  /// No description provided for @acceptOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Order'**
+  String get acceptOrder;
+
+  /// No description provided for @declineOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline Order'**
+  String get declineOrder;
+
+  /// No description provided for @reasonForDeclining.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for declining (optional)'**
+  String get reasonForDeclining;
+
+  /// No description provided for @declineReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please explain why you\'re declining this order'**
+  String get declineReasonHint;
+
+  /// No description provided for @awaitingSellerResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Seller Response'**
+  String get awaitingSellerResponse;
+
+  /// No description provided for @awaitingBuyerTimeSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Buyer Time Selection'**
+  String get awaitingBuyerTimeSelection;
+
+  /// No description provided for @timeSlotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Slot Confirmed'**
+  String get timeSlotConfirmed;
+
+  /// No description provided for @orderCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Completed'**
+  String get orderCompleted;
+
+  /// No description provided for @orderCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Cancelled'**
+  String get orderCancelled;
+
+  /// No description provided for @cancelOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Order'**
+  String get cancelOrder;
+
+  /// No description provided for @cancelOrderConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to cancel this order?'**
+  String get cancelOrderConfirmation;
+
+  /// No description provided for @cancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Reason'**
+  String get cancellationReason;
+
+  /// No description provided for @cancellationReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please explain why you\'re cancelling this order'**
+  String get cancellationReasonHint;
+
+  /// No description provided for @next72Hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 72 Hours'**
+  String get next72Hours;
+
+  /// No description provided for @selectTimeSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Time Slots'**
+  String get selectTimeSlots;
+
+  /// No description provided for @saveAvailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Availability'**
+  String get saveAvailability;
+
+  /// No description provided for @timeSlotUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This time slot is no longer available'**
+  String get timeSlotUnavailable;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get selectDate;
+
+  /// No description provided for @selectTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Time'**
+  String get selectTime;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get tomorrow;
+
+  /// No description provided for @dayAfterTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Day After Tomorrow'**
+  String get dayAfterTomorrow;
+
+  /// No description provided for @morning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get morning;
+
+  /// No description provided for @afternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get afternoon;
+
+  /// No description provided for @evening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get evening;
+
+  /// No description provided for @pickupAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Address'**
+  String get pickupAddress;
+
+  /// No description provided for @orderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetails;
+
+  /// No description provided for @buyerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer Information'**
+  String get buyerInfo;
+
+  /// No description provided for @sellerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller Information'**
+  String get sellerInfo;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @tapToView.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to view'**
+  String get tapToView;
+
+  /// No description provided for @newStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW!'**
+  String get newStatus;
+
+  /// No description provided for @markAsReadyForPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Ready for Pickup'**
+  String get markAsReadyForPickup;
+
+  /// No description provided for @acknowledgeTimeSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge Time Slot'**
+  String get acknowledgeTimeSlot;
+
+  /// No description provided for @timeSlotAcknowledged.
+  ///
+  /// In en, this message translates to:
+  /// **'Time slot acknowledged'**
+  String get timeSlotAcknowledged;
+
+  /// No description provided for @orderMarkedAsReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Order marked as ready for pickup'**
+  String get orderMarkedAsReady;
+
+  /// No description provided for @pickupTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Time'**
+  String get pickupTime;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
