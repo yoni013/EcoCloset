@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eco_closet/pages/item_page.dart';
+import 'package:eco_closet/widgets/item_card.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -64,6 +65,10 @@ class _HomepageState extends State<Homepage> {
       final allItems = querySnapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
+        // Ensure image_preview is set for ItemCard compatibility
+        if (data['images'] != null && (data['images'] as List).isNotEmpty) {
+          data['image_preview'] = data['images'][0];
+        }
         return data;
       }).toList();
       if (mounted) {
@@ -84,6 +89,7 @@ class _HomepageState extends State<Homepage> {
   Future<void> fetchTrendingItems() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('Items')
+        .where('status', isEqualTo: 'Available')
         // .orderBy('views', descending: true)
         .limit(5)
         .get();
@@ -93,6 +99,10 @@ class _HomepageState extends State<Homepage> {
         trendingItems = querySnapshot.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
+          // Ensure image_preview is set for ItemCard compatibility
+          if (data['images'] != null && (data['images'] as List).isNotEmpty) {
+            data['image_preview'] = data['images'][0];
+          }
           return data;
         }).toList();
         isLoading = false;
@@ -100,118 +110,15 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
-  Widget buildItemCard(Map<String, dynamic> item) {
-    final imageUrl = item['images'] != null && (item['images'] as List).isNotEmpty
-                      ? item['images'][0]
-                      : null;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ItemPage(itemId: item['id']),
-            ),
-          );
-        },
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.4,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    imageUrl != null && imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: Theme.of(context).colorScheme.surfaceVariant,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Theme.of(context).colorScheme.surfaceVariant,
-                              child: const Icon(
-                                Icons.image_not_supported,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '\₪${item['Price'] ?? 'N/A'}',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['Brand'] ?? 'Unknown',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item['Type'] ?? '',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 600.ms).slideX(
-          begin: 0.2,
-          end: 0,
-          duration: 600.ms,
-          curve: Curves.easeOutQuad,
-        );
+  // Public method to refresh the homepage data
+  Future<void> refreshHomepage() async {
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+      await fetchUserSizesAndItems();
+      await fetchTrendingItems();
+    }
   }
 
   @override
@@ -254,8 +161,21 @@ class _HomepageState extends State<Homepage> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         scrollDirection: Axis.horizontal,
                         itemCount: filteredItems.length,
-                        itemBuilder: (context, index) =>
-                            buildItemCard(filteredItems[index]),
+                        itemBuilder: (context, index) {
+                          // Ensure image_preview is set for ItemCard compatibility
+                          final item = Map<String, dynamic>.from(filteredItems[index]);
+                          if (item['images'] != null && (item['images'] as List).isNotEmpty) {
+                            item['image_preview'] = item['images'][0];
+                          }
+                          return Container(
+                            width: MediaQuery.of(context).size.width * 0.4,
+                            margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: ItemCard(
+                              item: item,
+                              animationIndex: index,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Padding(
@@ -273,8 +193,16 @@ class _HomepageState extends State<Homepage> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         scrollDirection: Axis.horizontal,
                         itemCount: trendingItems.length,
-                        itemBuilder: (context, index) =>
-                            buildItemCard(trendingItems[index]),
+                        itemBuilder: (context, index) {
+                          return Container(
+                            width: MediaQuery.of(context).size.width * 0.4,
+                            margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: ItemCard(
+                              item: trendingItems[index],
+                              animationIndex: index,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],

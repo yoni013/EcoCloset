@@ -600,5 +600,15 @@
   "timeSlotAcknowledged": "חלון הזמן אושר",
   "orderMarkedAsReady": "ההזמנה סומנה כמוכנה לאיסוף",
   "pickupTime": "זמן איסוף",
-  "refresh": "רענן"
+  "refresh": "רענן",
+  "pendingSellerApproval": "ממתין לאישור המוכר",
+  "orderApproved": "יאי! ההזמנה שלך אושרה על ידי המוכר, לחץ כאן לבחירת זמן איסוף.",
+  "sellerNeedsToRespond": "אנא קבל או דחה את ההזמנה הזו",
+  "awaitingTimeSelection": "ממתין לבחירת זמן איסוף על ידי הקונה",
+  "newPurchaseNotification": "בקשת רכישה חדשה לפריט שלך!",
+  "pendingSeller": "ממתין למוכר",
+  "pendingBuyer": "ממתין לקונה",
+  "confirmed": "אושר",
+  "cancelled": "בוטל",
+  "completed": "הושלם"
 }

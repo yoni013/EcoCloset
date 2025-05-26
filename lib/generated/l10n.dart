@@ -2074,6 +2074,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get refresh;
+
+  /// No description provided for @pendingSellerApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending seller approval'**
+  String get pendingSellerApproval;
+
+  /// No description provided for @orderApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Yay! Your order was approved by the seller, click here to choose your pickup time.'**
+  String get orderApproved;
+
+  /// No description provided for @sellerNeedsToRespond.
+  ///
+  /// In en, this message translates to:
+  /// **'Please accept or decline this order'**
+  String get sellerNeedsToRespond;
+
+  /// No description provided for @awaitingTimeSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for buyer to select pickup time'**
+  String get awaitingTimeSelection;
+
+  /// No description provided for @newPurchaseNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'New purchase request for your item!'**
+  String get newPurchaseNotification;
+
+  /// No description provided for @pendingSeller.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending seller'**
+  String get pendingSeller;
+
+  /// No description provided for @pendingBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending buyer'**
+  String get pendingBuyer;
+
+  /// No description provided for @confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get confirmed;
+
+  /// No description provided for @cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get cancelled;
+
+  /// No description provided for @completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completed;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

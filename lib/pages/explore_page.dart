@@ -49,9 +49,9 @@ class ExplorePage extends StatelessWidget {
                 );
               },
               child: Card(
-                elevation: 0,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.0),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
@@ -64,54 +64,45 @@ class ExplorePage extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(context).colorScheme.surface,
-                          Theme.of(context).colorScheme.surfaceVariant,
-                        ],
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            child: Image.asset(
-                              cat['image']!,
-                              fit: BoxFit.contain,
-                            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          child: Image.asset(
+                            cat['image']!,
+                            fit: BoxFit.contain,
                           ),
                         ),
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.8),
-                            ),
-                            child: Center(
-                              child: Text(
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
                                 (cat['name'] != null && cat['name']!.isNotEmpty)
                                     ? cat['name']!
                                     : AppLocalizations.of(context).shopAll,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
-                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.left,
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

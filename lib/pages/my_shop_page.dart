@@ -26,10 +26,8 @@ class _MyOrdersPageState extends State<MyOrdersPage>
 
   // Scroll controllers for each table:
   final ScrollController _incomingScrollController = ScrollController();
-  final ScrollController _incomingHorizontalController = ScrollController();
 
   final ScrollController _outgoingScrollController = ScrollController();
-  final ScrollController _outgoingHorizontalController = ScrollController();
 
   // Track whether we show the "Scroll to top" button.
   bool _showIncomingScrollUp = false;
@@ -69,9 +67,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   void dispose() {
     _tabController.dispose();
     _incomingScrollController.dispose();
-    _incomingHorizontalController.dispose();
     _outgoingScrollController.dispose();
-    _outgoingHorizontalController.dispose();
     super.dispose();
   }
 
@@ -232,7 +228,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
         .collection('Orders')
         .doc(orderId)
         .update({
-      'status': 'awaiting_seller_response',
+      'status': 'pending_buyer',
       'sellerAddress': sellerAddress,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -398,6 +394,52 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     await _fetchOrders();
   }
 
+  void _showOrderActions(Map<String, dynamic> order, List<PopupMenuEntry<String>> menuItems) {
+    if (menuItems.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context).actions,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...menuItems.map((item) {
+              if (item is PopupMenuItem<String>) {
+                return ListTile(
+                  leading: (item.child as Row).children[0] as Icon,
+                  title: Text(((item.child as Row).children[2] as Text).data!),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleOrderAction(order['id'], item.value!, order);
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            }).toList(),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ------------------ BUILD INCOMING TABLE ------------------
   Widget _buildIncomingOrdersTable() {
     if (incomingOrders.isEmpty) {
@@ -426,106 +468,128 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       margin: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         controller: _incomingScrollController,
-        child: SingleChildScrollView(
-          controller: _incomingHorizontalController,
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 24,
-            columns: [
-              DataColumn(label: Text(AppLocalizations.of(context).item)),
-              DataColumn(label: Text(AppLocalizations.of(context).seller)),
-              DataColumn(label: Text(AppLocalizations.of(context).price)),
-              DataColumn(label: Text(AppLocalizations.of(context).status)),
-              DataColumn(label: Text(AppLocalizations.of(context).pickupTime)),
-              DataColumn(label: Text(AppLocalizations.of(context).actions)),
-            ],
-            rows: incomingOrders.map((order) {
-              return DataRow(
-                cells: [
-                  DataCell(
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ItemPage(itemId: order['itemId']),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        child: order['itemImage'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: CachedNetworkImage(
-                                  imageUrl: order['itemImage'],
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => Container(
-                                    width: 40,
-                                    height: 40,
-                                    color: Theme.of(context).colorScheme.surfaceVariant,
+        child: Column(
+          children: incomingOrders.map((order) {
+            return InkWell(
+              onTap: () => _showOrderActions(order, _buildBuyerActionMenu(order)),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Item image (not clickable for actions)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ItemPage(itemId: order['itemId']),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            child: order['itemImage'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: order['itemImage'],
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (context, url, error) => Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: Theme.of(context).colorScheme.surfaceVariant,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size: 30,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                     child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 20,
+                                      Icons.image,
+                                      size: 30,
                                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                ),
-                              )
-                            : Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Icon(
-                                  Icons.image,
-                                  size: 20,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                  DataCell(Text(order['sellerName'] ?? 'Unknown')),
-                  DataCell(Text('\₪${(order['price'] ?? 0).toInt()}')),
-                  DataCell(
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(order['status']).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        TranslationUtils.getOrderStatus(order['status'], context),
-                        style: TextStyle(
-                          color: _getStatusColor(order['status']),
-                          fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 16),
+                        // Order details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Seller name (first row)
+                              Text(
+                                order['sellerName'] ?? 'Unknown',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              // Price and status (second row)
+                              Row(
+                                children: [
+                                  Text(
+                                    '\₪${(order['price'] ?? 0).toInt()}',
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(order['status']).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      TranslationUtils.getOrderStatus(order['status'], context),
+                                      style: TextStyle(
+                                        color: _getStatusColor(order['status']),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  DataCell(
-                    _buildPickupTimeCell(order),
-                  ),
-                  DataCell(
-                    PopupMenuButton<String>(
-                      onSelected: (value) => _handleOrderAction(order['id'], value, order),
-                      itemBuilder: (context) => _buildBuyerActionMenu(order),
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
+                    // Pickup time (new row)
+                    const SizedBox(height: 12),
+                    _buildPickupTimeCell(order, isBuyerView: true),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     ).animate().fadeIn(duration: 600.ms);
@@ -559,246 +623,397 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       margin: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         controller: _outgoingScrollController,
-        child: SingleChildScrollView(
-          controller: _outgoingHorizontalController,
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 24,
-            columns: [
-              DataColumn(label: Text(AppLocalizations.of(context).item)),
-              DataColumn(label: Text(AppLocalizations.of(context).buyer)),
-              DataColumn(label: Text(AppLocalizations.of(context).price)),
-              DataColumn(label: Text(AppLocalizations.of(context).status)),
-              DataColumn(label: Text(AppLocalizations.of(context).pickupTime)),
-              DataColumn(label: Text(AppLocalizations.of(context).actions)),
-            ],
-            rows: outgoingOrders.map((order) {
-              return DataRow(
-                cells: [
-                  DataCell(
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ItemPage(itemId: order['itemId']),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        child: order['itemImage'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: CachedNetworkImage(
-                                  imageUrl: order['itemImage'],
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => Container(
-                                    width: 40,
-                                    height: 40,
-                                    color: Theme.of(context).colorScheme.surfaceVariant,
+        child: Column(
+          children: outgoingOrders.map((order) {
+            return InkWell(
+              onTap: () => _showOrderActions(order, _buildOrderActionMenu(order)),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Item image (not clickable for actions)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ItemPage(itemId: order['itemId']),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            child: order['itemImage'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: order['itemImage'],
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (context, url, error) => Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: Theme.of(context).colorScheme.surfaceVariant,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size: 30,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                     child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 20,
+                                      Icons.image,
+                                      size: 30,
                                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                ),
-                              )
-                            : Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Icon(
-                                  Icons.image,
-                                  size: 20,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                  DataCell(Text(order['buyerName'] ?? 'Unknown')),
-                  DataCell(Text('\₪${(order['price'] ?? 0).toInt()}')),
-                  DataCell(
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(order['status']).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        TranslationUtils.getOrderStatus(order['status'], context),
-                        style: TextStyle(
-                          color: _getStatusColor(order['status']),
-                          fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 16),
+                        // Order details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Buyer name (first row)
+                              Text(
+                                order['buyerName'] ?? 'Unknown',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              // Price and status (second row)
+                              Row(
+                                children: [
+                                  Text(
+                                    '\₪${(order['price'] ?? 0).toInt()}',
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(order['status']).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      TranslationUtils.getOrderStatus(order['status'], context),
+                                      style: TextStyle(
+                                        color: _getStatusColor(order['status']),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  DataCell(
-                    _buildPickupTimeCell(order),
-                  ),
-                  DataCell(
-                    PopupMenuButton<String>(
-                      onSelected: (value) => _handleOrderAction(order['id'], value, order),
-                      itemBuilder: (context) => _buildOrderActionMenu(order),
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
+                    // Pickup time (new row)
+                    const SizedBox(height: 12),
+                    _buildPickupTimeCell(order, isBuyerView: false),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     ).animate().fadeIn(duration: 600.ms);
   }
 
-  Widget _buildPickupTimeCell(Map<String, dynamic> order) {
+  Widget _buildPickupTimeCell(Map<String, dynamic> order, {bool isBuyerView = false}) {
     final selectedTimeSlot = order['selectedTimeSlot'];
     final lastAction = order['lastAction'];
     final isNewBuyerAction = lastAction == 'buyer_selected_time';
+    final status = order['status'];
     
     if (selectedTimeSlot != null) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isNewBuyerAction 
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-              : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(6),
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+              : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
           border: isNewBuyerAction 
               ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
               : null,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isNewBuyerAction ? Icons.notification_important : Icons.schedule,
-                  size: 12,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    isNewBuyerAction ? AppLocalizations.of(context).newStatus : AppLocalizations.of(context).timeSlotConfirmed.toUpperCase(),
+            Icon(
+              isNewBuyerAction ? Icons.notification_important : Icons.schedule,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isNewBuyerAction ? AppLocalizations.of(context).newStatus : AppLocalizations.of(context).timeSlotConfirmed,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-            Text(
-              selectedTimeSlot['formatted'] ?? 'N/A',
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: isNewBuyerAction ? FontWeight.w600 : FontWeight.normal,
+                  Text(
+                    selectedTimeSlot['formatted'] ?? '-',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: isNewBuyerAction ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                  if (isNewBuyerAction)
+                    Text(
+                      AppLocalizations.of(context).timeSlotSelected,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-            if (isNewBuyerAction)
-              Text(
-                AppLocalizations.of(context).timeSlotSelected,
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontStyle: FontStyle.italic,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
           ],
         ),
       );
-    } else if (order['status'] == 'awaiting_buyer_time_selection') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
+    } else if (status == 'pending_buyer') {
+      if (isBuyerView) {
+        // For buyers - clickable to select time
+        return GestureDetector(
+          onTap: () {
+            // Navigate to time selection for buyer
+            _selectPickupTime(order['id'], order);
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue, width: 1),
+            ),
+            child: Row(
               children: [
                 Icon(
-                  Icons.hourglass_empty,
-                  size: 12,
-                  color: Colors.orange.shade700,
+                  Icons.touch_app,
+                  size: 16,
+                  color: Colors.blue.shade700,
                 ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    AppLocalizations.of(context).loading.replaceAll('...', ''),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.orange.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).orderApproved,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            Text(
-              AppLocalizations.of(context).awaitingBuyerTimeSelection,
-              style: TextStyle(
-                fontSize: 9,
-                color: Colors.orange.shade600,
+          ),
+        );
+      } else {
+        // For sellers - just informational
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.hourglass_empty,
+                size: 16,
+                color: Colors.blue.shade700,
               ),
-              overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context).awaitingTimeSelection,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } else if (status == 'pending_seller') {
+      if (isBuyerView) {
+        // For buyers - show that they're waiting for seller approval
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.hourglass_empty,
+                size: 16,
+                color: Colors.orange.shade700,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context).pendingSellerApproval,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // For sellers - show that they need to respond
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.pending_actions,
+                size: 16,
+                color: Colors.orange.shade700,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context).sellerNeedsToRespond,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } else if (status == 'confirmed') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context).timeSlotConfirmed,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
-        ),
-      );
-    } else if (order['status'] == 'time_slot_confirmed') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          AppLocalizations.of(context).timeSlotConfirmed,
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w500,
-          ),
-          overflow: TextOverflow.ellipsis,
         ),
       );
     } else {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        child: Text(
-          '-',
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.schedule_outlined,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '-',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -808,7 +1023,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     List<PopupMenuEntry<String>> menuItems = [];
 
     switch (order['status']) {
-      case 'Pending':
+      case 'pending_seller':
         menuItems.addAll([
           PopupMenuItem(
             value: 'Accept',
@@ -838,24 +1053,10 @@ class _MyOrdersPageState extends State<MyOrdersPage>
           ),
         ]);
         break;
-      case 'awaiting_seller_response':
-        menuItems.add(
-          PopupMenuItem(
-            value: 'SetAvailability',
-            child: Row(
-              children: [
-                Icon(
-                  Icons.schedule,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(AppLocalizations.of(context).selectAvailableHours),
-              ],
-            ),
-          ),
-        );
+      case 'pending_buyer':
+        // Show message that we're waiting for buyer
         break;
-      case 'time_slot_confirmed':
+      case 'confirmed':
         break;
     }
 
@@ -878,8 +1079,8 @@ class _MyOrdersPageState extends State<MyOrdersPage>
       );
     }
 
-    // Add cancel option for all active orders
-    if (!['cancelled', 'completed', 'declined'].contains(order['status'])) {
+    // Add cancel option for active orders, but not for pending_seller (sellers should accept/decline)
+    if (!['cancelled', 'completed', 'declined', 'pending_seller'].contains(order['status'])) {
       menuItems.add(
         PopupMenuItem(
           value: 'Cancel',
@@ -904,7 +1105,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     List<PopupMenuEntry<String>> menuItems = [];
 
     switch (order['status']) {
-      case 'awaiting_buyer_time_selection':
+      case 'pending_buyer':
         menuItems.add(
           PopupMenuItem(
             value: 'SelectTime',
@@ -923,7 +1124,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
         break;
     }
 
-    // Add cancel option for all active orders
+    // Add cancel option for all active orders (buyers can cancel anytime)
     if (!['cancelled', 'completed', 'declined'].contains(order['status'])) {
       menuItems.add(
         PopupMenuItem(
@@ -948,10 +1149,12 @@ class _MyOrdersPageState extends State<MyOrdersPage>
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
+      case 'pending_seller':
         return Colors.orange;
       case 'approved':
-      case 'awaiting_buyer_time_selection':
+      case 'pending_buyer':
         return Colors.blue;
+      case 'confirmed':
       case 'time_slot_confirmed':
       case 'ready_for_pickup':
         return Colors.green;
@@ -993,11 +1196,11 @@ class _MyOrdersPageState extends State<MyOrdersPage>
           tabs: [
             Tab(
               icon: const Icon(Icons.shopping_bag_outlined),
-              text: AppLocalizations.of(context).incomingOrders,
+              text: AppLocalizations.of(context).buyer,
             ),
             Tab(
               icon: const Icon(Icons.store_outlined),
-              text: AppLocalizations.of(context).outgoingOrders,
+              text: AppLocalizations.of(context).seller,
             ),
           ],
         ),
@@ -1041,24 +1244,11 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                 ],
               ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          final controller = _tabController.index == 0
-              ? _incomingScrollController
-              : _outgoingScrollController;
-          controller.animateTo(
-            0,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        },
-        child: const Icon(Icons.arrow_upward),
-      ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
-            begin: 0.2,
-            end: 0,
-            duration: 600.ms,
-            curve: Curves.easeOutQuad,
-          ),
     );
+  }
+
+  // Public method to refresh orders from external calls
+  Future<void> refreshOrders() async {
+    await _fetchOrders();
   }
 }

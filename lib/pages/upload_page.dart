@@ -139,7 +139,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
     );
 
     final model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-2.0-flash-lite',
+      model: 'gemini-2.5-flash-preview-05-20',
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: jsonSchema,

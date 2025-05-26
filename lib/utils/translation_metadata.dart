@@ -110,7 +110,9 @@ class TranslationUtils {
   static String getOrderStatus(String status, BuildContext context) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return AppLocalizations.of(context).pending;
+      case 'pending_seller':
+      case 'awaiting_seller_response':
+        return AppLocalizations.of(context).pendingSeller;
       case 'approved':
         return AppLocalizations.of(context).approved;
       case 'declined':
@@ -119,16 +121,16 @@ class TranslationUtils {
         return AppLocalizations.of(context).shipped;
       case 'delivered':
         return AppLocalizations.of(context).delivered;
-      case 'awaiting_seller_response':
-        return AppLocalizations.of(context).awaitingSellerResponse;
+      case 'pending_buyer':
       case 'awaiting_buyer_time_selection':
-        return AppLocalizations.of(context).awaitingBuyerTimeSelection;
+        return AppLocalizations.of(context).pendingBuyer;
+      case 'confirmed':
       case 'time_slot_confirmed':
-        return AppLocalizations.of(context).timeSlotConfirmed;
+        return AppLocalizations.of(context).confirmed;
       case 'completed':
-        return AppLocalizations.of(context).orderCompleted;
+        return AppLocalizations.of(context).completed;
       case 'cancelled':
-        return AppLocalizations.of(context).orderCancelled;
+        return AppLocalizations.of(context).cancelled;
       default:
         return status;
     }

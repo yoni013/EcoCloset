@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eco_closet/utils/image_handler.dart';
+import 'package:eco_closet/bottom_navigation.dart';
 
 class ItemPage extends StatefulWidget {
   final String itemId;
@@ -23,6 +24,7 @@ class ItemPage extends StatefulWidget {
 class _ItemPageState extends State<ItemPage> {
   int _currentImageIndex = 0;
   late Future<Map<String, dynamic>> _itemDataFuture;
+  bool _isPurchaseRequestSent = false;
 
   @override
   void initState() {
@@ -94,16 +96,10 @@ class _ItemPageState extends State<ItemPage> {
       return;
     }
 
-    // // Check if user is trying to buy their own item
-    // if (currentUser.uid == itemData['seller_id']) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(AppLocalizations.of(context).cannotPurchaseOwnItem),
-    //       backgroundColor: Theme.of(context).colorScheme.error,
-    //     ),
-    //   );
-    //   return;
-    // }
+    // Set button state to loading
+    setState(() {
+      _isPurchaseRequestSent = true;
+    });
 
     // Show loading dialog
     showDialog(
@@ -122,7 +118,7 @@ class _ItemPageState extends State<ItemPage> {
         'itemId': widget.itemId,
         'itemName': itemData['item_name'] ?? 'Unknown Item',
         'price': itemData['Price'] ?? 0,
-        'status': 'Pending',
+        'status': 'pending_seller',
         'createdAt': FieldValue.serverTimestamp(),
         'sellerAddress': '', // Will be filled when seller accepts
         'availableTimeSlots': [],
@@ -136,6 +132,15 @@ class _ItemPageState extends State<ItemPage> {
             : null,
       });
 
+      // Update item status to "Pending Purchase"
+      await FirebaseFirestore.instance
+          .collection('Items')
+          .doc(widget.itemId)
+          .update({'status': 'Pending Purchase'});
+
+      // Send push notification to seller if enabled
+      await _sendPushNotificationToSeller(itemData['seller_id']);
+
       // Close loading dialog
       Navigator.of(context, rootNavigator: true).pop();
 
@@ -148,9 +153,20 @@ class _ItemPageState extends State<ItemPage> {
         ),
       );
 
+      // Navigate to My Orders page and refresh
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => PersistentBottomNavPage()),
+        (route) => false,
+      );
+
     } catch (e) {
       // Close loading dialog
       Navigator.of(context, rootNavigator: true).pop();
+      
+      // Reset button state
+      setState(() {
+        _isPurchaseRequestSent = false;
+      });
       
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -159,6 +175,39 @@ class _ItemPageState extends State<ItemPage> {
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
+    }
+  }
+
+  Future<void> _sendPushNotificationToSeller(String sellerId) async {
+    try {
+      // Check if seller has push notifications enabled
+      final sellerDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(sellerId)
+          .get();
+      
+      final sellerData = sellerDoc.data();
+      if (sellerData != null && sellerData['enablePushNotifications'] == true) {
+        // Here you would implement the actual push notification sending
+        // For now, we'll just log it since the actual implementation would require
+        // Firebase Cloud Functions or a backend service
+        debugPrint('Would send push notification to seller: $sellerId');
+        debugPrint('Notification: New purchase request for your item!');
+        
+        // You could also store a notification in Firestore for the seller
+        await FirebaseFirestore.instance.collection('Notifications').add({
+          'userId': sellerId,
+          'title': 'New purchase request for your item!',
+          'message': 'A buyer is interested in your item',
+          'type': 'purchase_request',
+          'itemId': widget.itemId,
+          'createdAt': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error sending push notification: $e');
+      // Don't throw error as this is not critical for the purchase flow
     }
   }
 
@@ -545,17 +594,31 @@ class _ItemPageState extends State<ItemPage> {
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
-                          onPressed: () {
+                          onPressed: _isPurchaseRequestSent ? null : () {
                             _createPurchaseRequest(itemData);
                           },
-                          icon: const Icon(Icons.shopping_cart_outlined),
-                          label: Text(AppLocalizations.of(context).buyNow),
+                          icon: _isPurchaseRequestSent 
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.shopping_cart_outlined),
+                          label: Text(_isPurchaseRequestSent 
+                              ? AppLocalizations.of(context).pendingSellerApproval
+                              : AppLocalizations.of(context).buyNow),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             minimumSize: const Size(double.infinity, 0),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            backgroundColor: _isPurchaseRequestSent 
+                                ? Theme.of(context).colorScheme.surfaceVariant
+                                : null,
+                            foregroundColor: _isPurchaseRequestSent 
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : null,
                           ),
                         ).animate().fadeIn(delay: 1000.ms, duration: 600.ms).slideY(
                           begin: 0.2,

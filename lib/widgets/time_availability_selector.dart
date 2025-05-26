@@ -326,7 +326,7 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
           .doc(widget.orderId)
           .update({
         'availableTimeSlots': timeSlotData,
-        'status': 'awaiting_buyer_time_selection',
+        'status': 'pending_buyer',
         'updatedAt': FieldValue.serverTimestamp(),
       });
 

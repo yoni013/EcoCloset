@@ -390,5 +390,16 @@
   "timeSlotAcknowledged": "Time slot acknowledged",
   "orderMarkedAsReady": "Order marked as ready for pickup",
   "pickupTime": "Pickup Time",
-  "refresh": "Refresh"
+  "refresh": "Refresh",
+  "pendingSellerApproval": "Pending seller approval",
+  "orderApproved": "Yay! Your order was approved by the seller, click here to choose your pickup time.",
+  "sellerNeedsToRespond": "Please accept or decline this order",
+  "awaitingTimeSelection": "Waiting for buyer to select pickup time",
+  "newPurchaseNotification": "New purchase request for your item!",
+  "pendingSeller": "Pending seller",
+  "pendingBuyer": "Pending buyer",
+  "confirmed": "Confirmed",
+  "declined": "Declined",
+  "cancelled": "Cancelled",
+  "completed": "Completed"
 }

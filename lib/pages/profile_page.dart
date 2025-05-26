@@ -1,10 +1,10 @@
 /// profile_page.dart
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eco_closet/utils/image_handler.dart';
-import 'package:eco_closet/pages/personal_sizes_preferences.dart';
 import 'package:eco_closet/settings/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:eco_closet/pages/item_page.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -61,7 +61,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<List<Map<String, dynamic>>> fetchSellerItems(String sellerId) async {
     var query = FirebaseFirestore.instance
         .collection('Items')
-        .where('seller_id', isEqualTo: sellerId);
+        .where('seller_id', isEqualTo: sellerId)
+        .where('status', isEqualTo: 'Available');
 
     // Apply filters
     if (filters['type'] != null && (filters['type'] as List).isNotEmpty) {
@@ -152,6 +153,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isOwnProfile = FirebaseAuth.instance.currentUser?.uid == widget.viewedUserId;
+    
     return Scaffold(
       body: FutureBuilder<Map<String, dynamic>>(
         future: fetchUserData(widget.viewedUserId),
@@ -264,26 +267,19 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.settings),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const SettingsPage(),
-                                  ),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.room_preferences),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const PersonalSizesPreferences(),
-                                  ),
-                                );
-                              },
-                            ),
+                            // Only show settings and preferences buttons for own profile
+                            if (isOwnProfile) ...[
+                              IconButton(
+                                icon: const Icon(Icons.settings),
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const SettingsPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       ),

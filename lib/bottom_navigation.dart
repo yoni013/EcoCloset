@@ -41,7 +41,7 @@ class PersistentBottomNavPage extends StatelessWidget {
         ),
         PersistentTabItem(
           tab: () => const MyOrdersPage(),
-          icon: Icons.compare_arrows_outlined,
+          icon: Icons.shopping_cart,
           title: AppLocalizations.of(context).myShop,
           navigatorkey: _shopNavigatorKey,
         ),
@@ -89,34 +89,71 @@ class _PersistentBottomBarScaffoldState
             .toList(),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         showSelectedLabels: false,
         showUnselectedLabels: false,
         currentIndex: _selectedTab,
         onTap: (index) {
           if (_selectedTab == index) {
+            // Pop to first route
             widget.items[index].navigatorkey?.currentState?.popUntil((route) => route.isFirst);
             
-            // If profile tab is double-tapped, refresh the items
-            if (index == 4) {
-              // Get the profile navigator's context and find ProfilePage widget
-              final navigatorState = widget.items[4].navigatorkey?.currentState;
-              if (navigatorState != null) {
-                final context = navigatorState.context;
-                // Find ProfilePage in the widget tree and call refresh
-                void visitElements(Element element) {
-                  if (element.widget is ProfilePage) {
-                    final state = element as StatefulElement;
-                    try {
-                      (state.state as dynamic).refreshItems();
-                    } catch (e) {
-                      // Ignore if method doesn't exist
-                    }
-                    return;
+            // Refresh the current page based on tab index
+            final navigatorState = widget.items[index].navigatorkey?.currentState;
+            if (navigatorState != null) {
+              final context = navigatorState.context;
+              
+              void visitElements(Element element) {
+                // Handle different page types for refresh
+                if (index == 0 && element.widget is Homepage) {
+                  // Homepage refresh
+                  final state = element as StatefulElement;
+                  try {
+                    (state.state as dynamic).refreshHomepage();
+                  } catch (e) {
+                    // Ignore if methods don't exist
                   }
-                  element.visitChildElements(visitElements);
+                  return;
+                } else if (index == 1 && element.widget is ExplorePage) {
+                  // Explore page refresh
+                  final state = element as StatefulElement;
+                  try {
+                    (state.state as dynamic).setState(() {});
+                  } catch (e) {
+                    // Ignore if method doesn't exist
+                  }
+                  return;
+                } else if (index == 2 && element.widget is UploadItemPage) {
+                  // Upload page refresh
+                  final state = element as StatefulElement;
+                  try {
+                    (state.state as dynamic).setState(() {});
+                  } catch (e) {
+                    // Ignore if method doesn't exist
+                  }
+                  return;
+                } else if (index == 3 && element.widget is MyOrdersPage) {
+                  // My orders page refresh
+                  final state = element as StatefulElement;
+                  try {
+                    (state.state as dynamic).refreshOrders();
+                  } catch (e) {
+                    // Ignore if method doesn't exist
+                  }
+                  return;
+                } else if (index == 4 && element.widget is ProfilePage) {
+                  // Profile page refresh
+                  final state = element as StatefulElement;
+                  try {
+                    (state.state as dynamic).refreshItems();
+                  } catch (e) {
+                    // Ignore if method doesn't exist
+                  }
+                  return;
                 }
-                context.visitChildElements(visitElements);
+                element.visitChildElements(visitElements);
               }
+              context.visitChildElements(visitElements);
             }
             
             setState(() {});

@@ -1003,4 +1003,34 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get refresh => 'רענן';
+
+  @override
+  String get pendingSellerApproval => 'ממתין לאישור המוכר';
+
+  @override
+  String get orderApproved => 'יאי! ההזמנה שלך אושרה על ידי המוכר, לחץ כאן לבחירת זמן איסוף.';
+
+  @override
+  String get sellerNeedsToRespond => 'אנא קבל או דחה את ההזמנה הזו';
+
+  @override
+  String get awaitingTimeSelection => 'ממתין לבחירת זמן איסוף על ידי הקונה';
+
+  @override
+  String get newPurchaseNotification => 'בקשת רכישה חדשה לפריט שלך!';
+
+  @override
+  String get pendingSeller => 'ממתין למוכר';
+
+  @override
+  String get pendingBuyer => 'ממתין לקונה';
+
+  @override
+  String get confirmed => 'אושר';
+
+  @override
+  String get cancelled => 'בוטל';
+
+  @override
+  String get completed => 'הושלם';
 }

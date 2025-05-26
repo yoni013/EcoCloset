@@ -86,11 +86,9 @@ class _EditItemPageState extends State<EditItemPage> {
         await Utils.loadMetadata();
       }
 
-      // Load dropdown data and item data concurrently
-      await Future.wait([
-        _fetchDropdownData(),
-        _fetchItemData(),
-      ]);
+      // Load dropdown data first, then item data to ensure validation works
+      await _fetchDropdownData();
+      await _fetchItemData();
 
       setState(() {
         _isLoading = false;
@@ -113,11 +111,11 @@ class _EditItemPageState extends State<EditItemPage> {
 
   /// Fetch dropdown data from Utils
   Future<void> _fetchDropdownData() async {
-    _brands = Utils.brands;
-    _colors = Utils.colors;
-    _conditions = Utils.conditions;
-    _sizes = Utils.sizes;
-    _types = Utils.types;
+    _brands = Utils.brands.toSet().toList();
+    _colors = Utils.colors.toSet().toList();
+    _conditions = Utils.conditions.toSet().toList();
+    _sizes = Utils.sizes.toSet().toList();
+    _types = Utils.types.toSet().toList();
   }
 
   /// Fetch complete item data from Firestore
@@ -139,10 +137,11 @@ class _EditItemPageState extends State<EditItemPage> {
     final priceValue = _itemData?['Price'];
     _priceController.text = priceValue != null ? '${(priceValue is num ? priceValue.toInt() : priceValue)}' : '';
     
-    _selectedColor = _itemData?['Color'];
-    _selectedCondition = _itemData?['Condition'];
-    _selectedSize = _itemData?['Size'];
-    _selectedType = _itemData?['Type'];
+    // Validate and set dropdown values, ensuring they exist in the available options
+    _selectedColor = _findIgnoreCase(_colors, _itemData?['Color']);
+    _selectedCondition = _findIgnoreCase(_conditions, _itemData?['Condition']);
+    _selectedSize = _findIgnoreCase(_sizes, _itemData?['Size']);
+    _selectedType = _findIgnoreCase(_types, _itemData?['Type']);
     _isAvailable = (_itemData?['status'] ?? 'Available') == 'Available';
 
     // Handle existing images
@@ -384,6 +383,85 @@ class _EditItemPageState extends State<EditItemPage> {
     }
   }
 
+  /// Quick mark as sold functionality
+  Future<void> _markAsSold() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context).soldOut),
+        content: Text('${AppLocalizations.of(context).confirmSignOutMessage.replaceAll('sign out', 'mark this item as sold')}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: Text(AppLocalizations.of(context).confirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('Items')
+            .doc(widget.itemId)
+            .update({
+          'status': 'Sold Out',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).itemIsSoldOut),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+          
+          // Navigate back to get out of both edit page and item page
+          // This will take the user back to the original page (like profile/my shop)
+          
+          // First pop: exit edit page
+          Navigator.pop(context, {
+            'success': true,
+            'itemId': widget.itemId,
+            'markedAsSold': true,
+            'needsRefresh': true,
+          });
+          
+          // Small delay to ensure the first pop completes
+          await Future.delayed(const Duration(milliseconds: 100));
+          
+          // Second pop: exit item page (if still mounted and can pop)
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context, {
+              'success': true,
+              'itemId': widget.itemId,
+              'markedAsSold': true,
+              'needsRefresh': true,
+            });
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${AppLocalizations.of(context).errorGeneric}: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Widget _buildBrandAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
@@ -393,6 +471,36 @@ class _EditItemPageState extends State<EditItemPage> {
         return _brands.where((option) => option
             .toLowerCase()
             .contains(textEditingValue.text.toLowerCase()));
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4.0,
+            borderRadius: BorderRadius.circular(8.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(
+                        option,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
       },
       onSelected: (String selection) {
         _brandController.text = selection;
@@ -446,6 +554,36 @@ class _EditItemPageState extends State<EditItemPage> {
         return translatedColors.where((translatedColor) => translatedColor
             .toLowerCase()
             .contains(textEditingValue.text.toLowerCase()));
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4.0,
+            borderRadius: BorderRadius.circular(8.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(
+                        option,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
       },
       onSelected: (String selection) {
         // Find the original color value
@@ -686,7 +824,10 @@ class _EditItemPageState extends State<EditItemPage> {
                               items: _types
                                   .map((type) => DropdownMenuItem(
                                         value: type,
-                                        child: Text(TranslationUtils.getCategory(type, context)),
+                                        child: Text(
+                                          TranslationUtils.getCategory(type, context),
+                                          style: Theme.of(context).textTheme.bodyMedium,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (val) {
@@ -700,6 +841,8 @@ class _EditItemPageState extends State<EditItemPage> {
                                 }
                                 return null;
                               },
+                              menuMaxHeight: 200,
+                              isDense: true,
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
@@ -715,7 +858,10 @@ class _EditItemPageState extends State<EditItemPage> {
                               items: _sizes
                                   .map((size) => DropdownMenuItem(
                                         value: size,
-                                        child: Text(size),
+                                        child: Text(
+                                          size,
+                                          style: Theme.of(context).textTheme.bodyMedium,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (val) {
@@ -729,6 +875,8 @@ class _EditItemPageState extends State<EditItemPage> {
                                 }
                                 return null;
                               },
+                              menuMaxHeight: 200,
+                              isDense: true,
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
@@ -744,7 +892,10 @@ class _EditItemPageState extends State<EditItemPage> {
                               items: _conditions
                                   .map((condition) => DropdownMenuItem(
                                         value: condition,
-                                        child: Text(TranslationUtils.getCondition(condition, context)),
+                                        child: Text(
+                                          TranslationUtils.getCondition(condition, context),
+                                          style: Theme.of(context).textTheme.bodyMedium,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (val) {
@@ -758,6 +909,8 @@ class _EditItemPageState extends State<EditItemPage> {
                                 }
                                 return null;
                               },
+                              menuMaxHeight: 200,
+                              isDense: true,
                             ),
                           ],
                         ),
@@ -840,6 +993,25 @@ class _EditItemPageState extends State<EditItemPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
+                            if (_isAvailable) ...[
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: _markAsSold,
+                                  icon: const Icon(Icons.sell),
+                                  label: Text(AppLocalizations.of(context).soldOut),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Theme.of(context).colorScheme.error,
+                                    side: BorderSide(color: Theme.of(context).colorScheme.error),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1135,14 +1307,19 @@ class _EditItemPageState extends State<EditItemPage> {
                                 ],
                               ),
                             const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: _getTotalImagesCount() < 6 ? _pickImages : null,
-                              icon: const Icon(Icons.add_photo_alternate),
-                              label: Text(AppLocalizations.of(context).addImages),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _getTotalImagesCount() < 6 ? _pickImages : null,
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.add_a_photo,
+                                  size: 24,
                                 ),
                               ),
                             ),

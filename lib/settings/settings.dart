@@ -2,6 +2,7 @@ import 'package:eco_closet/auth_onboarding/authentication.dart';
 import 'package:eco_closet/settings/change_password.dart';
 import 'package:eco_closet/settings/notifications_settings.dart';
 import 'package:eco_closet/settings/profile_settings_page.dart';
+import 'package:eco_closet/pages/personal_sizes_preferences.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/main.dart';
 import 'package:eco_closet/providers/theme_provider.dart';
@@ -140,6 +141,15 @@ class SettingsPage extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                      );
+                    },
+                  ),
+                  _CustomListTile(
+                    title: AppLocalizations.of(context).sizePreferences,
+                    icon: Icons.fit_screen_outlined,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PersonalSizesPreferences()),
                       );
                     },
                   ),

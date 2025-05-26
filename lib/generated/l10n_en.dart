@@ -1003,4 +1003,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refresh => 'Refresh';
+
+  @override
+  String get pendingSellerApproval => 'Pending seller approval';
+
+  @override
+  String get orderApproved => 'Yay! Your order was approved by the seller, click here to choose your pickup time.';
+
+  @override
+  String get sellerNeedsToRespond => 'Please accept or decline this order';
+
+  @override
+  String get awaitingTimeSelection => 'Waiting for buyer to select pickup time';
+
+  @override
+  String get newPurchaseNotification => 'New purchase request for your item!';
+
+  @override
+  String get pendingSeller => 'Pending seller';
+
+  @override
+  String get pendingBuyer => 'Pending buyer';
+
+  @override
+  String get confirmed => 'Confirmed';
+
+  @override
+  String get cancelled => 'Cancelled';
+
+  @override
+  String get completed => 'Completed';
 }
