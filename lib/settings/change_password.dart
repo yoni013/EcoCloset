@@ -113,75 +113,74 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).update),
-      ),
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                // Current Password
-                TextFormField(
-                  controller: _currentPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).currentPassword,
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  // Current Password
+                  TextFormField(
+                    controller: _currentPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).currentPassword,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppLocalizations.of(context).currentPasswordPlaceholder;
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context).currentPasswordPlaceholder;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // New Password
-                TextFormField(
-                  controller: _newPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).newPassword,
+                  // New Password
+                  TextFormField(
+                    controller: _newPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).newPassword,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppLocalizations.of(context).newPasswordPlaceholder;
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context).newPasswordPlaceholder;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Confirm New Password
-                TextFormField(
-                  controller: _confirmNewPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).confirmNewPassword,
+                  // Confirm New Password
+                  TextFormField(
+                    controller: _confirmNewPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).confirmNewPassword,
+                    ),
+                    validator: (value) {
+                      if (value == null ||
+                          value.isEmpty ||
+                          value != _newPasswordController.text) {
+                        return AppLocalizations.of(context).confirmNewPasswordPlaceholder;
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null ||
-                        value.isEmpty ||
-                        value != _newPasswordController.text) {
-                      return AppLocalizations.of(context).confirmNewPasswordPlaceholder;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-                // Submit Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _changePassword,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(AppLocalizations.of(context).changePassword),
-                ),
-              ],
+                  // Submit Button
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _changePassword,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(AppLocalizations.of(context).changePassword),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

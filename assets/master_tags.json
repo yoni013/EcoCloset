@@ -1,0 +1,55 @@
+{
+  "style_tags": [
+    "casual", "formal", "business-casual", "elegant", "chic",
+    "bohemian", "boho", "minimalist", "clean", "simple", "modern",
+    "vintage", "retro", "classic", "timeless",
+    "edgy", "punk", "grunge", "alternative",
+    "romantic", "feminine", "soft", "delicate",
+    "sporty", "athletic", "active", "performance",
+    "preppy", "streetwear", "urban", "trendy"
+  ],
+  
+  "occasion_tags": [
+    "work", "office", "professional", "business",
+    "date", "date-night", "romantic", "party", "celebration", "nightout",
+    "wedding", "formal-event", "cocktail",
+    "vacation", "travel", "beach", "resort",
+    "casual", "everyday", "weekend", "relaxed", "comfortable",
+    "gym", "workout", "fitness", "yoga", "running", "sports",
+    "brunch", "shopping", "social"
+  ],
+  
+  "material_tags": [
+    "cotton", "denim", "silk", "wool", "linen",
+    "leather", "faux-leather", "lace", "mesh",
+    "sustainable", "eco-friendly"
+  ],
+  
+  "pattern_tags": [
+    "solid", "plain",
+    "striped", "polka-dots", "floral", "geometric",
+    "plaid", "checkered", "animal-print", "paisley",
+    "tie-dye", "ombre", "color-block"
+  ],
+  
+  "fit_tags": [
+    "slim-fit", "fitted", "regular-fit", "comfortable",
+    "loose-fit", "oversized", "flowing",
+    "high-waisted", "cropped", "midi", "maxi",
+    "a-line", "straight", "wide-leg",
+    "wrap", "off-shoulder", "stretchy"
+  ],
+  
+  "season_tags": [
+    "spring", "summer", "fall", "winter", "all-season",
+    "lightweight", "breathable", "airy", "cooling",
+    "warm", "insulated", "cozy", "layering",
+    "waterproof", "sun-protection", "quick-dry", "moisture-wicking"
+  ],
+  
+  "functionality_tags": [
+    "pockets", "wrinkle-free", "travel-friendly", "machine-washable",
+    "reversible", "adjustable", "versatile", "breathable",
+    "comfortable", "durable", "easy-care"
+  ]
+} 

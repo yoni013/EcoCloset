@@ -3,6 +3,7 @@ import 'package:eco_closet/settings/change_password.dart';
 import 'package:eco_closet/settings/notifications_settings.dart';
 import 'package:eco_closet/settings/profile_settings_page.dart';
 import 'package:eco_closet/pages/personal_sizes_preferences.dart';
+import 'package:eco_closet/pages/archive_page.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/main.dart';
 import 'package:eco_closet/providers/theme_provider.dart';
@@ -53,192 +54,200 @@ class SettingsPage extends StatelessWidget {
     final localeProvider = context.watch<LocaleProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).settings),
-      ),
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: ListView(
-            children: [
-              _SingleSection(
-                title: AppLocalizations.of(context).general,
-                children: [
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).darkMode,
-                    icon: Icons.dark_mode_outlined,
-                    trailing: Switch(
-                      value: Theme.of(context).brightness == Brightness.dark,
-                      onChanged: (value) {
-                        context.read<ThemeProvider>().updateUserTheme(value);
-                      },
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: ListView(
+              children: [
+                _SingleSection(
+                  title: AppLocalizations.of(context).general,
+                  children: [
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).darkMode,
+                      icon: Icons.dark_mode_outlined,
+                      trailing: Switch(
+                        value: Theme.of(context).brightness == Brightness.dark,
+                        onChanged: (value) {
+                          context.read<ThemeProvider>().updateUserTheme(value);
+                        },
+                      ),
                     ),
-                  ),
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).notifications,
-                    icon: Icons.notifications_none_rounded,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
-                      );
-                    },
-                  ),
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).language,
-                    icon: Icons.language_outlined,
-                    trailing: DropdownButton<Locale>(
-                      value: (localeProvider.locale.languageCode == 'he' || localeProvider.locale.languageCode == 'en') 
-                              ? localeProvider.locale 
-                              : const Locale('en'),
-                      onChanged: (Locale? newLocale) {
-                        if (newLocale != null) {
-                          localeProvider.setLocale(newLocale);
-                        }
-                      },
-                      items: AppLocalizations.supportedLocales
-                          .map((Locale locale) {
-                        return DropdownMenuItem(
-                          value: locale,
-                          child: Text(
-                            locale.languageCode == 'en'
-                                ? 'English'
-                                : 'עברית', // Add more if needed
-                          ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).notifications,
+                      icon: Icons.notifications_none_rounded,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
                         );
-                      }).toList(),
+                      },
                     ),
-                  ),
-                ],
-              ),
-              const Divider(),
-              _SingleSection(
-                title: AppLocalizations.of(context).account,
-                children: [
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).profileSettings,
-                    icon: Icons.person_outline_rounded,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ProfileSettingsPage()),
-                      );
-                    },
-                  ),
-                  // Privacy Button
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).privacyPolicy,
-                    icon: Icons.privacy_tip_outlined,
-                    onTap: () => _showPrivacyDialog(context),
-                  ),
-                  // Terms & Conditions Button
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).termsAndCondition,
-                    icon: Icons.policy_outlined,
-                    onTap: () => _showTermsDialog(context),
-                  ),
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).changePassword,
-                    icon: Icons.lock_reset,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
-                      );
-                    },
-                  ),
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).sizePreferences,
-                    icon: Icons.fit_screen_outlined,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PersonalSizesPreferences()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const Divider(),
-              _SingleSection(
-                title: AppLocalizations.of(context).support,
-                children: [
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).helpFeedback,
-                    icon: Icons.help_outline_rounded,
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: Text(AppLocalizations.of(context).helpFeedback),
-                            content: const Text('Feel free to contact us using one of the emails: ariel4216@gmail.com, yoni013@gmail.com'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(AppLocalizations.of(context).ok),
-                              ),
-                            ],
-                          );
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).language,
+                      icon: Icons.language_outlined,
+                      trailing: DropdownButton<Locale>(
+                        value: (localeProvider.locale.languageCode == 'he' || localeProvider.locale.languageCode == 'en') 
+                                ? localeProvider.locale 
+                                : const Locale('en'),
+                        onChanged: (Locale? newLocale) {
+                          if (newLocale != null) {
+                            localeProvider.setLocale(newLocale);
+                          }
                         },
-                      );
-                    },
-                  ),
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).about,
-                    icon: Icons.info_outline_rounded,
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: Text(AppLocalizations.of(context).about),
-                            content: const Text('Ariel Porath and Yonathan Eliav, just two regular guys trying to make the world a better place.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(AppLocalizations.of(context).ok),
-                              ),
-                            ],
+                        items: AppLocalizations.supportedLocales
+                            .map((Locale locale) {
+                          return DropdownMenuItem(
+                            value: locale,
+                            child: Text(
+                              locale.languageCode == 'en'
+                                  ? 'English'
+                                  : 'עברית', // Add more if needed
+                            ),
                           );
-                        },
-                      );
-                    },
-                  ),
-                  _CustomListTile(
-                    title: AppLocalizations.of(context).signOut,
-                    icon: Icons.exit_to_app_rounded,
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text(AppLocalizations.of(context).signOut),
-                            content: Text(AppLocalizations.of(context)
-                                .confirmSignOutMessage),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text(AppLocalizations.of(context).no),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  await FirebaseAuth.instance.signOut();
-                                  Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                        builder: (context) => AuthGate()),
-                                    (route) => false,
-                                  );
-                                },
-                                child: Text(AppLocalizations.of(context).yes),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                _SingleSection(
+                  title: AppLocalizations.of(context).account,
+                  children: [
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).profileSettings,
+                      icon: Icons.person_outline_rounded,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ProfileSettingsPage()),
+                        );
+                      },
+                    ),
+                    // Privacy Button
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).privacyPolicy,
+                      icon: Icons.privacy_tip_outlined,
+                      onTap: () => _showPrivacyDialog(context),
+                    ),
+                    // Terms & Conditions Button
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).termsAndCondition,
+                      icon: Icons.policy_outlined,
+                      onTap: () => _showTermsDialog(context),
+                    ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).changePassword,
+                      icon: Icons.lock_reset,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                        );
+                      },
+                    ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).sizePreferences,
+                      icon: Icons.fit_screen_outlined,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PersonalSizesPreferences()),
+                        );
+                      },
+                    ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).archivePosts,
+                      icon: Icons.archive_outlined,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ArchivePage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const Divider(),
+                _SingleSection(
+                  title: AppLocalizations.of(context).support,
+                  children: [
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).helpFeedback,
+                      icon: Icons.help_outline_rounded,
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text(AppLocalizations.of(context).helpFeedback),
+                              content: const Text('Feel free to contact us using one of the emails: ariel4216@gmail.com, yoni013@gmail.com'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(AppLocalizations.of(context).ok),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).about,
+                      icon: Icons.info_outline_rounded,
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text(AppLocalizations.of(context).about),
+                              content: const Text('Ariel Porath and Yonathan Eliav, just two regular guys trying to make the world a better place.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(AppLocalizations.of(context).ok),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).signOut,
+                      icon: Icons.exit_to_app_rounded,
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text(AppLocalizations.of(context).signOut),
+                              content: Text(AppLocalizations.of(context)
+                                  .confirmSignOutMessage),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text(AppLocalizations.of(context).no),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    await FirebaseAuth.instance.signOut();
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                          builder: (context) => AuthGate()),
+                                      (route) => false,
+                                    );
+                                  },
+                                  child: Text(AppLocalizations.of(context).yes),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

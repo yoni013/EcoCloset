@@ -70,6 +70,7 @@ class ItemCard extends StatelessWidget {
       return CachedNetworkImage(
         imageUrl: imageUrl,
         fit: BoxFit.cover,
+        width: double.infinity,
         placeholder: (context, url) => Container(
           color: Theme.of(context).colorScheme.surfaceVariant,
           child: Center(
@@ -89,6 +90,7 @@ class ItemCard extends StatelessWidget {
       );
     } else {
       return Container(
+        width: double.infinity,
         color: Theme.of(context).colorScheme.surfaceVariant,
         child: Icon(
           Icons.image_not_supported,
@@ -124,29 +126,36 @@ class ItemCard extends StatelessWidget {
   }
 
   Widget _buildItemInfo(BuildContext context) {
+    final size = item['Size'] ?? '';
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            item['Brand'] ?? 'Unknown',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Text(
+              item['item_name'] ?? item['Brand'] ?? 'Unknown',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
           const SizedBox(height: 2),
-          Text(
-            item['Type'] ?? '',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Text(
+              size.isNotEmpty ? size : '',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
         ],
       ),

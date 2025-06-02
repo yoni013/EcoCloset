@@ -87,45 +87,44 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).notificationSettings),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                children: [
+                  SwitchListTile(
+                    title: Text(AppLocalizations.of(context).enablePushNotifications),
+                    value: _enablePushNotifications,
+                    onChanged: (bool newValue) {
+                      setState(() {
+                        _enablePushNotifications = newValue;
+                      });
+                      _updateSetting('enablePushNotifications', newValue);
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text(AppLocalizations.of(context).enableEmailNotifications),
+                    value: _enableEmailNotifications,
+                    onChanged: (bool newValue) {
+                      setState(() {
+                        _enableEmailNotifications = newValue;
+                      });
+                      _updateSetting('enableEmailNotifications', newValue);
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text(AppLocalizations.of(context).enableSmsNotifications),
+                    value: _enableSmsNotifications,
+                    onChanged: (bool newValue) {
+                      setState(() {
+                        _enableSmsNotifications = newValue;
+                      });
+                      _updateSetting('enableSmsNotifications', newValue);
+                    },
+                  ),
+                ],
+              ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                SwitchListTile(
-                  title: Text(AppLocalizations.of(context).enablePushNotifications),
-                  value: _enablePushNotifications,
-                  onChanged: (bool newValue) {
-                    setState(() {
-                      _enablePushNotifications = newValue;
-                    });
-                    _updateSetting('enablePushNotifications', newValue);
-                  },
-                ),
-                SwitchListTile(
-                  title: Text(AppLocalizations.of(context).enableEmailNotifications),
-                  value: _enableEmailNotifications,
-                  onChanged: (bool newValue) {
-                    setState(() {
-                      _enableEmailNotifications = newValue;
-                    });
-                    _updateSetting('enableEmailNotifications', newValue);
-                  },
-                ),
-                SwitchListTile(
-                  title: Text(AppLocalizations.of(context).enableSmsNotifications),
-                  value: _enableSmsNotifications,
-                  onChanged: (bool newValue) {
-                    setState(() {
-                      _enableSmsNotifications = newValue;
-                    });
-                    _updateSetting('enableSmsNotifications', newValue);
-                  },
-                ),
-              ],
-            ),
     );
   }
 }

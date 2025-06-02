@@ -341,6 +341,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brandRequired => 'Brand is required';
 
   @override
+  String get itemName => 'Item Name';
+
+  @override
+  String get itemNameRequired => 'Item name is required';
+
+  @override
   String get color => 'Color';
 
   @override
@@ -404,6 +410,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sortByRecommended => 'Recommended';
+
+  @override
+  String get sortByNewestFirst => 'Newest First';
+
+  @override
+  String get sortByOldestFirst => 'Oldest First';
 
   @override
   String get forMe => 'For Me';
@@ -694,9 +706,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editItem => 'Edit Item';
 
   @override
-  String get itemName => 'Item Name';
-
-  @override
   String get thisFieldIsRequired => 'This field is required';
 
   @override
@@ -897,7 +906,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get declineOrder => 'Decline Order';
 
   @override
-  String get reasonForDeclining => 'Reason for declining (optional)';
+  String get reasonForDeclining => 'Reason for declining:';
 
   @override
   String get declineReasonHint => 'Please explain why you\'re declining this order';
@@ -1033,4 +1042,126 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get completed => 'Completed';
+
+  @override
+  String get archive => 'Archive';
+
+  @override
+  String get archivedItems => 'Archived Items';
+
+  @override
+  String get noArchivedItems => 'No archived items found';
+
+  @override
+  String get archivedItemsDescription => 'Items that are sold or marked as unavailable';
+
+  @override
+  String get archivePosts => 'Archive Posts';
+
+  @override
+  String get markAsSold => 'Mark as Sold';
+
+  @override
+  String get confirmSale => 'Confirm Sale';
+
+  @override
+  String get confirmSaleMessage => 'Have you completed the sale and handed over the item to the buyer?';
+
+  @override
+  String get awaitingBuyerConfirmation => 'Awaiting Buyer Confirmation';
+
+  @override
+  String get confirmPurchase => 'Confirm Purchase';
+
+  @override
+  String get confirmPurchaseMessage => 'Did you receive the item from the seller?';
+
+  @override
+  String get writeReview => 'Write a Review';
+
+  @override
+  String get reviewOptional => 'Review (Optional)';
+
+  @override
+  String get reviewPlaceholder => 'Share your experience with this seller...';
+
+  @override
+  String get skipReview => 'Skip Review';
+
+  @override
+  String get submitReview => 'Submit Review';
+
+  @override
+  String get thankYouForReview => 'Thank you for your review!';
+
+  @override
+  String get purchaseConfirmed => 'Purchase confirmed successfully';
+
+  @override
+  String get rateYourExperience => 'Rate your experience';
+
+  @override
+  String get reviewSubmitted => 'Review submitted successfully';
+
+  @override
+  String get sold => 'Sold';
+
+  @override
+  String get awaitingBuyerToConfirm => 'Waiting for buyer to confirm receipt';
+
+  @override
+  String get confirmReceiptOfItem => 'Please confirm that you received the item';
+
+  @override
+  String get sellerMarkedAsSold => 'Seller marked as Sold! Did you receive the item?';
+
+  @override
+  String get iReceivedItem => 'I received the item';
+
+  @override
+  String get iDidNotReceiveItem => 'I did not receive the item';
+
+  @override
+  String get reported => 'Reported';
+
+  @override
+  String get issueReported => 'Issue reported successfully';
+
+  @override
+  String get tapToConfirmReceipt => 'Tap to confirm receipt or report issue';
+
+  @override
+  String get reasonForCancellation => 'Reason for cancellation:';
+
+  @override
+  String get noReasonProvided => 'No reason provided';
+
+  @override
+  String get enjoyMessage => 'Enjoy :)';
+
+  @override
+  String get callBuyer => 'Call Buyer';
+
+  @override
+  String get callSeller => 'Call Seller';
+
+  @override
+  String get messageBuyer => 'Message Buyer';
+
+  @override
+  String get messageSeller => 'Message Seller';
+
+  @override
+  String whatsappMessageTemplate(Object brand, Object color, Object itemName, Object size, Object type) {
+    return 'Hi! I\'m contacting you regarding the order for: $itemName - $brand $type in $color, size $size.';
+  }
+
+  @override
+  String get phoneNotAvailable => 'Phone number not available';
+
+  @override
+  String get whatsappNotInstalled => 'WhatsApp is not installed on this device';
+
+  @override
+  String get cannotOpenDialer => 'Cannot open phone dialer';
 }

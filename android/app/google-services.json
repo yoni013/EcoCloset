@@ -23,6 +23,44 @@
           "other_platform_oauth_client": []
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46669496533:android:d2fa2829fc828257a2625c",
+        "android_client_info": {
+          "package_name": "com.test.ecoCloset"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46669496533:android:baaebfb20974397fa2625c",
+        "android_client_info": {
+          "package_name": "com.test.eco_closet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
     }
   ],
   "configuration_version": "1"

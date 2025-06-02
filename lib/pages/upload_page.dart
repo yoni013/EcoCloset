@@ -7,10 +7,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'dart:ui';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../services/tag_service.dart';
 
 class UploadItemPage extends StatefulWidget {
   @override
@@ -75,16 +77,35 @@ class _UploadItemPageState extends State<UploadItemPage> {
                   );
                   return;
                 }
-                final XFile? cameraImage = await _picker.pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 50,
-                );
-                if (cameraImage != null) {
-                  setState(() {
-                    if (_images.length < 6) {
-                      _images.add(cameraImage);
-                    }
-                  });
+                
+                try {
+                  final XFile? cameraImage = await _picker.pickImage(
+                    source: ImageSource.camera,
+                    imageQuality: 50,
+                    maxWidth: 1920,
+                    maxHeight: 1080,
+                  );
+                  
+                  if (cameraImage != null) {
+                    setState(() {
+                      if (_images.length < 6) {
+                        _images.add(cameraImage);
+                      }
+                    });
+                  } else {
+                    // User cancelled camera
+                    debugPrint('Camera cancelled by user');
+                  }
+                } catch (e) {
+                  debugPrint('Error taking photo: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error taking photo: ${e.toString()}'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    );
+                  }
                 }
               },
             ),
@@ -93,21 +114,40 @@ class _UploadItemPageState extends State<UploadItemPage> {
               title: Text(AppLocalizations.of(context).selectFromGallery),
               onTap: () async {
                 Navigator.pop(context);
-                final pickedImages = await _picker.pickMultiImage(
-                  imageQuality: 50,
-                  // You can pick multiple images here; limit them to 6
-                  limit: 6,
-                );
-                if (pickedImages.isNotEmpty) {
-                  setState(() {
-                    for (var img in pickedImages) {
-                      if (_images.length < 6) {
-                        _images.add(img);
-                      } else {
-                        break;
+                
+                try {
+                  final pickedImages = await _picker.pickMultiImage(
+                    imageQuality: 50,
+                    maxWidth: 1920,
+                    maxHeight: 1080,
+                    // You can pick multiple images here; limit them to 6
+                    limit: 6 - _images.length, // Only allow remaining slots
+                  );
+                  
+                  if (pickedImages.isNotEmpty) {
+                    setState(() {
+                      for (var img in pickedImages) {
+                        if (_images.length < 6) {
+                          _images.add(img);
+                        } else {
+                          break;
+                        }
                       }
-                    }
-                  });
+                    });
+                  } else {
+                    // User cancelled gallery selection
+                    debugPrint('Gallery selection cancelled by user');
+                  }
+                } catch (e) {
+                  debugPrint('Error selecting from gallery: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error selecting images: ${e.toString()}'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    );
+                  }
                 }
               },
             ),
@@ -117,70 +157,82 @@ class _UploadItemPageState extends State<UploadItemPage> {
     );
   }
 
-  void _makeImageMain(int index) {
+  void _removeImage(int index) {
     setState(() {
-      final tappedImage = _images.removeAt(index);
-      _images.insert(0, tappedImage);
+      _images.removeAt(index);
+    });
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final XFile item = _images.removeAt(oldIndex);
+      _images.insert(newIndex, item);
     });
   }
 
   Future<Map<String, dynamic>> _callGemini() async {
-    final jsonSchema = Schema.object(
-      properties: {
-        'Brand':
-            Schema.string(description: 'Brand of the item, or null if unknown'),
+    try {
+      // Define the JSON schema for structured output
+      final jsonSchema = Schema.object(properties: {
+        'item_name': Schema.string(description: 'A descriptive name for the item (2-4 words)'),
+        'Brand': Schema.string(description: 'Brand of the item, or empty string if unknown'),
         'Color': Schema.string(description: 'Color of the item'),
         'Condition': Schema.string(description: 'Condition of the item'),
         'Size': Schema.string(description: 'Size of the item'),
-        'Type': Schema.string(
-            description:
-                'Type of the item one of this list: Activewear,Belts,Coats,Dresses,Gloves,Hats,Jeans,Jumpsuits,Overalls,Pants,Scarves,Shirts,Shoes,Shorts,Skirts,Sleepwear,Sweaters,Swimwear'),
-      },
-    );
+        'Type': Schema.string(description: 'Type of the item - one of: Activewear,Belts,Coats,Dresses,Gloves,Hats,Jeans,Jumpsuits,Overalls,Pants,Scarves,Shirts,Shoes,Shorts,Skirts,Sleepwear,Sweaters,Swimwear'),
+      });
 
-    final model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-2.5-flash-preview-05-20',
-      generationConfig: GenerationConfig(
-        responseMimeType: 'application/json',
-        responseSchema: jsonSchema,
-        temperature: 0.2, // Lower temperature for more consistent results
-        maxOutputTokens: 1024,
-      ),
-    );
+      // Initialize the Gemini Developer API backend service using Firebase AI Logic
+      final model = FirebaseAI.googleAI().generativeModel(
+        model: 'gemini-2.0-flash',
+        // Configure for structured JSON output
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+          responseSchema: jsonSchema,
+        ),
+      );
 
-    List<InlineDataPart> imageParts = [];
-    for (var image in _images) {
-      final bytes = await File(image.path).readAsBytes();
-      imageParts.add(InlineDataPart('image/jpeg', bytes));
-    }
-
-    final prompt = TextPart(
-      '''Analyze the provided images of the clothing item and extract the following metadata:
-      1. Identify the brand if visible on tags or labels
-      2. Determine the exact color(s)
-      3. Assess the condition based on visible wear, stains, or damage
-      4. Identify the size from tags or labels
-      5. Determine the type of clothing item
+      // Convert images to Content objects
+      List<Content> contentParts = [];
       
-      Focus on accuracy and provide specific details when possible.''',
-    );
+      // Add images as content parts
+      for (var image in _images) {
+        final bytes = await File(image.path).readAsBytes();
+        contentParts.add(Content.inlineData('image/jpeg', bytes));
+      }
 
-    final content = [
-      Content.multi([...imageParts, prompt])
-    ];
+      // Add the text prompt
+      contentParts.add(Content.text('''
+        Analyze the provided images of the clothing item and extract the following metadata:
+        1. Generate a descriptive item name (2-4 words) that captures the essence of the item (e.g., "Blue Denim Jacket", "Red Summer Dress", "Black Running Shoes")
+        2. Identify the brand if visible on tags or labels
+        3. Determine the exact color(s)
+        4. Assess the condition based on visible wear, stains, or damage
+        5. Identify the size from tags or labels
+        6. Determine the type of clothing item
+        
+        For the item name, create something descriptive and appealing that a buyer would find attractive. Focus on key visual features like color, style, or distinctive characteristics.
+        Focus on accuracy and provide specific details when possible.
+      '''));
 
-    try {
-      final response = await model.generateContent(content);
+      // Generate content using Firebase AI Logic
+      final response = await model.generateContent(contentParts);
+      
       debugPrint('Gemini Response: ${response.text}');
 
-      if (response.text == null) {
+      if (response.text == null || response.text!.isEmpty) {
         throw Exception('No response from Gemini');
       }
 
+      // Parse the structured JSON response
       var decoded = jsonDecode(response.text!) as Map<String, dynamic>;
 
       // Validate and clean up the response
       return {
+        'item_name': decoded['item_name']?.toString() ?? '',
         'Brand': decoded['Brand']?.toString() ?? '',
         'Color': decoded['Color']?.toString() ?? '',
         'Condition': decoded['Condition']?.toString() ?? '',
@@ -196,299 +248,345 @@ class _UploadItemPageState extends State<UploadItemPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          AppLocalizations.of(context).uploadItemStep1,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .primaryContainer
-                  .withOpacity(0.1),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  AppLocalizations.of(context).photoTips,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontStyle: FontStyle.italic,
-                      ),
-                ).animate().fadeIn(duration: 600.ms),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(context).mainImageInstructions,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w500,
-                      ),
-                ).animate().fadeIn(delay: 200.ms, duration: 600.ms),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
               padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withOpacity(0.1),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+              ),
               child: Column(
                 children: [
-                  Expanded(
-                    child: _images.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_photo_alternate_outlined,
-                                  size: 64,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withOpacity(0.5),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  AppLocalizations.of(context).pickImages,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ).animate().fadeIn(duration: 600.ms)
-                        : GridView.builder(
-                            itemCount: _images.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemBuilder: (context, index) {
-                              final image = _images[index];
-                              return Card(
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Image.file(
-                                      File(image.path),
-                                      fit: BoxFit.cover,
-                                    ),
-                                    if (index == 0)
-                                      Positioned(
-                                        top: 8,
-                                        left: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primaryContainer,
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            AppLocalizations.of(context)
-                                                .mainImage,
-                                            style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onPrimaryContainer,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                          foregroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _images.removeAt(index);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () => _makeImageMain(index),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: index == 0
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                  : Colors.transparent,
-                                              width: 2,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                                  .animate(delay: (50 * index).ms)
-                                  .fadeIn(
-                                    duration: 600.ms,
-                                    curve: Curves.easeOutQuad,
-                                  )
-                                  .slideY(
-                                    begin: 0.2,
-                                    end: 0,
-                                    duration: 600.ms,
-                                    curve: Curves.easeOutQuad,
-                                  );
-                            },
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _pickImageSource,
-                          icon: const Icon(Icons.add_photo_alternate),
-                          label: Text(AppLocalizations.of(context).pickImages),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                  Text(
+                    AppLocalizations.of(context).photoTips,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontStyle: FontStyle.italic,
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _images.isNotEmpty
-                              ? () async {
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (context) => Dialog(
-                                      backgroundColor: Colors.transparent,
-                                      elevation: 0,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const CircularProgressIndicator(),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            AppLocalizations.of(context)
-                                                .analyzingImages,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-
-                                  try {
-                                    final metadata = await _callGemini();
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop();
-
-                                    final result = await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => _StepTwoForm(
-                                          images: _images,
-                                          brands: _brands,
-                                          colors: _colors,
-                                          conditions: _conditions,
-                                          sizes: _sizes,
-                                          types: _types,
-                                          prefilledData: metadata,
-                                        ),
-                                      ),
-                                    );
-
-                                    if (result == true) {
-                                      setState(() {});
-                                    }
-                                  } catch (e) {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content:
-                                            Text('${AppLocalizations.of(context).errorProcessingImages}: $e'),
-                                        backgroundColor:
-                                            Theme.of(context).colorScheme.error,
-                                      ),
-                                    );
-                                  }
-                                }
-                              : null,
-                          icon: const Icon(Icons.arrow_forward),
-                          label: Text(AppLocalizations.of(context).next),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                  ).animate().fadeIn(duration: 600.ms),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLocalizations.of(context).mainImageInstructions,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                    ],
-                  ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutQuad,
-                      ),
+                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms),
                 ],
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _images.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 64,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    AppLocalizations.of(context).pickImages,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ).animate().fadeIn(duration: 600.ms)
+                          : Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12.0),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.drag_handle,
+                                        color: Theme.of(context).colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Drag to reorder images',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: ReorderableListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _images.length,
+                                    onReorder: _onReorder,
+                                    proxyDecorator: (child, index, animation) {
+                                      return AnimatedBuilder(
+                                        animation: animation,
+                                        builder: (BuildContext context, Widget? child) {
+                                          final double animValue = Curves.easeInOut.transform(animation.value);
+                                          final double elevation = lerpDouble(0, 6, animValue)!;
+                                          final double scale = lerpDouble(1, 1.02, animValue)!;
+                                          return Transform.scale(
+                                            scale: scale,
+                                            child: Card(
+                                              elevation: elevation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: child,
+                                      );
+                                    },
+                                    itemBuilder: (context, index) {
+                                      final image = _images[index];
+                                      return Card(
+                                        key: ValueKey(image.path),
+                                        elevation: 0,
+                                        margin: const EdgeInsets.only(right: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: Container(
+                                          width: 160,
+                                          child: Stack(
+                                            fit: StackFit.expand,
+                                            children: [
+                                              // Image preview
+                                              Image.file(
+                                                File(image.path),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              // Main image badge
+                                              if (index == 0)
+                                                Positioned(
+                                                  top: 8,
+                                                  left: 8,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primaryContainer,
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      AppLocalizations.of(context).mainImage,
+                                                      style: TextStyle(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onPrimaryContainer,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              // Drag handle
+                                              Positioned(
+                                                bottom: 8,
+                                                left: 8,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .surface
+                                                        .withOpacity(0.8),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.drag_handle,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface,
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                              ),
+                                              // Remove button
+                                              Positioned(
+                                                top: 8,
+                                                right: 8,
+                                                child: IconButton(
+                                                  icon: const Icon(Icons.close),
+                                                  style: IconButton.styleFrom(
+                                                    backgroundColor: Theme.of(context)
+                                                        .colorScheme
+                                                        .surface,
+                                                    foregroundColor: Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                  ),
+                                                  onPressed: () => _removeImage(index),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ).animate(delay: (50 * index).ms)
+                                          .fadeIn(
+                                            duration: 600.ms,
+                                            curve: Curves.easeOutQuad,
+                                          )
+                                          .slideX(
+                                            begin: 0.2,
+                                            end: 0,
+                                            duration: 600.ms,
+                                            curve: Curves.easeOutQuad,
+                                          ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _pickImageSource,
+                            icon: const Icon(Icons.add_photo_alternate),
+                            label: Text(AppLocalizations.of(context).pickImages),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _images.isNotEmpty
+                                ? () async {
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => Dialog(
+                                        backgroundColor: Colors.transparent,
+                                        elevation: 0,
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const CircularProgressIndicator(),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              AppLocalizations.of(context)
+                                                  .analyzingImages,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+
+                                    try {
+                                      final metadata = await _callGemini();
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop();
+
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => _StepTwoForm(
+                                            images: _images,
+                                            brands: _brands,
+                                            colors: _colors,
+                                            conditions: _conditions,
+                                            sizes: _sizes,
+                                            types: _types,
+                                            prefilledData: metadata,
+                                          ),
+                                        ),
+                                      );
+
+                                      if (result == true) {
+                                        setState(() {});
+                                      }
+                                    } catch (e) {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content:
+                                              Text('${AppLocalizations.of(context).errorProcessingImages}: $e'),
+                                          backgroundColor:
+                                              Theme.of(context).colorScheme.error,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                : null,
+                            icon: const Icon(Icons.arrow_forward),
+                            label: Text(AppLocalizations.of(context).next),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: 600.ms,
+                          curve: Curves.easeOutQuad,
+                        ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -526,33 +624,92 @@ class _StepTwoForm extends StatelessWidget {
     return null;
   }
 
-  /// Upload item details (with images) to Firestore
+  /// Upload item details (with images) to Firestore using new tagging system
   Future<void> _uploadItemToFirebase(
     Map<String, dynamic> formData,
     BuildContext context,
   ) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      throw Exception('User not logged in.');
-    }
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User not logged in.');
+      }
 
-    // Upload images to Firebase Storage in order
-    List<String> imagePaths = [];
-    for (var image in images) {
-      final String imageName = 'items/${image.name}';
-      final ref = FirebaseStorage.instance.ref().child(imageName);
-      await ref.putFile(File(image.path));
-      final url = await ref.getDownloadURL();
-      imagePaths.add(url);
-    }
+      // Step 1: Upload images to Firebase Storage
+      debugPrint('📸 Uploading images...');
+      List<String> imagePaths = [];
+      for (var image in images) {
+        final String imageName = 'items/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+        final ref = FirebaseStorage.instance.ref().child(imageName);
+        
+        await ref.putFile(File(image.path)).timeout(
+          const Duration(minutes: 2),
+          onTimeout: () {
+            throw Exception('Image upload timed out. Please check your internet connection.');
+          },
+        );
+        
+        final url = await ref.getDownloadURL().timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw Exception('Failed to get download URL. Please try again.');
+          },
+        );
+        imagePaths.add(url);
+      }
 
-    // Create the document in Firestore
-    await FirebaseFirestore.instance.collection('Items').add({
-      ...formData,
-      'images': imagePaths, // The first in the list is "main"
-      'seller_id': userId,
-      'status': 'Available',
-    });
+      // Step 2: Create the item document in Firestore
+      debugPrint('💾 Creating item document...');
+      final itemRef = await FirebaseFirestore.instance.collection('Items').add({
+        ...formData,
+        'images': imagePaths,
+        'seller_id': userId,
+        'status': 'Available',
+        'createdAt': FieldValue.serverTimestamp(),
+      }).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Failed to save item data. Please try again.');
+        },
+      );
+
+      final itemId = itemRef.id;
+
+      // Step 3: Generate tags using Gemini AI
+      debugPrint('🏷️ Generating tags with AI...');
+      try {
+        final tagService = TagService();
+        await tagService.initialize();
+        
+        final generatedTags = await tagService.generateTagsWithGemini(
+          imageUrls: imagePaths,
+          itemMetadata: formData,
+        );
+
+        if (generatedTags.isNotEmpty) {
+          debugPrint('🎯 Generated ${generatedTags.length} tags: ${generatedTags.join(", ")}');
+          
+          // Step 4: Add tags to the item
+          await tagService.addTagsToItem(
+            itemId: itemId,
+            tagNames: generatedTags,
+          );
+          
+          debugPrint('✅ Tags added successfully!');
+        } else {
+          debugPrint('⚠️ No tags were generated, item uploaded without tags');
+        }
+      } catch (tagError) {
+        debugPrint('⚠️ Tag generation failed: $tagError');
+        debugPrint('📦 Item uploaded successfully without tags');
+      }
+
+      debugPrint('✅ Item uploaded successfully with ID: $itemId');
+
+    } catch (e) {
+      debugPrint('❌ Upload failed: $e');
+      throw Exception('Upload failed: ${e.toString()}');
+    }
   }
 
   @override
@@ -569,6 +726,7 @@ class _StepTwoForm extends StatelessWidget {
 
     // Initialize formData from possibly matched values
     final Map<String, dynamic> formData = {
+      'item_name': '', // New field for item name
       'Brand': matchedBrand,
       'Color': matchedColor,
       'Condition': matchedCondition,
@@ -579,296 +737,356 @@ class _StepTwoForm extends StatelessWidget {
     };
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).uploadItemStep2),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Brand (Autocomplete)
-                Autocomplete<String>(
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty) {
-                      return const Iterable<String>.empty();
-                    }
-                    return brands.where((option) => option
-                        .toLowerCase()
-                        .contains(textEditingValue.text.toLowerCase()));
-                  },
-                  onSelected: (String selection) {
-                    formData['Brand'] = selection;
-                  },
-                  initialValue: TextEditingValue(
-                    text: formData['Brand'] ?? '',
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Item Name (Text field)
+                  TextFormField(
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).itemName),
+                    maxLength: 50, // Character limit
+                    onChanged: (value) => formData['item_name'] = value,
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? AppLocalizations.of(context).itemNameRequired
+                        : null,
                   ),
-                  fieldViewBuilder: (BuildContext context,
-                      TextEditingController textEditingController,
-                      FocusNode focusNode,
-                      VoidCallback onFieldSubmitted) {
-                    return TextFormField(
-                      controller: textEditingController,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context).brand),
-                      validator: (value) => value == null || value.isEmpty
-                          ? AppLocalizations.of(context).brandRequired
-                          : null,
-                      onChanged: (value) {
-                        formData['Brand'] =
-                            value; // Update formData on text change
-                      },
-                      onFieldSubmitted: (value) {
-                        formData['Brand'] = value;
-                        onFieldSubmitted(); // Trigger any additional submission logic
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Color (Autocomplete)
-                Autocomplete<String>(
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty) {
-                      return const Iterable<String>.empty();
-                    }
-                    final translatedColors = colors
-                        .map((color) =>
-                            TranslationUtils.getColor(color, context))
-                        .toList();
-                    return translatedColors.where((translatedColor) =>
-                        translatedColor
-                            .toLowerCase()
-                            .contains(textEditingValue.text.toLowerCase()));
-                  },
-                  onSelected: (String selection) {
-                    formData['Color'] = colors.firstWhere(
-                        (color) =>
-                            TranslationUtils.getColor(color, context) ==
-                            selection,
-                        orElse: () => selection);
-                  },
-                  initialValue: TextEditingValue(
-                    text: formData['Color'] != null
-                        ? TranslationUtils.getColor(
-                            formData['Color']!, context) // Show localized color
-                        : '',
-                  ),
-                  fieldViewBuilder: (BuildContext context,
-                      TextEditingController textEditingController,
-                      FocusNode focusNode,
-                      VoidCallback onFieldSubmitted) {
-                    return TextFormField(
-                      controller: textEditingController,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context).color),
-                      validator: (value) => value == null || value.isEmpty
-                          ? AppLocalizations.of(context).colorRequired
-                          : null,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Condition (Dropdown)
-                DropdownButtonFormField<String>(
-                  items: conditions
-                      .map((condition) => DropdownMenuItem(
-                            value: condition,
-                            child: Text(TranslationUtils.getCondition(
-                                condition, context)),
-                          ))
-                      .toList(),
-                  value: formData['Condition'],
-                  onChanged: (value) => formData['Condition'] = value,
-                  decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context).condition),
-                  validator: (value) => value == null
-                      ? AppLocalizations.of(context).conditionRequired
-                      : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Size (Dropdown)
-                DropdownButtonFormField<String>(
-                  items: sizes
-                      .map((size) => DropdownMenuItem(
-                            value: size,
-                            child: Text(size),
-                          ))
-                      .toList(),
-                  value: formData['Size'],
-                  onChanged: (value) => formData['Size'] = value,
-                  decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context).size),
-                  validator: (value) => value == null
-                      ? AppLocalizations.of(context).sizeRequired
-                      : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Type (Dropdown)
-                DropdownButtonFormField<String>(
-                  items: types
-                      .map((type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(
-                                TranslationUtils.getCategory(type, context)),
-                          ))
-                      .toList(),
-                  value: formData['Type'],
-                  onChanged: (value) => formData['Type'] = value,
-                  decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context).type),
-                  validator: (value) => value == null
-                      ? AppLocalizations.of(context).typeRequired
-                      : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Description
-                TextFormField(
-                  decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context).description),
-                  maxLines: 3,
-                  initialValue: formData['Description'],
-                  onChanged: (value) => formData['Description'] = value,
-                ),
-                const SizedBox(height: 16),
-
-                // Price
-                TextFormField(
-                  decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context).price),
-                  keyboardType: TextInputType.number,
-                  initialValue: formData['Price'].toString(),
-                  onChanged: (value) {
-                    formData['Price'] = int.tryParse(value);
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context).priceRequired;
-                    }
-                    final intValue = int.tryParse(value);
-                    if (intValue == null) {
-                      return AppLocalizations.of(context).priceValidInteger;
-                    }
-                    if (intValue <= 0) {
-                      return AppLocalizations.of(context).priceGreaterThanZero;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Submit
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      final estimated = estimateItemValue(
-                        formData['Brand'] ?? 'Unknown',
-                        formData['Condition'] ?? 'New',
-                        formData['Type'] ?? 'T-Shirts',
+                  // Brand (Autocomplete)
+                  Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      return brands.where((option) => option
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase()));
+                    },
+                    onSelected: (String selection) {
+                      formData['Brand'] = selection;
+                    },
+                    initialValue: TextEditingValue(
+                      text: formData['Brand'] ?? '',
+                    ),
+                    fieldViewBuilder: (BuildContext context,
+                        TextEditingController textEditingController,
+                        FocusNode focusNode,
+                        VoidCallback onFieldSubmitted) {
+                      return TextFormField(
+                        controller: textEditingController,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context).brand),
+                        validator: (value) => value == null || value.isEmpty
+                            ? AppLocalizations.of(context).brandRequired
+                            : null,
+                        onChanged: (value) {
+                          formData['Brand'] =
+                              value; // Update formData on text change
+                        },
+                        onFieldSubmitted: (value) {
+                          formData['Brand'] = value;
+                          onFieldSubmitted(); // Trigger any additional submission logic
+                        },
                       );
-                      final ratioPercent =
-                          ((formData['Price'] / estimated) * 100).round();
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-                      if (ratioPercent > 120) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(
-                                AppLocalizations.of(context).verifyYourPrice),
-                            content: Text(
-                              AppLocalizations.of(context)
-                                  .priceVerificationMessage(
-                                      ratioPercent, estimated),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Text(
-                                    AppLocalizations.of(context).changePrice),
+                  // Color (Autocomplete)
+                  Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      final translatedColors = colors
+                          .map((color) =>
+                              TranslationUtils.getColor(color, context))
+                          .toList();
+                      return translatedColors.where((translatedColor) =>
+                          translatedColor
+                              .toLowerCase()
+                              .contains(textEditingValue.text.toLowerCase()));
+                    },
+                    onSelected: (String selection) {
+                      formData['Color'] = colors.firstWhere(
+                          (color) =>
+                              TranslationUtils.getColor(color, context) ==
+                              selection,
+                          orElse: () => selection);
+                    },
+                    initialValue: TextEditingValue(
+                      text: formData['Color'] != null
+                          ? TranslationUtils.getColor(
+                              formData['Color']!, context) // Show localized color
+                          : '',
+                    ),
+                    fieldViewBuilder: (BuildContext context,
+                        TextEditingController textEditingController,
+                        FocusNode focusNode,
+                        VoidCallback onFieldSubmitted) {
+                      return TextFormField(
+                        controller: textEditingController,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context).color),
+                        validator: (value) => value == null || value.isEmpty
+                            ? AppLocalizations.of(context).colorRequired
+                            : null,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Condition (Dropdown)
+                  DropdownButtonFormField<String>(
+                    items: conditions
+                        .map((condition) => DropdownMenuItem(
+                              value: condition,
+                              child: Text(TranslationUtils.getCondition(
+                                  condition, context)),
+                            ))
+                        .toList(),
+                    value: formData['Condition'],
+                    onChanged: (value) => formData['Condition'] = value,
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).condition),
+                    validator: (value) => value == null
+                        ? AppLocalizations.of(context).conditionRequired
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Size (Dropdown)
+                  DropdownButtonFormField<String>(
+                    items: sizes
+                        .map((size) => DropdownMenuItem(
+                              value: size,
+                              child: Text(size),
+                            ))
+                        .toList(),
+                    value: formData['Size'],
+                    onChanged: (value) => formData['Size'] = value,
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).size),
+                    validator: (value) => value == null
+                        ? AppLocalizations.of(context).sizeRequired
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Type (Dropdown)
+                  DropdownButtonFormField<String>(
+                    items: types
+                        .map((type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(
+                                  TranslationUtils.getCategory(type, context)),
+                            ))
+                        .toList(),
+                    value: formData['Type'],
+                    onChanged: (value) => formData['Type'] = value,
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).type),
+                    validator: (value) => value == null
+                        ? AppLocalizations.of(context).typeRequired
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Description
+                  TextFormField(
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).description),
+                    maxLines: 3,
+                    initialValue: formData['Description'],
+                    onChanged: (value) => formData['Description'] = value,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Price
+                  TextFormField(
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).price),
+                    keyboardType: TextInputType.number,
+                    initialValue: formData['Price'].toString(),
+                    onChanged: (value) {
+                      formData['Price'] = int.tryParse(value);
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppLocalizations.of(context).priceRequired;
+                      }
+                      final intValue = int.tryParse(value);
+                      if (intValue == null) {
+                        return AppLocalizations.of(context).priceValidInteger;
+                      }
+                      if (intValue <= 0) {
+                        return AppLocalizations.of(context).priceGreaterThanZero;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Submit
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        final estimated = estimateItemValue(
+                          formData['Brand'] ?? 'Unknown',
+                          formData['Condition'] ?? 'New',
+                          formData['Type'] ?? 'T-Shirts',
+                        );
+                        final ratioPercent =
+                            ((formData['Price'] / estimated) * 100).round();
+
+                        if (ratioPercent > 120) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text(
+                                  AppLocalizations.of(context).verifyYourPrice),
+                              content: Text(
+                                AppLocalizations.of(context)
+                                    .priceVerificationMessage(
+                                        ratioPercent, estimated),
                               ),
-                              TextButton(
-                                onPressed: () async {
-                                  Navigator.pop(context);
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (_) => const Center(
-                                        child: CircularProgressIndicator()),
-                                  );
-                                  try {
-                                    await _uploadItemToFirebase(
-                                        formData, context);
-                                    images.clear();
-                                    if (context.mounted) {
-                                      Navigator.of(context, rootNavigator: true)
-                                          .pop();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                AppLocalizations.of(context)
-                                                    .itemUploadedSuccess)),
-                                      );
-                                      Navigator.pop(context, true);
-                                    }
-                                  } catch (e) {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text(
+                                      AppLocalizations.of(context).changePrice),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    Navigator.pop(context);
+                                    
+                                    // Store dialog context for reliable dismissal
+                                    BuildContext? dialogContext;
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) {
+                                        dialogContext = context;
+                                        return const Center(
+                                            child: CircularProgressIndicator());
+                                      },
                                     );
-                                  }
-                                },
-                                child: Text(
-                                    AppLocalizations.of(context).uploadItem),
-                              ),
-                            ],
-                          ),
-                        );
-                      } else {
-                        // If ratioPercent <= 120, just upload the item directly with a loading screen
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
+                                    
+                                    try {
+                                      await _uploadItemToFirebase(
+                                          formData, context);
+                                      
+                                      // Dismiss dialog using stored context if available, fallback to rootNavigator
+                                      if (dialogContext != null && dialogContext!.mounted) {
+                                        Navigator.of(dialogContext!).pop();
+                                      } else if (context.mounted) {
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                      }
+                                      
+                                      // Only proceed with UI updates if context is still valid
+                                      if (context.mounted) {
+                                        // Clear images only after successful upload
+                                        images.clear();
+                                        
+                                        // Show success message and navigate back
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  AppLocalizations.of(context)
+                                                      .itemUploadedSuccess)),
+                                        );
+                                        Navigator.pop(context, true);
+                                      }
+                                    } catch (e) {
+                                      // Dismiss dialog using stored context if available, fallback to rootNavigator
+                                      if (dialogContext != null && dialogContext!.mounted) {
+                                        Navigator.of(dialogContext!).pop();
+                                      } else if (context.mounted) {
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                      }
+                                      
+                                      // Only show error message if context is still valid
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                              content: Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Text(
+                                      AppLocalizations.of(context).uploadItem),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          // If ratioPercent <= 120, just upload the item directly with a loading screen
+                          BuildContext? dialogContext;
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) {
+                              dialogContext = context;
+                              return const Center(child: CircularProgressIndicator());
+                            },
+                          );
 
-                        try {
-                          await _uploadItemToFirebase(formData, context);
-                          images.clear();
-                          Navigator.of(context, rootNavigator: true).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(AppLocalizations.of(context)
-                                    .itemUploadedSuccess)),
-                          );
-                          Navigator.pop(context, true);
-                        } catch (e) {
-                          Navigator.of(context, rootNavigator: true).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
-                          );
+                          try {
+                            await _uploadItemToFirebase(formData, context);
+                            
+                            // Dismiss dialog using stored context if available, fallback to rootNavigator
+                            if (dialogContext != null && dialogContext!.mounted) {
+                              Navigator.of(dialogContext!).pop();
+                            } else if (context.mounted) {
+                              Navigator.of(context, rootNavigator: true).pop();
+                            }
+                            
+                            // Only proceed with UI updates if context is still valid
+                            if (context.mounted) {
+                              // Clear images only after successful upload
+                              images.clear();
+                              
+                              // Show success message and navigate back
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(AppLocalizations.of(context)
+                                        .itemUploadedSuccess)),
+                              );
+                              Navigator.pop(context, true);
+                            }
+                          } catch (e) {
+                            // Dismiss dialog using stored context if available, fallback to rootNavigator
+                            if (dialogContext != null && dialogContext!.mounted) {
+                              Navigator.of(dialogContext!).pop();
+                            } else if (context.mounted) {
+                              Navigator.of(context, rootNavigator: true).pop();
+                            }
+                            
+                            // Only show error message if context is still valid
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('${AppLocalizations.of(context).errorUploadingItem}: $e')),
+                              );
+                            }
+                          }
                         }
                       }
-                    }
-                  },
-                  child: Text(AppLocalizations.of(context).submit),
-                ),
-              ],
+                    },
+                    child: Text(AppLocalizations.of(context).submit),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

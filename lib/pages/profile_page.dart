@@ -1,18 +1,17 @@
 /// profile_page.dart
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:eco_closet/utils/image_handler.dart';
-import 'package:eco_closet/settings/settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:eco_closet/pages/item_page.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:eco_closet/utils/translation_metadata.dart';
+import 'package:provider/provider.dart';
+import 'package:eco_closet/utils/firestore_cache_provider.dart';
 import 'package:eco_closet/widgets/filter_popup.dart';
 import 'package:eco_closet/widgets/item_card.dart';
+import 'package:eco_closet/utils/image_handler.dart';
+import 'package:eco_closet/settings/settings.dart';
 
 class ProfilePage extends StatefulWidget {
   final String viewedUserId;
@@ -30,6 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _searchController;
   bool _isLoading = false;
   final GlobalKey<_ItemsGridWidgetState> _itemsGridKey = GlobalKey<_ItemsGridWidgetState>();
+  Map<String, dynamic> userSizes = {};
   Map<String, dynamic> filters = {
     'type': null,
     'size': null,
@@ -143,12 +143,55 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<List<Map<String, dynamic>>> fetchSellerReviews(String sellerId) async {
-    var querySnapshot = await FirebaseFirestore.instance
-        .collection('Reviews')
-        .where('seller_id', isEqualTo: sellerId)
-        .get();
+    try {
+      var querySnapshot = await FirebaseFirestore.instance
+          .collection('Reviews')
+          .where('sellerId', isEqualTo: sellerId)
+          // Removed orderBy to avoid Firestore index requirements
+          .get();
 
-    return querySnapshot.docs.map((doc) => doc.data()).toList();
+      // Fetch reviewer names for each review
+      List<Map<String, dynamic>> reviewsWithNames = [];
+      for (var doc in querySnapshot.docs) {
+        var reviewData = doc.data();
+        
+        // Fetch reviewer name
+        String reviewerName = AppLocalizations.of(context).anonymous_reviewer;
+        try {
+          final reviewerId = reviewData['reviewerId'];
+          if (reviewerId != null) {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(reviewerId)
+                .get();
+            reviewerName = userDoc.data()?['name'] ?? AppLocalizations.of(context).anonymous_reviewer;
+          }
+        } catch (e) {
+          debugPrint('Error fetching reviewer name: $e');
+        }
+        
+        // Add reviewer name to review data
+        reviewData['reviewerName'] = reviewerName;
+        reviewsWithNames.add(reviewData);
+      }
+
+      // Sort by createdAt on the client side (newest first)
+      reviewsWithNames.sort((a, b) {
+        final aTimestamp = a['createdAt'] as Timestamp?;
+        final bTimestamp = b['createdAt'] as Timestamp?;
+        
+        if (aTimestamp == null && bTimestamp == null) return 0;
+        if (aTimestamp == null) return 1;
+        if (bTimestamp == null) return -1;
+        
+        return bTimestamp.compareTo(aTimestamp);
+      });
+
+      return reviewsWithNames;
+    } catch (e) {
+      debugPrint('Error fetching reviews: $e');
+      rethrow; // Re-throw the error so it can be caught by the FutureBuilder
+    }
   }
 
   @override
@@ -288,77 +331,111 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: AppLocalizations.of(context).searchItems,
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                child: GestureDetector(
+                  onTap: () {
+                    // Dismiss keyboard when tapping outside, but don't clear search
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: AppLocalizations.of(context).searchItems,
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             ),
-                            filled: true,
-                            fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                            onChanged: (value) {
+                              // Update search text without setState to avoid page refresh
+                              _searchText = value;
+                              // Directly update the grid widget
+                              _itemsGridKey.currentState?.updateSearchText(value);
+                            },
                           ),
-                          onChanged: (value) {
-                            // Update search text without setState to avoid page refresh
-                            _searchText = value;
-                            // Directly update the grid widget
-                            _itemsGridKey.currentState?.updateSearchText(value);
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.filter_alt),
+                          onPressed: openFiltersPopup,
+                          style: IconButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: () async {
+                            if (!isForMeActive) {
+                              setState(() {
+                                isForMeActive = true;
+                              });
+                              await _applyForMeFilter();
+                            } else {
+                              setState(() {
+                                isForMeActive = false;
+                                userSizes = {}; // Clear user sizes when disabled
+                              });
+                            }
                           },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.filter_alt),
-                        onPressed: openFiltersPopup,
-                        style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton.icon(
-                        onPressed: () async {
-                          setState(() {
-                            isForMeActive = !isForMeActive;
-                          });
-                        },
-                        icon: Icon(
-                          Icons.person,
-                          color: isForMeActive
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-                        label: Text(
-                          AppLocalizations.of(context).forMe,
-                          style: TextStyle(
+                          icon: Icon(
+                            Icons.person,
                             color: isForMeActive
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.onSurface,
-                            fontWeight: isForMeActive ? FontWeight.bold : FontWeight.normal,
+                            size: 20,
+                          ),
+                          label: Text(
+                            AppLocalizations.of(context).forMe,
+                            style: TextStyle(
+                              color: isForMeActive
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: isForMeActive ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: isForMeActive 
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Theme.of(context).colorScheme.surfaceVariant,
+                            foregroundColor: isForMeActive
+                                ? Theme.of(context).colorScheme.onPrimaryContainer
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
               SliverFillRemaining(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ItemsGridWidget(
-                        key: _itemsGridKey,
-                        items: items,
-                        searchText: _searchText,
-                        isForMeActive: isForMeActive,
-                        userSizes: const {},
-                      ),
+                child: GestureDetector(
+                  onTap: () {
+                    // Dismiss keyboard when tapping outside, but don't clear search
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ItemsGridWidget(
+                          key: _itemsGridKey,
+                          items: items,
+                          searchText: _searchText,
+                          isForMeActive: isForMeActive,
+                          userSizes: userSizes,
+                        ),
+                ),
               ),
             ],
           );
@@ -381,44 +458,131 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _showReviewsPopup() async {
-    var reviews = await fetchSellerReviews(widget.viewedUserId);
-
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context).userReviews,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).userReviews,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              setState(() {}); // Trigger rebuild to refresh reviews
+                            },
+                            icon: const Icon(Icons.refresh),
+                            tooltip: 'Refresh reviews',
                           ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: _buildReviewsList(reviews),
-              ),
-            ],
+                const Divider(height: 1),
+                Flexible(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: fetchSellerReviews(widget.viewedUserId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Error loading reviews',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${snapshot.error}',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.rate_review_outlined,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No reviews yet',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Reviews from buyers will appear here',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      } else {
+                        return _buildReviewsList(snapshot.data!);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -473,7 +637,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        review['seller_name'] ??
+                        review['reviewerName'] ??
                             AppLocalizations.of(context).anonymous_reviewer,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -484,7 +648,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  review['content'] ?? AppLocalizations.of(context).noContent,
+                  review['reviewText'] ?? AppLocalizations.of(context).noContent,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -505,9 +669,51 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<Map<String, dynamic>> _fetchUserSizes(String userId) async {
+    final doc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+
+    if (!doc.exists) return {};
+    return doc.data()?['Sizes'] ?? {};
+  }
+
+  List<Map<String, dynamic>> _filterItemsByMySizes({
+    required List<Map<String, dynamic>> items,
+    required Map<String, dynamic> userSizes,
+  }) {
+    return items.where((item) {
+      final itemType = item['Type'] ?? '';
+      final itemSize = item['Size'] ?? '';
+      if (userSizes.containsKey(itemType)) {
+        final preferred = userSizes[itemType];
+        return preferred.contains(itemSize);
+      } else {
+        return true;
+      }
+    }).toList();
+  }
+
+  Future<void> _applyForMeFilter() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final fetchedUserSizes = await _fetchUserSizes(userId);
+    setState(() {
+      userSizes = fetchedUserSizes;
+    });
+    // The filtering will be applied in the ItemsGridWidget based on isForMeActive and userSizes
+  }
+
   // Public method to refresh items from external calls
   void refreshItems() {
     _refreshItems();
+  }
+
+  // Public method to refresh profile data when reviews are updated
+  void refreshProfile() {
+    if (mounted) {
+      setState(() {
+        // This will trigger a rebuild of the main profile FutureBuilder
+      });
+    }
   }
 }
 
@@ -544,18 +750,26 @@ class _ItemsGridWidgetState extends State<ItemsGridWidget> {
   void didUpdateWidget(ItemsGridWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.items != oldWidget.items ||
-        widget.searchText != oldWidget.searchText) {
+        widget.searchText != oldWidget.searchText ||
+        widget.isForMeActive != oldWidget.isForMeActive ||
+        widget.userSizes != oldWidget.userSizes) {
       currentSearchText = widget.searchText;
       _updateFilteredItems();
     }
   }
 
   void _updateFilteredItems() {
+    List<Map<String, dynamic>> searchFiltered;
+    
     if (currentSearchText.isEmpty) {
-      filteredItems = List.from(widget.items);
+      searchFiltered = List.from(widget.items);
     } else {
-      filteredItems = widget.items
+      searchFiltered = widget.items
           .where((item) =>
+              (item['item_name'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(currentSearchText.toLowerCase()) ||
               (item['Brand'] ?? '')
                   .toString()
                   .toLowerCase()
@@ -570,30 +784,27 @@ class _ItemsGridWidgetState extends State<ItemsGridWidget> {
                   .contains(currentSearchText.toLowerCase()))
           .toList();
     }
+
+    // Apply "For Me" filtering if active
+    if (widget.isForMeActive && widget.userSizes.isNotEmpty) {
+      filteredItems = searchFiltered.where((item) {
+        final itemType = item['Type'] ?? '';
+        final itemSize = item['Size'] ?? '';
+        if (widget.userSizes.containsKey(itemType)) {
+          final preferred = widget.userSizes[itemType];
+          return preferred.contains(itemSize);
+        } else {
+          return true; // Show items with types not in user preferences
+        }
+      }).toList();
+    } else {
+      filteredItems = searchFiltered;
+    }
   }
 
   void updateSearchText(String searchText) {
     currentSearchText = searchText;
-    // Update the filtered items based on the new search text
-    if (searchText.isEmpty) {
-      filteredItems = List.from(widget.items);
-    } else {
-      filteredItems = widget.items
-          .where((item) =>
-              (item['Brand'] ?? '')
-                  .toString()
-                  .toLowerCase()
-                  .contains(searchText.toLowerCase()) ||
-              (item['Type'] ?? '')
-                  .toString()
-                  .toLowerCase()
-                  .contains(searchText.toLowerCase()) ||
-              (item['Color'] ?? '')
-                  .toString()
-                  .toLowerCase()
-                  .contains(searchText.toLowerCase()))
-          .toList();
-    }
+    _updateFilteredItems();
     
     // Only call setState here - this will only rebuild the grid, not the main page
     if (mounted) {

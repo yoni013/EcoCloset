@@ -27,6 +27,7 @@ class _EditItemPageState extends State<EditItemPage> {
 
   // Controllers for form fields
   late TextEditingController _brandController;
+  late TextEditingController _itemNameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
 
@@ -66,6 +67,7 @@ class _EditItemPageState extends State<EditItemPage> {
 
   void _initializeControllers() {
     _brandController = TextEditingController();
+    _itemNameController = TextEditingController();
     _descriptionController = TextEditingController();
     _priceController = TextEditingController();
   }
@@ -73,6 +75,7 @@ class _EditItemPageState extends State<EditItemPage> {
   @override
   void dispose() {
     _brandController.dispose();
+    _itemNameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
     super.dispose();
@@ -133,6 +136,7 @@ class _EditItemPageState extends State<EditItemPage> {
     
     // Pre-fill form fields
     _brandController.text = _itemData?['Brand'] ?? '';
+    _itemNameController.text = _itemData?['item_name'] ?? '';
     _descriptionController.text = _itemData?['Description'] ?? '';
     final priceValue = _itemData?['Price'];
     _priceController.text = priceValue != null ? '${(priceValue is num ? priceValue.toInt() : priceValue)}' : '';
@@ -329,6 +333,7 @@ class _EditItemPageState extends State<EditItemPage> {
       // Prepare update data
       final updateData = {
         'Brand': _brandController.text.trim(),
+        'item_name': _itemNameController.text.trim(),
         'Color': _selectedColor,
         'Condition': _selectedCondition,
         'Size': _selectedSize,
@@ -767,6 +772,24 @@ class _EditItemPageState extends State<EditItemPage> {
                             const SizedBox(height: 16),
                             _buildColorAutocomplete(),
                             const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _itemNameController,
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context).itemName,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                prefixIcon: const Icon(Icons.title),
+                              ),
+                              maxLength: 50,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return AppLocalizations.of(context).itemNameRequired;
+                                }
+                                return null;
+                              },
+                            ),
                             TextFormField(
                               controller: _descriptionController,
                               decoration: InputDecoration(

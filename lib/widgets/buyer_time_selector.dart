@@ -84,11 +84,30 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
           .doc(widget.orderId)
           .update({
         'selectedTimeSlot': selectedTimeSlot,
-        'status': 'time_slot_confirmed',
+        'status': 'Purchase Confirmed',
         'updatedAt': FieldValue.serverTimestamp(),
         'lastAction': 'buyer_selected_time',
         'buyerConfirmedAt': FieldValue.serverTimestamp(),
       });
+
+      // Get the order data to retrieve the item ID and update item status
+      final orderDoc = await FirebaseFirestore.instance
+          .collection('Orders')
+          .doc(widget.orderId)
+          .get();
+      
+      if (orderDoc.exists) {
+        final orderData = orderDoc.data()!;
+        final itemId = orderData['itemId'];
+        
+        if (itemId != null) {
+          // Update item status to "Purchase Confirmed"
+          await FirebaseFirestore.instance
+              .collection('Items')
+              .doc(itemId)
+              .update({'status': 'Purchase Confirmed'});
+        }
+      }
 
       // Close loading dialog
       Navigator.of(context, rootNavigator: true).pop();
@@ -195,7 +214,7 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       decoration: BoxDecoration(
                         color: isSelected 
                             ? Theme.of(context).colorScheme.primary
@@ -224,37 +243,37 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
                               color: isSelected
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             date.day.toString(),
                             style: TextStyle(
                               color: isSelected
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             _getMonthName(date.month).substring(0, 3),
                             style: TextStyle(
                               color: isSelected
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           if (isToday) ...[
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 1),
                             Container(
-                              width: 5,
-                              height: 5,
+                              width: 4,
+                              height: 4,
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.onPrimary
@@ -263,14 +282,14 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)
                                   : Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               '$slotsCount times',
@@ -278,7 +297,7 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.onPrimary
                                     : Theme.of(context).colorScheme.primary,
-                                fontSize: 9,
+                                fontSize: 8,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -426,33 +445,6 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
               },
             ),
           ),
-          if (selectedTimeSlot != null)
-            Container(
-              margin: const EdgeInsets.only(top: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Selected: ${selectedTimeSlot!['formatted']}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -463,19 +455,6 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).selectPickupTime),
-        actions: [
-          TextButton(
-            onPressed: selectedTimeSlot != null ? _confirmTimeSlot : null,
-            child: Text(
-              AppLocalizations.of(context).confirm,
-              style: TextStyle(
-                color: selectedTimeSlot != null 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).disabledColor,
-              ),
-            ),
-          ),
-        ],
       ),
       body: widget.availableTimeSlots.isEmpty
           ? Center(
@@ -550,6 +529,46 @@ class _BuyerTimeSelectorState extends State<BuyerTimeSelector> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                // Selected time slot info
+                if (selectedTimeSlot != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Selected: ${selectedTimeSlot!['formatted']}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                // Confirm button at the bottom
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton(
+                    onPressed: selectedTimeSlot != null ? _confirmTimeSlot : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context).confirm,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],

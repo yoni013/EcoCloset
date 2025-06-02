@@ -1,12 +1,15 @@
 import 'package:eco_closet/generated/l10n.dart';
+import 'package:eco_closet/services/order_notification_service.dart';
+import 'package:eco_closet/widgets/notification_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/pages/homepage.dart';
-import 'package:eco_closet/pages/explore_page.dart';
+import 'package:eco_closet/pages/tag_based_explore_page.dart';
 import 'package:eco_closet/pages/my_shop_page.dart';
 import 'package:eco_closet/pages/profile_page.dart';
 import 'package:eco_closet/pages/upload_page.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     hide EmailAuthProvider, PhoneAuthProvider;
+import 'package:provider/provider.dart';
 
 class PersistentBottomNavPage extends StatelessWidget {
   final _homeNavigatorKey = GlobalKey<NavigatorState>();
@@ -28,7 +31,7 @@ class PersistentBottomNavPage extends StatelessWidget {
           navigatorkey: _homeNavigatorKey,
         ),
         PersistentTabItem(
-          tab: () => ExplorePage(),
+          tab: () => TagBasedExplorePage(),
           icon: Icons.search,
           title: AppLocalizations.of(context).explore,
           navigatorkey: _exploreNavigatorKey,
@@ -73,6 +76,22 @@ class _PersistentBottomBarScaffoldState
   int _selectedTab = 0;
 
   @override
+  void initState() {
+    super.initState();
+    
+    // Initialize the notification service once when the scaffold is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final orderService = Provider.of<OrderNotificationService>(context, listen: false);
+        orderService.startListening();
+        debugPrint('PersistentBottomBarScaffold: OrderNotificationService initialized');
+      } catch (e) {
+        debugPrint('Error initializing OrderNotificationService: $e');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
@@ -88,85 +107,103 @@ class _PersistentBottomBarScaffoldState
                 ))
             .toList(),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        currentIndex: _selectedTab,
-        onTap: (index) {
-          if (_selectedTab == index) {
-            // Pop to first route
-            widget.items[index].navigatorkey?.currentState?.popUntil((route) => route.isFirst);
-            
-            // Refresh the current page based on tab index
-            final navigatorState = widget.items[index].navigatorkey?.currentState;
-            if (navigatorState != null) {
-              final context = navigatorState.context;
-              
-              void visitElements(Element element) {
-                // Handle different page types for refresh
-                if (index == 0 && element.widget is Homepage) {
-                  // Homepage refresh
-                  final state = element as StatefulElement;
-                  try {
-                    (state.state as dynamic).refreshHomepage();
-                  } catch (e) {
-                    // Ignore if methods don't exist
+      bottomNavigationBar: Consumer<OrderNotificationService>(
+        builder: (context, orderService, child) {
+          // Just listen for notification count changes - initialization happens in initState
+          
+          return BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            currentIndex: _selectedTab,
+            onTap: (index) {
+              if (_selectedTab == index) {
+                // Pop to first route
+                widget.items[index].navigatorkey?.currentState?.popUntil((route) => route.isFirst);
+                
+                // Refresh the current page based on tab index
+                final navigatorState = widget.items[index].navigatorkey?.currentState;
+                if (navigatorState != null) {
+                  final context = navigatorState.context;
+                  
+                  void visitElements(Element element) {
+                    // Handle different page types for refresh
+                    if (index == 0 && element.widget is Homepage) {
+                      // Homepage refresh
+                      if (element is StatefulElement) {
+                        try {
+                          (element.state as dynamic).refreshHomepage();
+                        } catch (e) {
+                          // Ignore if methods don't exist
+                        }
+                      }
+                      return;
+                    } else if (index == 1 && element.widget is TagBasedExplorePage) {
+                      // Explore page is StatelessWidget, no refresh needed
+                      return;
+                    } else if (index == 2 && element.widget is UploadItemPage) {
+                      // Upload page refresh
+                      if (element is StatefulElement) {
+                        try {
+                          (element.state as dynamic).setState(() {});
+                        } catch (e) {
+                          // Ignore if method doesn't exist
+                        }
+                      }
+                      return;
+                    } else if (index == 3 && element.widget is MyOrdersPage) {
+                      // My orders page refresh
+                      if (element is StatefulElement) {
+                        try {
+                          (element.state as dynamic).refreshOrders();
+                        } catch (e) {
+                          // Ignore if method doesn't exist
+                        }
+                      }
+                      return;
+                    } else if (index == 4 && element.widget is ProfilePage) {
+                      // Profile page refresh
+                      if (element is StatefulElement) {
+                        try {
+                          (element.state as dynamic).refreshItems();
+                        } catch (e) {
+                          // Ignore if method doesn't exist
+                        }
+                      }
+                      return;
+                    }
+                    element.visitChildElements(visitElements);
                   }
-                  return;
-                } else if (index == 1 && element.widget is ExplorePage) {
-                  // Explore page refresh
-                  final state = element as StatefulElement;
-                  try {
-                    (state.state as dynamic).setState(() {});
-                  } catch (e) {
-                    // Ignore if method doesn't exist
-                  }
-                  return;
-                } else if (index == 2 && element.widget is UploadItemPage) {
-                  // Upload page refresh
-                  final state = element as StatefulElement;
-                  try {
-                    (state.state as dynamic).setState(() {});
-                  } catch (e) {
-                    // Ignore if method doesn't exist
-                  }
-                  return;
-                } else if (index == 3 && element.widget is MyOrdersPage) {
-                  // My orders page refresh
-                  final state = element as StatefulElement;
-                  try {
-                    (state.state as dynamic).refreshOrders();
-                  } catch (e) {
-                    // Ignore if method doesn't exist
-                  }
-                  return;
-                } else if (index == 4 && element.widget is ProfilePage) {
-                  // Profile page refresh
-                  final state = element as StatefulElement;
-                  try {
-                    (state.state as dynamic).refreshItems();
-                  } catch (e) {
-                    // Ignore if method doesn't exist
-                  }
-                  return;
+                  context.visitChildElements(visitElements);
                 }
-                element.visitChildElements(visitElements);
+                
+                setState(() {});
+              } else {
+                setState(() {
+                  _selectedTab = index;
+                });
               }
-              context.visitChildElements(visitElements);
-            }
-            
-            setState(() {});
-          } else {
-            setState(() {
-              _selectedTab = index;
-            });
-          }
+            },
+            items: widget.items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              
+              // Add notification badge to My Shop tab (index 3)
+              Widget iconWidget = Icon(item.icon);
+              if (index == 3) {
+                iconWidget = NotificationBadge(
+                  count: orderService.pendingOrdersCount,
+                  child: Icon(item.icon),
+                );
+              }
+              
+              return BottomNavigationBarItem(
+                icon: iconWidget,
+                label: item.title,
+              );
+            }).toList(),
+          );
         },
-        items: widget.items
-            .map((item) => BottomNavigationBarItem(
-                icon: Icon(item.icon), label: item.title))
-            .toList(),
       ),
     );
   }

@@ -341,6 +341,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get brandRequired => 'מותג נדרש';
 
   @override
+  String get itemName => 'שם הפריט';
+
+  @override
+  String get itemNameRequired => 'שם הפריט נדרש';
+
+  @override
   String get color => 'צבע';
 
   @override
@@ -404,6 +410,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get sortByRecommended => 'מומלץ';
+
+  @override
+  String get sortByNewestFirst => 'החדשים ביותר';
+
+  @override
+  String get sortByOldestFirst => 'הישנים ביותר';
 
   @override
   String get forMe => 'בשבילי';
@@ -694,9 +706,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get editItem => 'ערוך פריט';
 
   @override
-  String get itemName => 'שם הפריט';
-
-  @override
   String get thisFieldIsRequired => 'שדה זה נדרש';
 
   @override
@@ -897,7 +906,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get declineOrder => 'דחה הזמנה';
 
   @override
-  String get reasonForDeclining => 'סיבה לדחייה (אופציונלי)';
+  String get reasonForDeclining => 'סיבת הדחייה:';
 
   @override
   String get declineReasonHint => 'אנא הסבר מדוע אתה דוחה הזמנה זו';
@@ -924,7 +933,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get cancelOrderConfirmation => 'האם אתה בטוח שברצונך לבטל הזמנה זו?';
 
   @override
-  String get cancellationReason => 'סיבת ביטול';
+  String get cancellationReason => 'סיבת הביטול';
 
   @override
   String get cancellationReasonHint => 'אנא הסבר מדוע אתה מבטל הזמנה זו';
@@ -1033,4 +1042,126 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get completed => 'הושלם';
+
+  @override
+  String get archive => 'ארכיון';
+
+  @override
+  String get archivedItems => 'פריטים בארכיון';
+
+  @override
+  String get noArchivedItems => 'לא נמצאו פריטים בארכיון';
+
+  @override
+  String get archivedItemsDescription => 'פריטים שנמכרו או סומנו כלא זמינים';
+
+  @override
+  String get archivePosts => 'ארכיון פוסטים';
+
+  @override
+  String get markAsSold => 'סמן כנמכר';
+
+  @override
+  String get confirmSale => 'אשר מכירה';
+
+  @override
+  String get confirmSaleMessage => 'האם השלמת את המכירה ומסרת את הפריט לקונה?';
+
+  @override
+  String get awaitingBuyerConfirmation => 'ממתין לאישור הקונה';
+
+  @override
+  String get confirmPurchase => 'אשר קבלת פריט';
+
+  @override
+  String get confirmPurchaseMessage => 'האם קיבלת את הפריט מהמוכר?';
+
+  @override
+  String get writeReview => 'כתוב ביקורת';
+
+  @override
+  String get reviewOptional => 'ביקורת (אופציונלי)';
+
+  @override
+  String get reviewPlaceholder => 'שתף את החוויה שלך עם המוכר הזה...';
+
+  @override
+  String get skipReview => 'דלג על ביקורת';
+
+  @override
+  String get submitReview => 'שלח ביקורת';
+
+  @override
+  String get thankYouForReview => 'תודה על הביקורת!';
+
+  @override
+  String get purchaseConfirmed => 'הרכישה אושרה בהצלחה';
+
+  @override
+  String get rateYourExperience => 'דרג את החוויה שלך';
+
+  @override
+  String get reviewSubmitted => 'הביקורת נשלחה בהצלחה';
+
+  @override
+  String get sold => 'נמכר';
+
+  @override
+  String get awaitingBuyerToConfirm => 'ממתין לקונה לאשר קבלה';
+
+  @override
+  String get confirmReceiptOfItem => 'אנא אשר שקיבלת את הפריט';
+
+  @override
+  String get sellerMarkedAsSold => 'המוכר סימן כנמכר! האם קיבלת את הפריט?';
+
+  @override
+  String get iReceivedItem => 'קיבלתי את הפריט';
+
+  @override
+  String get iDidNotReceiveItem => 'לא קיבלתי את הפריט';
+
+  @override
+  String get reported => 'דווח';
+
+  @override
+  String get issueReported => 'הבעיה דווחה בהצלחה';
+
+  @override
+  String get tapToConfirmReceipt => 'הקש לאישור קבלה או דיווח בעיה';
+
+  @override
+  String get reasonForCancellation => 'סיבת הביטול:';
+
+  @override
+  String get noReasonProvided => 'לא סופקה סיבה';
+
+  @override
+  String get enjoyMessage => 'תהנו :)';
+
+  @override
+  String get callBuyer => 'התקשר לקונה';
+
+  @override
+  String get callSeller => 'התקשר למוכר';
+
+  @override
+  String get messageBuyer => 'שלח הודעה לקונה';
+
+  @override
+  String get messageSeller => 'שלח הודעה למוכר';
+
+  @override
+  String whatsappMessageTemplate(Object brand, Object color, Object itemName, Object size, Object type) {
+    return 'שלום! אני פונה אליך לגבי ההזמנה עבור: $itemName - $brand $type בצבע $color, מידה $size';
+  }
+
+  @override
+  String get phoneNotAvailable => 'מספר טלפון לא זמין';
+
+  @override
+  String get whatsappNotInstalled => 'WhatsApp לא מותקן במכשיר זה';
+
+  @override
+  String get cannotOpenDialer => 'לא ניתן לפתוח את החייגן';
 }

@@ -5,6 +5,7 @@ import 'package:eco_closet/firebase_options.dart';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:eco_closet/utils/firestore_cache_provider.dart';
+import 'package:eco_closet/services/order_notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:eco_closet/providers/theme_provider.dart';
@@ -21,16 +22,9 @@ void main() async {
   );
   
   // Enable offline persistence for Firestore
-  FirebaseFirestore.instance.enablePersistence()
-    .catchError((err) {
-      if (err.code == 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled in one tab at a time
-        debugPrint('Firestore persistence failed: Multiple tabs open');
-      } else if (err.code == 'unimplemented') {
-        // The current browser doesn't support persistence
-        debugPrint('Firestore persistence not available');
-      }
-    });
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
 
   // Load metadata with error handling
   try {
@@ -49,6 +43,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FirestoreCacheProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()..loadUserTheme()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => OrderNotificationService()),
       ],
       child: MyApp(),
     ),

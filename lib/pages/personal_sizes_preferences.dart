@@ -19,20 +19,18 @@ class PersonalSizesPreferences extends StatefulWidget {
 class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   // Map of category -> selected sizes (Set of strings for each category)
   final Map<String, Set<String>> userSizes = {
-    'Coats': {},
-    'Sweaters': {},
     'T-Shirts': {},
     'Pants': {},
     'Shoes': {},
+    'Sweaters': {},
   };
 
   // Map of category -> available sizes (List of possible sizes)
   Map<String, List<String>> availableSizes = {
-    'Coats': [],
-    'Sweaters': [],
     'T-Shirts': [],
     'Pants': [],
     'Shoes': [],
+    'Sweaters': [],
   };
 
   bool isLoading = true;
@@ -56,9 +54,8 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
     setState(() {
       // Load available sizes from the Utils class
       availableSizes = {
-        'Coats': Utils.general_sizes,
-        'Pants': Utils.pants_sizes,
         'T-Shirts': Utils.general_sizes,
+        'Pants': Utils.pants_sizes,
         'Shoes': Utils.shoe_sizes,
         'Sweaters': Utils.general_sizes
       };
@@ -69,7 +66,9 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
             userDoc.data()?['Sizes'] as Map<String, dynamic>;
         sizesMap.forEach((key, value) {
           // Ensure we convert the stored list to a Set<String>
-          userSizes[key] = (value is List) ? Set<String>.from(value) : {};
+          if (userSizes.containsKey(key)) {
+            userSizes[key] = (value is List) ? Set<String>.from(value) : {};
+          }
         });
       }
       isLoading = false;
@@ -85,6 +84,16 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
         (key, value) => MapEntry(key, value.toList()),
       );
 
+      // Also save T-Shirt sizes as Shirts sizes
+      if (userSizes.containsKey('T-Shirts')) {
+        sizesToSave['Shirts'] = userSizes['T-Shirts']!.toList();
+      }
+
+      // Also save Pants sizes as Shorts sizes
+      if (userSizes.containsKey('Pants')) {
+        sizesToSave['Shorts'] = userSizes['Pants']!.toList();
+      }
+
       await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
@@ -99,11 +108,10 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
         .toList();
     
     final categoryLocalized = {
-      'Coats': AppLocalizations.of(context).categoryCoats,
-      'Sweaters': AppLocalizations.of(context).categorySweaters,
       'T-Shirts': AppLocalizations.of(context).categoryShirts,
       'Pants': AppLocalizations.of(context).categoryPants,
       'Shoes': AppLocalizations.of(context).categoryShoes,
+      'Sweaters': AppLocalizations.of(context).categorySweaters,
     }[category] ?? category;
 
     return Card(
@@ -187,8 +195,6 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Coats':
-        return Icons.checkroom;
       case 'Sweaters':
         return Icons.dry_cleaning;
       case 'T-Shirts':
@@ -205,28 +211,19 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          AppLocalizations.of(context).sizePreferences,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-              Theme.of(context).colorScheme.surface,
-            ],
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
           ),
-        ),
-        child: isLoading
+          child: isLoading
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -363,6 +360,7 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
                       ),
                 ],
               ),
+        ),
       ),
     );
   }

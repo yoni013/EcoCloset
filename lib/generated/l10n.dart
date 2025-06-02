@@ -755,6 +755,18 @@ abstract class AppLocalizations {
   /// **'Brand is required'**
   String get brandRequired;
 
+  /// No description provided for @itemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name'**
+  String get itemName;
+
+  /// No description provided for @itemNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Item name is required'**
+  String get itemNameRequired;
+
   /// No description provided for @color.
   ///
   /// In en, this message translates to:
@@ -880,6 +892,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recommended'**
   String get sortByRecommended;
+
+  /// No description provided for @sortByNewestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest First'**
+  String get sortByNewestFirst;
+
+  /// No description provided for @sortByOldestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest First'**
+  String get sortByOldestFirst;
 
   /// No description provided for @forMe.
   ///
@@ -1457,12 +1481,6 @@ abstract class AppLocalizations {
   /// **'Edit Item'**
   String get editItem;
 
-  /// No description provided for @itemName.
-  ///
-  /// In en, this message translates to:
-  /// **'Item Name'**
-  String get itemName;
-
   /// No description provided for @thisFieldIsRequired.
   ///
   /// In en, this message translates to:
@@ -1862,7 +1880,7 @@ abstract class AppLocalizations {
   /// No description provided for @reasonForDeclining.
   ///
   /// In en, this message translates to:
-  /// **'Reason for declining (optional)'**
+  /// **'Reason for declining:'**
   String get reasonForDeclining;
 
   /// No description provided for @declineReasonHint.
@@ -2134,6 +2152,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get completed;
+
+  /// No description provided for @archive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archive;
+
+  /// No description provided for @archivedItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived Items'**
+  String get archivedItems;
+
+  /// No description provided for @noArchivedItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived items found'**
+  String get noArchivedItems;
+
+  /// No description provided for @archivedItemsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Items that are sold or marked as unavailable'**
+  String get archivedItemsDescription;
+
+  /// No description provided for @archivePosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive Posts'**
+  String get archivePosts;
+
+  /// No description provided for @markAsSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Sold'**
+  String get markAsSold;
+
+  /// No description provided for @confirmSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Sale'**
+  String get confirmSale;
+
+  /// No description provided for @confirmSaleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Have you completed the sale and handed over the item to the buyer?'**
+  String get confirmSaleMessage;
+
+  /// No description provided for @awaitingBuyerConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Buyer Confirmation'**
+  String get awaitingBuyerConfirmation;
+
+  /// No description provided for @confirmPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Purchase'**
+  String get confirmPurchase;
+
+  /// No description provided for @confirmPurchaseMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you receive the item from the seller?'**
+  String get confirmPurchaseMessage;
+
+  /// No description provided for @writeReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a Review'**
+  String get writeReview;
+
+  /// No description provided for @reviewOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Review (Optional)'**
+  String get reviewOptional;
+
+  /// No description provided for @reviewPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your experience with this seller...'**
+  String get reviewPlaceholder;
+
+  /// No description provided for @skipReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Review'**
+  String get skipReview;
+
+  /// No description provided for @submitReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Review'**
+  String get submitReview;
+
+  /// No description provided for @thankYouForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for your review!'**
+  String get thankYouForReview;
+
+  /// No description provided for @purchaseConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase confirmed successfully'**
+  String get purchaseConfirmed;
+
+  /// No description provided for @rateYourExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate your experience'**
+  String get rateYourExperience;
+
+  /// No description provided for @reviewSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Review submitted successfully'**
+  String get reviewSubmitted;
+
+  /// No description provided for @sold.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold'**
+  String get sold;
+
+  /// No description provided for @awaitingBuyerToConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for buyer to confirm receipt'**
+  String get awaitingBuyerToConfirm;
+
+  /// No description provided for @confirmReceiptOfItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm that you received the item'**
+  String get confirmReceiptOfItem;
+
+  /// No description provided for @sellerMarkedAsSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller marked as Sold! Did you receive the item?'**
+  String get sellerMarkedAsSold;
+
+  /// No description provided for @iReceivedItem.
+  ///
+  /// In en, this message translates to:
+  /// **'I received the item'**
+  String get iReceivedItem;
+
+  /// No description provided for @iDidNotReceiveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'I did not receive the item'**
+  String get iDidNotReceiveItem;
+
+  /// No description provided for @reported.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported'**
+  String get reported;
+
+  /// No description provided for @issueReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue reported successfully'**
+  String get issueReported;
+
+  /// No description provided for @tapToConfirmReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to confirm receipt or report issue'**
+  String get tapToConfirmReceipt;
+
+  /// No description provided for @reasonForCancellation.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for cancellation:'**
+  String get reasonForCancellation;
+
+  /// No description provided for @noReasonProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'No reason provided'**
+  String get noReasonProvided;
+
+  /// No description provided for @enjoyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy :)'**
+  String get enjoyMessage;
+
+  /// No description provided for @callBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Buyer'**
+  String get callBuyer;
+
+  /// No description provided for @callSeller.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Seller'**
+  String get callSeller;
+
+  /// No description provided for @messageBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Buyer'**
+  String get messageBuyer;
+
+  /// No description provided for @messageSeller.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Seller'**
+  String get messageSeller;
+
+  /// No description provided for @whatsappMessageTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi! I\'m contacting you regarding the order for: {itemName} - {brand} {type} in {color}, size {size}.'**
+  String whatsappMessageTemplate(Object brand, Object color, Object itemName, Object size, Object type);
+
+  /// No description provided for @phoneNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number not available'**
+  String get phoneNotAvailable;
+
+  /// No description provided for @whatsappNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp is not installed on this device'**
+  String get whatsappNotInstalled;
+
+  /// No description provided for @cannotOpenDialer.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot open phone dialer'**
+  String get cannotOpenDialer;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

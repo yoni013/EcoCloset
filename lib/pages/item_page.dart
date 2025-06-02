@@ -10,7 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eco_closet/utils/image_handler.dart';
-import 'package:eco_closet/bottom_navigation.dart';
+import 'package:provider/provider.dart';
+import 'package:eco_closet/services/order_notification_service.dart';
 
 class ItemPage extends StatefulWidget {
   final String itemId;
@@ -30,6 +31,7 @@ class _ItemPageState extends State<ItemPage> {
   void initState() {
     super.initState();
     _itemDataFuture = fetchItemData();
+    _checkItemStatus();
   }
 
   Future<Map<String, dynamic>> fetchItemData() async {
@@ -44,6 +46,30 @@ class _ItemPageState extends State<ItemPage> {
         .doc(sellerId)
         .get();
     return documentSnapshot.data() ?? {};
+  }
+
+  Future<void> _checkItemStatus() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Check if there's already a pending order for this item by this user
+      final orderQuery = await FirebaseFirestore.instance
+          .collection('Orders')
+          .where('itemId', isEqualTo: widget.itemId)
+          .where('buyerId', isEqualTo: currentUser.uid)
+          .where('status', isEqualTo: 'pending_seller')
+          .limit(1)
+          .get();
+
+      if (orderQuery.docs.isNotEmpty) {
+        setState(() {
+          _isPurchaseRequestSent = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking item status: $e');
+    }
   }
 
   void _openFullScreenViewer(List<dynamic> images, int index) {
@@ -132,11 +158,11 @@ class _ItemPageState extends State<ItemPage> {
             : null,
       });
 
-      // Update item status to "Pending Purchase"
+      // Update item status to "Pending Seller"
       await FirebaseFirestore.instance
           .collection('Items')
           .doc(widget.itemId)
-          .update({'status': 'Pending Purchase'});
+          .update({'status': 'Pending Seller'});
 
       // Send push notification to seller if enabled
       await _sendPushNotificationToSeller(itemData['seller_id']);
@@ -144,19 +170,57 @@ class _ItemPageState extends State<ItemPage> {
       // Close loading dialog
       Navigator.of(context, rootNavigator: true).pop();
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).purchaseRequestSent),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      // Refresh notification service to update my_shop page automatically
+      try {
+        final orderService = Provider.of<OrderNotificationService>(context, listen: false);
+        orderService.notifyOrdersChanged(); // Manually trigger notification for immediate update
+      } catch (e) {
+        debugPrint('OrderNotificationService not available: $e');
+      }
 
-      // Navigate to My Orders page and refresh
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => PersistentBottomNavPage()),
-        (route) => false,
+      // Show success popup dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Theme.of(context).colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Amazing!',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'The seller was notified that you want to buy this item, now wait for him to mark the hours he is available for you to come and pick it up',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Cool'),
+            ),
+          ],
+        ),
       );
 
     } catch (e) {
@@ -215,6 +279,7 @@ class _ItemPageState extends State<ItemPage> {
     setState(() {
       _itemDataFuture = fetchItemData();
     });
+    _checkItemStatus();
   }
 
   @override
@@ -398,7 +463,8 @@ class _ItemPageState extends State<ItemPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                itemData['Brand'] ??
+                                itemData['item_name'] ??
+                                    itemData['Brand'] ??
                                     AppLocalizations.of(context).unknownItem,
                                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
@@ -426,6 +492,20 @@ class _ItemPageState extends State<ItemPage> {
                           duration: 600.ms,
                           curve: Curves.easeOutQuad,
                         ),
+                        
+                        // Brand - Type subtitle
+                        if (itemData['Brand'] != null && itemData['Brand'].toString().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              itemData['Brand'],
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        
                         const SizedBox(height: 16),
                         FutureBuilder<Map<String, dynamic>>(
                           future: fetchSellerData(itemData['seller_id'] ?? ''),
@@ -434,16 +514,18 @@ class _ItemPageState extends State<ItemPage> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                _buildInfoChip(
-                                  context,
-                                  Icons.check_circle_outline,
-                                  TranslationUtils.getCondition(itemData['Condition'], context),
-                                ),
-                                _buildInfoChip(
-                                  context,
-                                  Icons.straighten,
-                                  itemData['Size'] ?? 'N/A',
-                                ),
+                                if (itemData['Condition'] != null)
+                                  _buildInfoChip(
+                                    context,
+                                    Icons.check_circle_outline,
+                                    TranslationUtils.getCondition(itemData['Condition'], context),
+                                  ),
+                                if (itemData['Size'] != null && itemData['Size'].toString().isNotEmpty)
+                                  _buildInfoChip(
+                                    context,
+                                    Icons.straighten,
+                                    itemData['Size'],
+                                  ),
                                 if (sellerSnapshot.hasData && 
                                     sellerSnapshot.data!['address'] != null &&
                                     sellerSnapshot.data!['address'].toString().isNotEmpty)
@@ -461,6 +543,7 @@ class _ItemPageState extends State<ItemPage> {
                           duration: 600.ms,
                           curve: Curves.easeOutQuad,
                         ),
+                        
                         const SizedBox(height: 24),
                         Text(
                           AppLocalizations.of(context).description,
@@ -593,20 +676,10 @@ class _ItemPageState extends State<ItemPage> {
                           curve: Curves.easeOutQuad,
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton.icon(
+                        ElevatedButton(
                           onPressed: _isPurchaseRequestSent ? null : () {
                             _createPurchaseRequest(itemData);
                           },
-                          icon: _isPurchaseRequestSent 
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.shopping_cart_outlined),
-                          label: Text(_isPurchaseRequestSent 
-                              ? AppLocalizations.of(context).pendingSellerApproval
-                              : AppLocalizations.of(context).buyNow),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             minimumSize: const Size(double.infinity, 0),
@@ -619,6 +692,21 @@ class _ItemPageState extends State<ItemPage> {
                             foregroundColor: _isPurchaseRequestSent 
                                 ? Theme.of(context).colorScheme.onSurfaceVariant
                                 : null,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (!_isPurchaseRequestSent) ...[
+                                const Icon(Icons.shopping_cart_outlined),
+                                const SizedBox(width: 8),
+                              ] else ...[
+                                const Icon(Icons.hourglass_empty_rounded),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(_isPurchaseRequestSent 
+                                  ? 'Almost yours! Waiting for seller...'
+                                  : AppLocalizations.of(context).buyNow),
+                            ],
                           ),
                         ).animate().fadeIn(delay: 1000.ms, duration: 600.ms).slideY(
                           begin: 0.2,

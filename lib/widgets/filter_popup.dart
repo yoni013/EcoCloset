@@ -215,7 +215,6 @@ class _FilterPopupState extends State<FilterPopup> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        foregroundColor: Colors.blue,
                       ),
                     ),
                   ),
@@ -274,6 +273,8 @@ class _FilterPopupState extends State<FilterPopup> {
               items: items,
               searchable: true,
               initialValue: initialValues,
+              dialogHeight: MediaQuery.of(context).size.height * 0.5,
+              dialogWidth: MediaQuery.of(context).size.width * 0.85,
               buttonText: Text(
                 AppLocalizations.of(context).select(label),
                 style: Theme.of(context).textTheme.bodyLarge,

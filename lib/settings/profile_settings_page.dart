@@ -218,102 +218,101 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).profileSettings),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Profile Image Section
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.grey[300],
-                        child: ClipOval(
-                          child: SizedBox(
-                            width: 80,
-                            height: 80,
-                            child: _profileImage != null
-                                // If a new image is picked, display it immediately.
-                                ? Image.file(
-                                    _profileImage!,
-                                    fit: BoxFit.cover,
-                                  )
-                                : _profilePhotoUrl != null
-                                    // Otherwise, if a URL exists, display the network image.
-                                    ? ImageHandler.buildCachedNetworkImage(
-                                        imageUrl: _profilePhotoUrl!,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(Icons.person, size: 50),
-                                      )
-                                    // If neither exists, show an icon prompting the user to add a photo.
-                                    : const Icon(Icons.add_a_photo, size: 40),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // Profile Image Section
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.grey[300],
+                          child: ClipOval(
+                            child: SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: _profileImage != null
+                                  // If a new image is picked, display it immediately.
+                                  ? Image.file(
+                                      _profileImage!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : _profilePhotoUrl != null
+                                      // Otherwise, if a URL exists, display the network image.
+                                      ? ImageHandler.buildCachedNetworkImage(
+                                          imageUrl: _profilePhotoUrl!,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              const CircularProgressIndicator(),
+                                          errorWidget: (context, url, error) =>
+                                              const Icon(Icons.person, size: 50),
+                                        )
+                                      // If neither exists, show an icon prompting the user to add a photo.
+                                      : const Icon(Icons.add_a_photo, size: 40),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // Name
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).name,
+                      // Name
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context).name,
+                        ),
+                        validator: (val) =>
+                            val == null || val.isEmpty ? AppLocalizations.of(context).name : null,
                       ),
-                      validator: (val) =>
-                          val == null || val.isEmpty ? AppLocalizations.of(context).name : null,
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // Address (Google Places Autocomplete)
-                    placesAutoCompleteTextField(),
-                    const SizedBox(height: 24),
+                      // Address (Google Places Autocomplete)
+                      placesAutoCompleteTextField(),
+                      const SizedBox(height: 24),
 
-                    // Favorite Brands - in a fixed-size scroll area
-                    SizedBox(
-                      height: 300, // Fixed height
-                      child: SingleChildScrollView(
-                        child: MultiSelectChipField<String?>(
-                          items: items,
-                          title: Text(AppLocalizations.of(context).preferredBrands),
-                          scroll: false,
-                          headerColor: Colors.blue.withOpacity(0.5),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue, width: 1.8),
+                      // Favorite Brands - in a fixed-size scroll area
+                      SizedBox(
+                        height: 300, // Fixed height
+                        child: SingleChildScrollView(
+                          child: MultiSelectChipField<String?>(
+                            items: items,
+                            title: Text(AppLocalizations.of(context).preferredBrands),
+                            scroll: false,
+                            headerColor: Colors.blue.withOpacity(0.5),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.blue, width: 1.8),
+                            ),
+                            selectedChipColor: Colors.blue.withOpacity(0.8),
+                            selectedTextStyle: const TextStyle(color: Colors.white),
+                            initialValue: _selectedBrands, // prefill if any
+                            onTap: (selection) {
+                              setState(() {
+                                // Keep non-null strings
+                                _selectedBrands =
+                                    selection.whereType<String>().toList();
+                              });
+                            },
                           ),
-                          selectedChipColor: Colors.blue.withOpacity(0.8),
-                          selectedTextStyle: const TextStyle(color: Colors.white),
-                          initialValue: _selectedBrands, // prefill if any
-                          onTap: (selection) {
-                            setState(() {
-                              // Keep non-null strings
-                              _selectedBrands =
-                                  selection.whereType<String>().toList();
-                            });
-                          },
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // "Next" Button
-                    ElevatedButton(
-                      onPressed: _updateProfile,
-                      child: Text(AppLocalizations.of(context).update),
-                    ),
-                  ],
+                      // "Next" Button
+                      ElevatedButton(
+                        onPressed: _updateProfile,
+                        child: Text(AppLocalizations.of(context).update),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

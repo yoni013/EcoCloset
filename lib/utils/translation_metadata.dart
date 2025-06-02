@@ -126,11 +126,18 @@ class TranslationUtils {
         return AppLocalizations.of(context).pendingBuyer;
       case 'confirmed':
       case 'time_slot_confirmed':
+      case 'purchase confirmed':
         return AppLocalizations.of(context).confirmed;
+      case 'awaiting_buyer_confirmation':
+        return AppLocalizations.of(context).awaitingBuyerToConfirm;
+      case 'sold':
+        return AppLocalizations.of(context).sold;
       case 'completed':
         return AppLocalizations.of(context).completed;
       case 'cancelled':
         return AppLocalizations.of(context).cancelled;
+      case 'reported':
+        return AppLocalizations.of(context).reported;
       default:
         return status;
     }

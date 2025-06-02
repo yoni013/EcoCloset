@@ -36,6 +36,13 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
     return List.generate(15, (index) => 8 + index); // 8 to 22
   }
 
+  bool _isHourInPast(DateTime date, int hour) {
+    final now = DateTime.now();
+    final isToday = _isSameDay(date, now);
+    if (!isToday) return false;
+    return hour <= now.hour;
+  }
+
   String _formatTime(int hour) {
     return '${hour.toString().padLeft(2, '0')}:00';
   }
@@ -60,6 +67,30 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
       } else {
         selectedTimeSlots[dateKey]!.add(hour);
       }
+    });
+  }
+
+  void _selectAllHoursForDate(DateTime date) {
+    final dateKey = DateTime(date.year, date.month, date.day);
+    final availableHours = _getAvailableHours();
+    
+    setState(() {
+      if (selectedTimeSlots[dateKey] == null) {
+        selectedTimeSlots[dateKey] = <int>{};
+      }
+      
+      for (int hour in availableHours) {
+        if (!_isHourInPast(date, hour)) {
+          selectedTimeSlots[dateKey]!.add(hour);
+        }
+      }
+    });
+  }
+
+  void _deselectAllHoursForDate(DateTime date) {
+    final dateKey = DateTime(date.year, date.month, date.day);
+    setState(() {
+      selectedTimeSlots.remove(dateKey);
     });
   }
 
@@ -111,7 +142,7 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
                   },
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     decoration: BoxDecoration(
                       color: isSelected 
                           ? Theme.of(context).colorScheme.primary
@@ -144,37 +175,38 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
                             color: isSelected
                                 ? Theme.of(context).colorScheme.onPrimary
                                 : Theme.of(context).colorScheme.onSurface,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Text(
                           date.day.toString(),
                           style: TextStyle(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.onPrimary
                                 : Theme.of(context).colorScheme.onSurface,
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Text(
                           _getMonthName(date.month).substring(0, 3),
                           style: TextStyle(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.onPrimary
                                 : Theme.of(context).colorScheme.onSurface,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        if (isToday) ...[
-                          const SizedBox(height: 2),
+                        if (isToday || (hasSelectedSlots && !isSelected)) 
+                          const SizedBox(height: 1),
+                        if (isToday)
                           Container(
-                            width: 5,
-                            height: 5,
+                            width: 4,
+                            height: 4,
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? Theme.of(context).colorScheme.onPrimary
@@ -182,15 +214,12 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
                               shape: BoxShape.circle,
                             ),
                           ),
-                        ],
-                        if (hasSelectedSlots && !isSelected) ...[
-                          const SizedBox(height: 2),
+                        if (hasSelectedSlots && !isSelected)
                           Icon(
                             Icons.check_circle,
-                            size: 14,
+                            size: 12,
                             color: Theme.of(context).colorScheme.primary,
                           ),
-                        ],
                       ],
                     ),
                   ),
@@ -248,11 +277,40 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Available hours for ${selectedDate!.day}/${selectedDate!.month}',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _selectAllHoursForDate(selectedDate!),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                  ),
+                  child: Text(
+                    'Select All',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _deselectAllHoursForDate(selectedDate!),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                  ),
+                  child: Text(
+                    'Deselect All',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -267,19 +325,24 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
               itemBuilder: (context, index) {
                 final hour = availableHours[index];
                 final isSelected = _isTimeSlotSelected(selectedDate!, hour);
+                final isInPast = _isHourInPast(selectedDate!, hour);
                 
                 return InkWell(
-                  onTap: () => _toggleTimeSlot(selectedDate!, hour),
+                  onTap: isInPast ? null : () => _toggleTimeSlot(selectedDate!, hour),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.surface,
+                      color: isInPast
+                          ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3)
+                          : isSelected 
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.surface,
                       border: Border.all(
-                        color: isSelected 
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.outline,
+                        color: isInPast
+                            ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                            : isSelected 
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -287,9 +350,11 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
                       child: Text(
                         _formatTime(hour),
                         style: TextStyle(
-                          color: isSelected 
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.onSurface,
+                          color: isInPast
+                              ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
+                              : isSelected 
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context).colorScheme.onSurface,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
@@ -320,7 +385,16 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
         }
       });
 
-      // Update the order with available time slots
+      // Get order data to retrieve item ID
+      final orderDoc = await FirebaseFirestore.instance
+          .collection('Orders')
+          .doc(widget.orderId)
+          .get();
+      
+      final orderData = orderDoc.data();
+      final itemId = orderData?['itemId'];
+
+      // Update the order with available time slots and change status
       await FirebaseFirestore.instance
           .collection('Orders')
           .doc(widget.orderId)
@@ -329,6 +403,14 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
         'status': 'pending_buyer',
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Update item status to "Pending Buyer"
+      if (itemId != null) {
+        await FirebaseFirestore.instance
+            .collection('Items')
+            .doc(itemId)
+            .update({'status': 'Pending Buyer'});
+      }
 
       // Callback to parent widget
       widget.onTimeSlotsSaved(timeSlotData);
@@ -358,19 +440,6 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).selectAvailableHours),
-        actions: [
-          TextButton(
-            onPressed: _getTotalSelectedSlots() > 0 ? _saveAvailability : null,
-            child: Text(
-              AppLocalizations.of(context).saveAvailability,
-              style: TextStyle(
-                color: _getTotalSelectedSlots() > 0 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).disabledColor,
-              ),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -385,10 +454,22 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    'Select dates and times for pickup',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
+                  child: RichText(
+                    text: TextSpan(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Select '),
+                        TextSpan(
+                          text: 'ALL',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const TextSpan(text: ' dates and times for pickup'),
+                      ],
                     ),
                   ),
                 ),
@@ -442,6 +523,27 @@ class _TimeAvailabilitySelectorState extends State<TimeAvailabilitySelector> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
+            ),
+          ),
+          // Save availability button at the bottom
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: _getTotalSelectedSlots() > 0 ? _saveAvailability : null,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                AppLocalizations.of(context).saveAvailability,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
