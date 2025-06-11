@@ -2,9 +2,6 @@ import 'package:eco_closet/utils/fetch_item_metadata.dart';
 import 'package:eco_closet/utils/get_recommended_price.dart';
 import 'package:eco_closet/utils/translation_metadata.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:ui';
@@ -12,7 +9,8 @@ import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../services/tag_service.dart';
+import '../utils/upload_with_tags.dart';
+import '../pages/item_page.dart';
 
 class UploadItemPage extends StatefulWidget {
   @override
@@ -625,86 +623,20 @@ class _StepTwoForm extends StatelessWidget {
   }
 
   /// Upload item details (with images) to Firestore using new tagging system
-  Future<void> _uploadItemToFirebase(
+  Future<String?> _uploadItemToFirebase(
     Map<String, dynamic> formData,
     BuildContext context,
   ) async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception('User not logged in.');
-      }
-
-      // Step 1: Upload images to Firebase Storage
-      debugPrint('📸 Uploading images...');
-      List<String> imagePaths = [];
-      for (var image in images) {
-        final String imageName = 'items/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
-        final ref = FirebaseStorage.instance.ref().child(imageName);
-        
-        await ref.putFile(File(image.path)).timeout(
-          const Duration(minutes: 2),
-          onTimeout: () {
-            throw Exception('Image upload timed out. Please check your internet connection.');
-          },
-        );
-        
-        final url = await ref.getDownloadURL().timeout(
-          const Duration(seconds: 30),
-          onTimeout: () {
-            throw Exception('Failed to get download URL. Please try again.');
-          },
-        );
-        imagePaths.add(url);
-      }
-
-      // Step 2: Create the item document in Firestore
-      debugPrint('💾 Creating item document...');
-      final itemRef = await FirebaseFirestore.instance.collection('Items').add({
-        ...formData,
-        'images': imagePaths,
-        'seller_id': userId,
-        'status': 'Available',
-        'createdAt': FieldValue.serverTimestamp(),
-      }).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Failed to save item data. Please try again.');
-        },
+      // Use the centralized upload function with proper tagging
+      final itemId = await UploadWithTags.uploadItemWithTags(
+        images: images,
+        formData: formData,
+        context: context,
       );
 
-      final itemId = itemRef.id;
-
-      // Step 3: Generate tags using Gemini AI
-      debugPrint('🏷️ Generating tags with AI...');
-      try {
-        final tagService = TagService();
-        await tagService.initialize();
-        
-        final generatedTags = await tagService.generateTagsWithGemini(
-          imageUrls: imagePaths,
-          itemMetadata: formData,
-        );
-
-        if (generatedTags.isNotEmpty) {
-          debugPrint('🎯 Generated ${generatedTags.length} tags: ${generatedTags.join(", ")}');
-          
-          // Step 4: Add tags to the item
-          await tagService.addTagsToItem(
-            itemId: itemId,
-            tagNames: generatedTags,
-          );
-          
-          debugPrint('✅ Tags added successfully!');
-        } else {
-          debugPrint('⚠️ No tags were generated, item uploaded without tags');
-        }
-      } catch (tagError) {
-        debugPrint('⚠️ Tag generation failed: $tagError');
-        debugPrint('📦 Item uploaded successfully without tags');
-      }
-
       debugPrint('✅ Item uploaded successfully with ID: $itemId');
+      return itemId;
 
     } catch (e) {
       debugPrint('❌ Upload failed: $e');
@@ -982,7 +914,7 @@ class _StepTwoForm extends StatelessWidget {
                                     );
                                     
                                     try {
-                                      await _uploadItemToFirebase(
+                                      final itemId = await _uploadItemToFirebase(
                                           formData, context);
                                       
                                       // Dismiss dialog using stored context if available, fallback to rootNavigator
@@ -993,11 +925,11 @@ class _StepTwoForm extends StatelessWidget {
                                       }
                                       
                                       // Only proceed with UI updates if context is still valid
-                                      if (context.mounted) {
+                                      if (context.mounted && itemId != null) {
                                         // Clear images only after successful upload
                                         images.clear();
                                         
-                                        // Show success message and navigate back
+                                        // Show success message and navigate to item page
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           SnackBar(
@@ -1005,7 +937,13 @@ class _StepTwoForm extends StatelessWidget {
                                                   AppLocalizations.of(context)
                                                       .itemUploadedSuccess)),
                                         );
-                                        Navigator.pop(context, true);
+                                        
+                                        // Navigate to the item page using root navigator
+                                        Navigator.of(context, rootNavigator: true).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => ItemPage(itemId: itemId),
+                                          ),
+                                        );
                                       }
                                     } catch (e) {
                                       // Dismiss dialog using stored context if available, fallback to rootNavigator
@@ -1043,7 +981,7 @@ class _StepTwoForm extends StatelessWidget {
                           );
 
                           try {
-                            await _uploadItemToFirebase(formData, context);
+                            final itemId = await _uploadItemToFirebase(formData, context);
                             
                             // Dismiss dialog using stored context if available, fallback to rootNavigator
                             if (dialogContext != null && dialogContext!.mounted) {
@@ -1053,17 +991,23 @@ class _StepTwoForm extends StatelessWidget {
                             }
                             
                             // Only proceed with UI updates if context is still valid
-                            if (context.mounted) {
+                            if (context.mounted && itemId != null) {
                               // Clear images only after successful upload
                               images.clear();
                               
-                              // Show success message and navigate back
+                              // Show success message and navigate to item page
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                     content: Text(AppLocalizations.of(context)
                                         .itemUploadedSuccess)),
                               );
-                              Navigator.pop(context, true);
+                              
+                              // Navigate to the item page using root navigator
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ItemPage(itemId: itemId),
+                                ),
+                              );
                             }
                           } catch (e) {
                             // Dismiss dialog using stored context if available, fallback to rootNavigator

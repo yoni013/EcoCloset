@@ -297,7 +297,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            '$averageRating (${num_of_reviewers.toString()})',
+                                            '${averageRating.toStringAsFixed(1)} (${num_of_reviewers.toString()})',
                                             style: TextStyle(
                                               color: Theme.of(context).colorScheme.onSurface,
                                               fontWeight: FontWeight.bold,
