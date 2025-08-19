@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eco_closet/pages/item_page.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ItemCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -18,9 +19,9 @@ class ItemCard extends StatelessWidget {
     final imageUrl = item['image_preview'] ?? item['imageUrl'] ?? '';
     
     return Card(
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
+        borderRadius: BorderRadius.circular(18.0),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -71,6 +72,9 @@ class ItemCard extends StatelessWidget {
         imageUrl: imageUrl,
         fit: BoxFit.cover,
         width: double.infinity,
+        httpHeaders: kIsWeb ? const {
+          'Access-Control-Allow-Origin': '*',
+        } : null,
         placeholder: (context, url) => Container(
           color: Theme.of(context).colorScheme.surfaceVariant,
           child: Center(
@@ -103,16 +107,23 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildPriceTag(BuildContext context) {
     return Positioned(
-      top: 8,
-      right: 8,
+      top: 10,
+      right: 10,
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 4,
+          horizontal: 10,
+          vertical: 6,
         ),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Text(
           '\₪${item['Price'] ?? 'N/A'}',

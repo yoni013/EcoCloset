@@ -1,0 +1,45 @@
+[
+  {
+    "origin": [
+      "https://eco-closet-f0942.web.app",
+      "https://eco-closet-f0942.firebaseapp.com",
+      "http://localhost:3000",
+      "http://localhost:8080",
+      "http://localhost:5000",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:8080",
+      "http://127.0.0.1:5000",
+      "http://127.0.0.1:5002",
+      "http://127.0.0.1:4500"
+    ],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS",
+      "HEAD"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "User-Agent",
+      "X-Requested-With",
+      "Accept",
+      "Accept-Language",
+      "Accept-Encoding",
+      "Connection",
+      "Cache-Control",
+      "Origin",
+      "Referer",
+      "X-Firebase-GMPID",
+      "X-Firebase-Auth-Version",
+      "X-Firebase-Locale",
+      "X-Client-Version",
+      "X-Firebase-Client",
+      "X-Firebase-AppCheck"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

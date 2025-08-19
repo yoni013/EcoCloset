@@ -11,6 +11,23 @@ import 'package:firebase_auth/firebase_auth.dart'
     hide EmailAuthProvider, PhoneAuthProvider;
 import 'package:provider/provider.dart';
 
+/// Minimal controller to allow programmatic tab switching and cross-tab navigation
+class BottomNavController {
+  // Access to the scaffold/state to switch tabs and access tab navigators
+  static final GlobalKey<_PersistentBottomBarScaffoldState> scaffoldKey =
+      GlobalKey<_PersistentBottomBarScaffoldState>();
+
+  static void switchToTab(int index) {
+    scaffoldKey.currentState?.switchToTab(index);
+  }
+
+  static NavigatorState? homeNavigator() {
+    final state = scaffoldKey.currentState;
+    if (state == null) return null;
+    return state.widget.items[0].navigatorkey?.currentState;
+  }
+}
+
 class PersistentBottomNavPage extends StatelessWidget {
   final _homeNavigatorKey = GlobalKey<NavigatorState>();
   final _exploreNavigatorKey = GlobalKey<NavigatorState>();
@@ -23,6 +40,7 @@ class PersistentBottomNavPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PersistentBottomBarScaffold(
+      key: BottomNavController.scaffoldKey,
       items: [
         PersistentTabItem(
           tab: () => const Homepage(),
@@ -206,6 +224,17 @@ class _PersistentBottomBarScaffoldState
         },
       ),
     );
+  }
+
+  // Programmatically switch tabs
+  void switchToTab(int index) {
+    if (!mounted) return;
+    setState(() {
+      _selectedTab = index;
+    });
+    // Ensure the target tab is popped to its root when switching
+    widget.items[index].navigatorkey?.currentState
+        ?.popUntil((route) => route.isFirst);
   }
 }
 

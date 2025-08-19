@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eco_closet/bottom_navigation.dart';
 import 'package:eco_closet/auth_onboarding/onboarding_main.dart';
+import 'package:eco_closet/auth_onboarding/phone_auth_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'
-    hide EmailAuthProvider, PhoneAuthProvider;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthGate extends StatelessWidget {
   @override
@@ -49,42 +48,19 @@ class AuthGate extends StatelessWidget {
 
         // Handle no user
         if (!snapshot.hasData) {
-          debugPrint('AuthGate: No user logged in, showing SignInScreen');
-          return SignInScreen(
-            providers: [
-              EmailAuthProvider(),
-            ],
-            actions: [
-              AuthStateChangeAction<SignedIn>((context, state) async {
-                debugPrint('AuthGate: User signed in with UID: ${state.user?.uid}');
-
-                if (!(state.user?.emailVerified ?? false)) {
-                  await state.user?.sendEmailVerification();
-                  _showVerificationMessage(context);
-                  FirebaseAuth.instance.signOut(); // Log out the user until email is verified
-                } else {
-                  await _checkAndCreateUser(context, state.user!);
-                }
-              }),
-            ],
+          debugPrint('AuthGate: No user logged in, showing PhoneAuthScreen');
+          return PhoneAuthScreen(
+            onSignedIn: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                debugPrint('AuthGate: User signed in with UID: ${user.uid}');
+                await _checkAndCreateUser(context, user);
+              }
+            },
           );
         }
 
-        // Handle unverified email
-        if (snapshot.hasData && !(snapshot.data?.emailVerified ?? false)) {
-          debugPrint('AuthGate: Email not verified, signing out...');
-          FirebaseAuth.instance.signOut();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showVerificationMessage(context);
-          });
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        // Handle authenticated user
+        // Handle authenticated user - phone numbers are automatically verified
         debugPrint('AuthGate: User is logged in with UID: ${snapshot.data?.uid}');
         _checkAndCreateUser(context, snapshot.data!);
 
@@ -94,11 +70,6 @@ class AuthGate extends StatelessWidget {
   }
 
   Future<void> _checkAndCreateUser(BuildContext context, User user) async {
-    if (!user.emailVerified) {
-      debugPrint('User email is not verified. Cannot proceed.');
-      return;
-    }
-
     final userDocRef =
         FirebaseFirestore.instance.collection('Users').doc(user.uid);
     final docSnapshot = await userDocRef.get();
@@ -106,14 +77,31 @@ class AuthGate extends StatelessWidget {
     if (!docSnapshot.exists) {
       debugPrint('User does not exist, creating new user...');
 
-      await userDocRef.set({
+      // Create user data based on authentication method
+      Map<String, dynamic> userData = {
         'uid': user.uid,
-        'email': user.email,
         'isNewUser': true,
         'created_at': FieldValue.serverTimestamp(),
         'average_rating': 0,
         'seller_reviews': [],
-      });
+      };
+
+      // Add phone number if available (phone auth)
+      if (user.phoneNumber != null) {
+        userData['phoneNumber'] = user.phoneNumber;
+      }
+
+      // Add email if available (email auth)
+      if (user.email != null) {
+        userData['email'] = user.email;
+      }
+
+      // Add display name if available
+      if (user.displayName != null) {
+        userData['name'] = user.displayName;
+      }
+
+      await userDocRef.set(userData);
 
       debugPrint('New user created successfully with UID: ${user.uid}');
       _showOnboardingPopup(context, user.uid);
@@ -135,30 +123,6 @@ class AuthGate extends StatelessWidget {
     });
   }
 
-  void _showVerificationMessage(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showDialog(
-        context: context,
-        barrierDismissible:
-            false, // Prevent the user from dismissing without action
-        builder: (context) => AlertDialog(
-          title: const Text('Verify Your Email'),
-          content: const Text(
-            'A verification email has been sent to your email address. '
-            'Please check your inbox and verify your email before logging in.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                FirebaseAuth.instance.signOut(); // Ensure they sign out
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    });
-  }
+
 }
 

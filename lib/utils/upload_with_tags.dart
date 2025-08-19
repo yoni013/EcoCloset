@@ -1,14 +1,15 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/tag_service.dart';
+import '../services/content_moderation_service.dart';
 import '../models/tag_model.dart';
 
 class UploadWithTags {
   static final TagService _tagService = TagService();
+  static final ContentModerationService _moderationService = ContentModerationService();
   
   /// Enhanced upload function that includes automatic tagging
   static Future<String?> uploadItemWithTags({
@@ -22,14 +23,33 @@ class UploadWithTags {
         throw Exception('User not logged in.');
       }
 
-      // Step 1: Upload images to Firebase Storage
+      // Step 1: Content moderation
+      debugPrint('🛡️ Moderating content...');
+      final description = formData['Description'] ?? '';
+      final itemName = formData['item_name'] ?? '';
+      final category = formData['Type'] ?? '';
+      
+      final moderationResult = await _moderationService.aiContentModeration(
+        description: description,
+        itemName: itemName,
+        category: category,
+      );
+
+      if (!moderationResult.isApproved) {
+        throw Exception('Content moderation failed: ${moderationResult.reason}');
+      }
+      debugPrint('✅ Content approved for upload');
+
+      // Step 2: Upload images to Firebase Storage
       debugPrint('📸 Uploading images...');
       List<String> imagePaths = [];
       for (var image in images) {
         final String imageName = 'items/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
         final ref = FirebaseStorage.instance.ref().child(imageName);
         
-        await ref.putFile(File(image.path)).timeout(
+        // Use bytes for cross-platform compatibility (works on web and mobile)
+        final bytes = await image.readAsBytes();
+        await ref.putData(bytes).timeout(
           const Duration(minutes: 2),
           onTimeout: () {
             throw Exception('Image upload timed out. Please check your internet connection.');
@@ -45,7 +65,7 @@ class UploadWithTags {
         imagePaths.add(url);
       }
 
-      // Step 2: Create the item document in Firestore
+      // Step 3: Create the item document in Firestore
       debugPrint('💾 Creating item document...');
       final itemRef = await FirebaseFirestore.instance.collection('Items').add({
         ...formData,
@@ -53,6 +73,7 @@ class UploadWithTags {
         'seller_id': userId,
         'status': 'Available',
         'createdAt': FieldValue.serverTimestamp(),
+        'moderation_status': 'approved', // Mark as approved by moderation
       }).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -62,33 +83,33 @@ class UploadWithTags {
 
       final itemId = itemRef.id;
 
-      // Step 3: Generate tags using Gemini AI
-      debugPrint('🏷️ Generating tags with AI...');
-      try {
-        await _tagService.initialize();
+      // Step 4: Generate tags using Gemini AI
+      // debugPrint('🏷️ Generating tags with AI...');
+      // try {
+      //   await _tagService.initialize();
         
-        final generatedTags = await _tagService.generateTagsWithGemini(
-          imageUrls: imagePaths,
-          itemMetadata: formData,
-        );
+      //   final generatedTags = await _tagService.generateTagsWithGemini(
+      //     imageUrls: imagePaths,
+      //     itemMetadata: formData,
+      //   );
 
-        if (generatedTags.isNotEmpty) {
-          debugPrint('🎯 Generated ${generatedTags.length} tags: ${generatedTags.join(", ")}');
+      //   if (generatedTags.isNotEmpty) {
+      //     debugPrint('🎯 Generated ${generatedTags.length} tags: ${generatedTags.join(", ")}');
           
-          // Step 4: Add tags to the item
-          await _tagService.addTagsToItem(
-            itemId: itemId,
-            tagNames: generatedTags,
-          );
+      //     // Step 5: Add tags to the item
+      //     await _tagService.addTagsToItem(
+      //       itemId: itemId,
+      //       tagNames: generatedTags,
+      //     );
           
-          debugPrint('✅ Tags added successfully!');
-        } else {
-          debugPrint('⚠️ No tags were generated, item uploaded without tags');
-        }
-      } catch (tagError) {
-        debugPrint('⚠️ Tag generation failed: $tagError');
-        debugPrint('📦 Item uploaded successfully without tags');
-      }
+      //     debugPrint('✅ Tags added successfully!');
+      //   } else {
+      //     debugPrint('⚠️ No tags were generated, item uploaded without tags');
+      //   }
+      // } catch (tagError) {
+      //   debugPrint('⚠️ Tag generation failed: $tagError');
+      //   debugPrint('📦 Item uploaded successfully without tags');
+      // }
 
       return itemId;
 

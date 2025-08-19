@@ -1,6 +1,5 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:eco_closet/generated/l10n.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -8,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:google_places_flutter/google_places_flutter.dart';
-import 'package:google_places_flutter/model/prediction.dart';
+
 import 'package:eco_closet/utils/image_handler.dart';
 
 
@@ -27,15 +25,13 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
 
-  // For lat/lng
-  double? _latitude;
-  double? _longitude;
+
 
   // Currently selected brand names
   List<String> _selectedBrands = [];
 
   // To hold picked image file
-  File? _profileImage;
+  XFile? _profileImage;
   String? _profilePhotoUrl; 
 
   // To hold original user values
@@ -81,13 +77,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           _selectedBrands = List<String>.from(data['favoriteBrands']);
           _original_brands = _selectedBrands;
         }
-        // If you stored latitude/longitude previously, fetch them:
-        if (data['latitude'] != null) {
-          _latitude = data['latitude'];
-        }
-        if (data['longitude'] != null) {
-          _longitude = data['longitude'];
-        }
+
         if (data['profilePicUrl'] != null) {
           _profilePhotoUrl = data['profilePicUrl'];
         }
@@ -104,7 +94,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
     setState(() {
-      _profileImage = File(pickedFile.path);
+      _profileImage = pickedFile;
     });
     should_update_photo = true;
   }
@@ -131,7 +121,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             .ref()
             .child('profile_pics')
             .child('${user.uid}.jpg');
-        await ref.putFile(_profileImage!);
+        final bytes = await _profileImage!.readAsBytes();
+        await ref.putData(bytes);
         photoURL = await ref.getDownloadURL();
       }
 
@@ -141,8 +132,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         if (_addressController.text != _original_address) 'address': _addressController.text.trim(),
         if (_selectedBrands != _original_brands) 'likedBrands': _selectedBrands,
         if (photoURL != null && should_update_photo!) 'profilePicUrl': photoURL,
-        if (_latitude != null) 'latitude': _latitude,
-        if (_longitude != null) 'longitude': _longitude,
+
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -159,54 +149,19 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     }
   }
 
-  // Use the provided code snippet to build the Google Place autocomplete field
+  // Simple text field for address input
   Widget placesAutoCompleteTextField() {
-    return GooglePlaceAutoCompleteTextField(
-      textEditingController: _addressController,
-      googleAPIKey: 'AIzaSyB9vjhEDF4fRZ6x_Qy73Xgwhrb2GQjBjK8',
-      inputDecoration: InputDecoration(
+    return TextFormField(
+      controller: _addressController,
+      decoration: InputDecoration(
         labelText: AppLocalizations.of(context).address,
-        hintText: AppLocalizations.of(context).addressSearch,
+        hintText: 'Enter your full address (City, Street, etc.)',
+        prefixIcon: const Icon(Icons.location_on),
+        border: const OutlineInputBorder(),
       ),
-      debounceTime: 400,
-      // Restrict or broaden countries as needed
-      countries: const ['il'], // example: "in", "fr", "us", etc.
-      isLatLngRequired: true,
-      getPlaceDetailWithLatLng: (Prediction prediction) {
-        debugPrint('placeDetails lat: ${prediction.lat}, lng: ${prediction.lng}');
-        // Save lat/lng locally for potential storage in Firestore
-        if (prediction.lat != null && prediction.lng != null) {
-          final lat = double.tryParse(prediction.lat!);
-          final lng = double.tryParse(prediction.lng!);
-          if (lat != null && lng != null) {
-            _latitude = lat;
-            _longitude = lng;
-          }
-        }
-      },
-      itemClick: (Prediction prediction) {
-        // Set the text in the address controller
-        _addressController.text = prediction.description ?? '';
-        _addressController.selection = TextSelection.fromPosition(
-          TextPosition(offset: prediction.description?.length ?? 0),
-        );
-        _addressController.text = prediction.description?.substring(0, prediction.description!.lastIndexOf(',')) ?? '';
-      },
-      itemBuilder: (context, index, Prediction prediction) {
-        return Container(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(prediction.description ?? ''),
-              ),
-            ],
-          ),
-        );
-      },
-      isCrossBtnShown: true,
+      maxLines: 2,
+      validator: (value) => 
+          value == null || value.isEmpty ? 'Please enter your address' : null,
     );
   }
 
@@ -239,9 +194,17 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                               height: 80,
                               child: _profileImage != null
                                   // If a new image is picked, display it immediately.
-                                  ? Image.file(
-                                      _profileImage!,
-                                      fit: BoxFit.cover,
+                                  ? FutureBuilder<Uint8List>(
+                                      future: _profileImage!.readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                          );
+                                        }
+                                        return const Center(child: CircularProgressIndicator());
+                                      },
                                     )
                                   : _profilePhotoUrl != null
                                       // Otherwise, if a URL exists, display the network image.

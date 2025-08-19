@@ -20,7 +20,8 @@ We may collect personal information that you provide directly to us, such as:
 * Analytics: Engagement metrics, crash reports, system logs, and other diagnostic data.
 2.5 Payment Information
 * The App does not directly process or store payment method details (such as credit card numbers).
-* We may collect limited transaction details (e.g., transaction amount, date, and payment confirmations) from external payment processors (e.g., Bit, Paybox) to facilitate payment tracking, dispute resolution, and fraud detection.
+* We do not handle payments between users. All transactions are coordinated directly between buyers and sellers using their chosen payment methods (e.g., Bit, Paybox, cash).
+* We may collect limited transaction metadata (e.g., transaction amount for listings, meeting coordination details) to facilitate dispute resolution and improve our matching services.
 3. How We Collect Data
 3.1 Directly from You
 * Sign-Up and Profile Creation: Information you provide when creating an account or updating your profile.
@@ -48,7 +49,7 @@ We use your information for the following purposes:
 We do not sell your personal data. However, we may share your data in the following circumstances:
 1. Service Providers and Partners
 
-   * Payment Processors: To facilitate transactions through Bit, Paybox, or other external payment platforms.
+   * Service Coordination: We may share transaction coordination details (pickup times, locations) with users to facilitate successful exchanges.
    * AI Recommendations and Tagging: Sharing relevant data with AI service providers to improve personalized suggestions.
    * Analytics Providers: Such as Google Analytics or other similar tools to help analyze how you use the App.
    2. Legal and Compliance
@@ -73,7 +74,7 @@ Depending on your location, you may have the right to:
 
                      * Adjust your cookie settings through your browser or device settings.
                      * Opt out of certain third-party ad networks or tracking.
-To exercise these rights, please contact us at  ariel4216@gmail.com and yoni013@gmail.com. We will respond to valid requests within the time required by applicable law.
+To exercise these rights, please contact us at support@ecocloset.com. We will respond to valid requests within the time required by applicable law.
 7. Data Retention Policy
 We retain your data only as long as it is necessary for:
                      * Fulfilling the purposes outlined in this Policy (e.g., providing services, maintaining transaction records).
@@ -87,11 +88,11 @@ We take reasonable and appropriate measures to protect your personal information
                      * Secure Storage solutions with regular security audits and penetration testing.
 However, please note that no method of transmission or electronic storage is completely secure. By using our App, you acknowledge that you share data at your own risk.
 9. Children’s Privacy
-Our App is not intended for individuals under the age of 16. We do not knowingly collect personal information from children. If you believe a child under 16 has provided us with personal data, please contact us at ariel4216@gmail.com and yoni013@gmail.com so we can take appropriate action.
+Our App is not intended for individuals under the age of 16. We do not knowingly collect personal information from children. If you believe a child under 16 has provided us with personal data, please contact us at support@ecocloset.com so we can take appropriate action.
 10. Changes to this Privacy Policy
 We reserve the right to update this Privacy Policy at any time to reflect changes in our practices or applicable laws. If we make significant modifications, we will notify you via email or prominent in-App notices. The date at the top of this Policy indicates the latest revision.
 11. Contact Information
-If you have any questions, concerns, or complaints about this Privacy Policy or our data handling practices, please contact us at ariel4216@gmail.com and yoni013@gmail.com.
+If you have any questions, concerns, or complaints about this Privacy Policy or our data handling practices, please contact us at support@ecocloset.com.
 ________________
 
 

@@ -41,7 +41,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
     'brand': null,
     'color': null,
     'condition': null,
-    'priceRange': const RangeValues(0, 500),
+    'priceRange': const RangeValues(0, 1000),
   };
 
   late FirestoreCacheProvider cacheProvider;

@@ -1447,43 +1447,47 @@ class _MyOrdersPageState extends State<MyOrdersPage>
     } else if (status == 'pending_buyer') {
       if (isBuyerView) {
         // For buyers - clickable to select time
-        return GestureDetector(
-          onTap: () {
-            // Navigate to time selection for buyer
-            _selectPickupTime(order['id'], order);
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue, width: 1),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.touch_app,
-                  size: 16,
-                  color: Colors.blue.shade700,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context).orderApproved,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              // Navigate to time selection for buyer
+              _selectPickupTime(order['id'], order);
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.touch_app,
+                    size: 16,
+                    color: Colors.blue.shade700,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).orderApproved,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1929,6 +1933,7 @@ class _MyOrdersPageState extends State<MyOrdersPage>
             // Custom tab bar without AppBar
             Container(
               margin: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(4.0),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
@@ -1942,12 +1947,16 @@ class _MyOrdersPageState extends State<MyOrdersPage>
                 labelColor: Theme.of(context).colorScheme.onPrimary,
                 unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 dividerColor: Colors.transparent,
+                indicatorPadding: const EdgeInsets.symmetric(horizontal: -16.0, vertical: -8.0),
+                indicatorSize: TabBarIndicatorSize.tab,
                 tabs: [
                   Tab(
+                    height: 60,
                     icon: const Icon(Icons.shopping_bag_outlined),
                     text: AppLocalizations.of(context).buyer,
                   ),
                   Tab(
+                    height: 60,
                     icon: const Icon(Icons.store_outlined),
                     text: AppLocalizations.of(context).seller,
                   ),

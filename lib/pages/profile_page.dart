@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:provider/provider.dart';
-import 'package:eco_closet/utils/firestore_cache_provider.dart';
+
+
 import 'package:eco_closet/widgets/filter_popup.dart';
 import 'package:eco_closet/widgets/item_card.dart';
 import 'package:eco_closet/utils/image_handler.dart';
@@ -28,6 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool isForMeActive = false;
   late TextEditingController _searchController;
   bool _isLoading = false;
+  bool _isUploadingProfilePic = false;
   final GlobalKey<_ItemsGridWidgetState> _itemsGridKey = GlobalKey<_ItemsGridWidgetState>();
   Map<String, dynamic> userSizes = {};
   Map<String, dynamic> filters = {
@@ -36,7 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
     'brand': null,
     'color': null,
     'condition': null,
-    'priceRange': const RangeValues(0, 500),
+    'priceRange': const RangeValues(0, 1000),
   };
 
   @override
@@ -244,14 +248,60 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Hero(
                               tag: 'profile_${widget.viewedUserId}',
-                              child: ImageHandler.buildProfilePicture(
-                                profilePicUrl: userData['profilePicUrl'],
-                                userId: widget.viewedUserId,
-                                radius: 40,
-                                fallbackIcon: Icon(
-                                  Icons.person,
-                                  size: 40,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                              child: GestureDetector(
+                                onTap: isOwnProfile ? _changeProfilePicture : null,
+                                child: Stack(
+                                  children: [
+                                    ImageHandler.buildProfilePicture(
+                                      profilePicUrl: userData['profilePicUrl'],
+                                      userId: widget.viewedUserId,
+                                      radius: 40,
+                                      fallbackIcon: Icon(
+                                        Icons.person,
+                                        size: 40,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    // Show edit indicator for own profile
+                                    if (isOwnProfile) ...[
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.primary,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Theme.of(context).colorScheme.surface,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.camera_alt,
+                                            size: 16,
+                                            color: Theme.of(context).colorScheme.onPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    // Show loading overlay when uploading
+                                    if (_isUploadingProfilePic)
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.black54,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -677,21 +727,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return doc.data()?['Sizes'] ?? {};
   }
 
-  List<Map<String, dynamic>> _filterItemsByMySizes({
-    required List<Map<String, dynamic>> items,
-    required Map<String, dynamic> userSizes,
-  }) {
-    return items.where((item) {
-      final itemType = item['Type'] ?? '';
-      final itemSize = item['Size'] ?? '';
-      if (userSizes.containsKey(itemType)) {
-        final preferred = userSizes[itemType];
-        return preferred.contains(itemSize);
-      } else {
-        return true;
-      }
-    }).toList();
-  }
+
 
   Future<void> _applyForMeFilter() async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -700,6 +736,87 @@ class _ProfilePageState extends State<ProfilePage> {
       userSizes = fetchedUserSizes;
     });
     // The filtering will be applied in the ItemsGridWidget based on isForMeActive and userSizes
+  }
+
+  Future<void> _changeProfilePicture() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80, // Reasonable quality without cropping
+      );
+      
+      if (image == null) return; // User cancelled
+
+      setState(() {
+        _isUploadingProfilePic = true;
+      });
+
+      await _uploadProfilePicture(image);
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting or cropping image'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfilePic = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _uploadProfilePicture(XFile imageFile) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('User not logged in');
+
+      // Create storage reference
+      final String imageName = 'profile_pics/${user.uid}.jpg';
+      final storageRef = FirebaseStorage.instance.ref().child(imageName);
+
+      // Upload the file using bytes
+      final bytes = await imageFile.readAsBytes();
+      await storageRef.putData(Uint8List.fromList(bytes));
+
+      // Get download URL
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      // Update Firestore with new profile picture URL
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .update({'profilePicUrl': downloadUrl});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile picture updated successfully'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+        
+        // Refresh the profile page to show the new image
+        setState(() {});
+      }
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      rethrow;
+    }
   }
 
   // Public method to refresh items from external calls

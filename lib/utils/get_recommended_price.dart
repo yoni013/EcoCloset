@@ -108,6 +108,7 @@ const Map<String, double> conditionMultiplier = {
 
 // Type multipliers
 const Map<String, double> typeMultiplier = {
+  'Accessories': 0.8,
   'Activewear': 1.0,
   'Belts': 0.5,
   'Blazers': 1.2,
@@ -138,7 +139,74 @@ const Map<String, double> typeMultiplier = {
   'Tracksuits': 1.2,
 };
 
-int estimateItemValue(String brand, String condition, String type) {
+// Size multipliers - uncommon sizes may have different demand
+const Map<String, double> sizeMultiplier = {
+  'XXS': 0.85, // Less common, lower demand
+  'XS': 0.95,
+  'S': 1.0,
+  'M': 1.0,
+  'L': 1.0,
+  'XL': 0.95,
+  'XXL': 0.85, // Less common, lower demand
+  'XXXL': 0.75,
+  // Shoe sizes
+  '35': 0.9,
+  '36': 0.95,
+  '37': 1.0,
+  '38': 1.0,
+  '39': 1.0,
+  '40': 1.0,
+  '41': 1.0,
+  '42': 0.95,
+  '43': 0.9,
+  '44': 0.85,
+  '45': 0.8,
+  '46': 0.75,
+};
+
+// Color multipliers - neutral colors vs unique/fashion colors
+const Map<String, double> colorMultiplier = {
+  // Classic/Neutral colors - high demand
+  'Black': 1.1,
+  'White': 1.05,
+  'Navy': 1.05,
+  'Gray': 1.0,
+  'Grey': 1.0,
+  'Brown': 0.95,
+  'Beige': 0.95,
+  'Cream': 1.0,
+  
+  // Popular fashion colors
+  'Red': 1.0,
+  'Blue': 1.0,
+  'Green': 0.95,
+  'Pink': 0.95,
+  'Purple': 0.9,
+  'Yellow': 0.85,
+  'Orange': 0.85,
+  
+  // Unique/Bold colors - may have lower demand
+  'Neon': 0.8,
+  'Fluorescent': 0.75,
+  'Multi-color': 0.9,
+  'Rainbow': 0.8,
+};
+
+// Premium keywords in description that may increase value
+const List<String> premiumKeywords = [
+  'limited edition', 'rare', 'vintage', 'collectible', 'exclusive',
+  'designer', 'handmade', 'artisan', 'premium', 'luxury',
+  'authentic', 'original', 'special edition', 'unique', 'one-of-a-kind',
+  'silk', 'cashmere', 'leather', 'suede', 'wool', 'linen',
+  'diamond', 'gold', 'silver', 'platinum', 'crystal'
+];
+
+// Enhanced price estimation with additional factors
+int estimateItemValue(String brand, String condition, String type, {
+  String? size,
+  String? color,
+  String? description,
+}) {
   // Get the base price, default to 30 if brand is unknown
   double basePrice = brandBasePrices[brand] ?? 30.0;
 
@@ -148,11 +216,45 @@ int estimateItemValue(String brand, String condition, String type) {
   // Get the type multiplier, default to 1.0 for unknown types
   double typeFactor = typeMultiplier[type] ?? 1.0;
 
-  // Calculate estimated price
-  double estimatedPrice = basePrice * conditionFactor * typeFactor;
+  // Get the size multiplier, default to 1.0 for unknown sizes
+  double sizeFactor = 1.0;
+  if (size != null && size.isNotEmpty) {
+    sizeFactor = sizeMultiplier[size] ?? 1.0;
+  }
+
+  // Get the color multiplier, default to 1.0 for unknown colors
+  double colorFactor = 1.0;
+  if (color != null && color.isNotEmpty) {
+    colorFactor = colorMultiplier[color] ?? 1.0;
+  }
+
+  // Analyze description for premium keywords
+  double descriptionFactor = 1.0;
+  if (description != null && description.isNotEmpty) {
+    final lowerDescription = description.toLowerCase();
+    int premiumKeywordCount = 0;
+    
+    for (final keyword in premiumKeywords) {
+      if (lowerDescription.contains(keyword.toLowerCase())) {
+        premiumKeywordCount++;
+      }
+    }
+    
+    // Each premium keyword adds 5% to the value, capped at 25% increase
+    descriptionFactor = 1.0 + (premiumKeywordCount * 0.05).clamp(0.0, 0.25);
+  }
+
+  // Calculate estimated price with all factors
+  double estimatedPrice = basePrice * conditionFactor * typeFactor * sizeFactor * colorFactor * descriptionFactor;
 
   // Round to nearest 10 (e.g., 53 -> 50, 77 -> 80)
   int roundedPrice = (estimatedPrice / 10).round() * 10;
 
-  return roundedPrice;
+  // Ensure minimum price of 10
+  return roundedPrice < 10 ? 10 : roundedPrice;
+}
+
+// Legacy function for backward compatibility
+int estimateItemValueBasic(String brand, String condition, String type) {
+  return estimateItemValue(brand, condition, type);
 }

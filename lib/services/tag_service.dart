@@ -8,6 +8,22 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../models/tag_model.dart';
 
+/// Custom exception for AI service errors with retry information
+class AIServiceException implements Exception {
+  final String message;
+  final bool isRetryable;
+  final String? details;
+  
+  const AIServiceException(
+    this.message, {
+    this.isRetryable = true,
+    this.details,
+  });
+  
+  @override
+  String toString() => 'AIServiceException: $message${details != null ? ' ($details)' : ''}';
+}
+
 class TagService {
   static final TagService _instance = TagService._internal();
   factory TagService() => _instance;
@@ -127,48 +143,102 @@ class TagService {
     required List<String> imageUrls,
     required Map<String, dynamic> itemMetadata,
   }) async {
-    try {
-      // Prepare the prompt for Gemini
-      final prompt = _buildGeminiPrompt(itemMetadata);
-      
-      // Create content parts
-      List<Content> contentParts = [];
-      
-      // Add images by downloading them and converting to bytes
-      for (final imageUrl in imageUrls) {
-        final imageBytes = await _downloadImageBytes(imageUrl);
-        if (imageBytes != null) {
-          contentParts.add(Content.inlineData('image/jpeg', imageBytes));
+    const int maxRetries = 3;
+    int retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        debugPrint('🤖 AI Tagging attempt ${retryCount + 1}/$maxRetries');
+        
+        // Validate inputs
+        if (imageUrls.isEmpty) {
+          throw Exception('No images provided for AI analysis');
         }
+        
+        // Prepare the prompt for Gemini
+        final prompt = _buildGeminiPrompt(itemMetadata);
+        
+        // Create content parts with timeout handling
+        List<Content> contentParts = [];
+        
+        // Add images by downloading them with timeout
+        for (final imageUrl in imageUrls) {
+          try {
+            final imageBytes = await _downloadImageBytes(imageUrl)
+                .timeout(const Duration(seconds: 10));
+            if (imageBytes != null) {
+              contentParts.add(Content.inlineData('image/jpeg', imageBytes));
+            }
+          } catch (imageError) {
+            debugPrint('⚠️ Failed to download image $imageUrl: $imageError');
+            // Continue with other images instead of failing completely
+          }
+        }
+        
+        if (contentParts.isEmpty) {
+          throw Exception('Failed to download any images for analysis');
+        }
+        
+        // Add text prompt
+        contentParts.add(Content.text(prompt));
+
+        // Get Firebase AI model with error checking
+        final model = FirebaseAI.googleAI().generativeModel(
+          model: 'gemini-2.0-flash',
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+            maxOutputTokens: 2048,
+            temperature: 0.7,
+          ),
+        );
+
+        // Generate content with timeout
+        final response = await model.generateContent(contentParts)
+            .timeout(const Duration(seconds: 30));
+        
+        if (response.text == null || response.text!.isEmpty) {
+          throw AIServiceException('Empty response from Gemini AI', isRetryable: true);
+        }
+
+        // Parse the response to extract tags
+        final selectedTags = _parseGeminiResponse(response.text!);
+        
+        if (selectedTags.isEmpty) {
+          throw AIServiceException('No valid tags extracted from AI response', isRetryable: false);
+        }
+        
+        debugPrint('✅ AI tagging successful: ${selectedTags.length} tags generated');
+        return selectedTags;
+        
+      } on AIServiceException catch (e) {
+        debugPrint('🚨 AI Service Error (attempt ${retryCount + 1}): ${e.message}');
+        
+        if (!e.isRetryable || retryCount >= maxRetries - 1) {
+          debugPrint('❌ AI tagging failed permanently. Using fallback method.');
+          return _generateBasicTags(itemMetadata);
+        }
+        
+        retryCount++;
+        // Exponential backoff: 2^retry seconds
+        await Future.delayed(Duration(seconds: (1 << retryCount)));
+        
+      } catch (e) {
+        debugPrint('💥 Unexpected error in AI tagging (attempt ${retryCount + 1}): $e');
+        
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          debugPrint('❌ Max retries exceeded. Using fallback method.');
+          return _generateBasicTags(itemMetadata);
+        }
+        
+        // Wait before retry
+        await Future.delayed(Duration(seconds: retryCount * 2));
       }
-      
-      // Add text prompt
-      contentParts.add(Content.text(prompt));
-
-      // Get Firebase AI model
-      final model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-2.0-flash',
-        generationConfig: GenerationConfig(
-          responseMimeType: 'application/json',
-        ),
-      );
-
-      // Generate content
-      final response = await model.generateContent(contentParts);
-      
-      if (response.text == null || response.text!.isEmpty) {
-        throw Exception('No response from Gemini');
-      }
-
-      // Parse the response to extract tags
-      final selectedTags = _parseGeminiResponse(response.text!);
-      
-      return selectedTags;
-    } catch (e) {
-      debugPrint('Error generating tags with Gemini: $e');
-      // Fallback to basic tag generation
-      return _generateBasicTags(itemMetadata);
     }
+    
+    // Should never reach here, but just in case
+    debugPrint('⚠️ AI tagging exhausted all retries. Using fallback method.');
+    return _generateBasicTags(itemMetadata);
   }
 
   /// Build comprehensive prompt for Gemini

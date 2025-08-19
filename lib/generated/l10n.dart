@@ -419,6 +419,12 @@ abstract class AppLocalizations {
   /// **'Shop All'**
   String get shopAll;
 
+  /// No description provided for @categoryAccessories.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessories'**
+  String get categoryAccessories;
+
   /// No description provided for @categoryActivewear.
   ///
   /// In en, this message translates to:
