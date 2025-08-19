@@ -3,14 +3,15 @@ import 'package:eco_closet/utils/get_recommended_price.dart';
 import 'package:eco_closet/utils/translation_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import 'package:eco_closet/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../utils/upload_with_tags.dart';
 import '../pages/item_page.dart';
+ 
 
 class UploadItemPage extends StatefulWidget {
   @override
@@ -57,6 +58,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
   }
 
   Future<void> _pickImageSource() async {
+    print('🚀 _pickImageSource() called - showing bottom sheet');
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -77,6 +79,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
                 }
                 
                 try {
+                  debugPrint('📷 Starting camera...');
                   final XFile? cameraImage = await _picker.pickImage(
                     source: ImageSource.camera,
                     imageQuality: 50,
@@ -85,17 +88,20 @@ class _UploadItemPageState extends State<UploadItemPage> {
                   );
                   
                   if (cameraImage != null) {
+                    debugPrint('📷 Camera image captured: ${cameraImage.path}');
                     setState(() {
                       if (_images.length < 6) {
                         _images.add(cameraImage);
                       }
                     });
+                    debugPrint('✅ Camera image added. Total: ${_images.length}');
                   } else {
                     // User cancelled camera
-                    debugPrint('Camera cancelled by user');
+                    debugPrint('❌ Camera cancelled by user');
                   }
-                } catch (e) {
-                  debugPrint('Error taking photo: $e');
+                } catch (e, stackTrace) {
+                  debugPrint('💥 Error taking photo: $e');
+                  debugPrint('Stack trace: $stackTrace');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -111,9 +117,12 @@ class _UploadItemPageState extends State<UploadItemPage> {
               leading: const Icon(Icons.photo_library),
               title: Text(AppLocalizations.of(context).selectFromGallery),
               onTap: () async {
+                print('📱 Gallery option tapped');
                 Navigator.pop(context);
                 
                 try {
+                  print('🖼️ Starting gallery selection...');
+                  debugPrint('🖼️ Starting gallery selection...');
                   final pickedImages = await _picker.pickMultiImage(
                     imageQuality: 50,
                     maxWidth: 1920,
@@ -122,22 +131,35 @@ class _UploadItemPageState extends State<UploadItemPage> {
                     limit: 6 - _images.length, // Only allow remaining slots
                   );
                   
+                  debugPrint('🖼️ Picked ${pickedImages.length} images');
+                  
+                  print('🖼️ Picked ${pickedImages.length} images');
+                  
                   if (pickedImages.isNotEmpty) {
+                    print('📸 About to call setState() to add images');
                     setState(() {
                       for (var img in pickedImages) {
                         if (_images.length < 6) {
+                          print('📸 Adding image: ${img.path}');
+                          debugPrint('📸 Adding image: ${img.path}');
                           _images.add(img);
                         } else {
                           break;
                         }
                       }
                     });
+                    print('✅ setState() completed. Total images: ${_images.length}');
+                    debugPrint('✅ Successfully added images. Total: ${_images.length}');
                   } else {
                     // User cancelled gallery selection
-                    debugPrint('Gallery selection cancelled by user');
+                    print('❌ Gallery selection cancelled by user');
+                    debugPrint('❌ Gallery selection cancelled by user');
                   }
-                } catch (e) {
-                  debugPrint('Error selecting from gallery: $e');
+                } catch (e, stackTrace) {
+                  print('💥 ERROR selecting from gallery: $e');
+                  print('💥 Stack trace: $stackTrace');
+                  debugPrint('💥 Error selecting from gallery: $e');
+                  debugPrint('Stack trace: $stackTrace');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -198,7 +220,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
       
       // Add images as content parts
       for (var image in _images) {
-        final bytes = await File(image.path).readAsBytes();
+        final bytes = await image.readAsBytes();
         contentParts.add(Content.inlineData('image/jpeg', bytes));
       }
 
@@ -245,6 +267,7 @@ class _UploadItemPageState extends State<UploadItemPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ Building UploadItemPage widget. Current images count: ${_images.length}');
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -385,9 +408,36 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                             fit: StackFit.expand,
                                             children: [
                                               // Image preview
-                                              Image.file(
-                                                File(image.path),
-                                                fit: BoxFit.cover,
+                                              FutureBuilder<Uint8List>(
+                                                future: image.readAsBytes(),
+                                                builder: (context, snapshot) {
+                                                  if (snapshot.hasError) {
+                                                    debugPrint('💥 Error reading image bytes: ${snapshot.error}');
+                                                    return Container(
+                                                      color: Colors.red[100],
+                                                      child: const Center(
+                                                        child: Icon(Icons.error, color: Colors.red),
+                                                      ),
+                                                    );
+                                                  }
+                                                  if (snapshot.hasData) {
+                                                    debugPrint('📸 Successfully loaded image bytes: ${snapshot.data!.length} bytes');
+                                                    return Image.memory(
+                                                      snapshot.data!,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        debugPrint('💥 Error displaying image: $error');
+                                                        return Container(
+                                                          color: Colors.orange[100],
+                                                          child: const Center(
+                                                            child: Icon(Icons.image_not_supported, color: Colors.orange),
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  }
+                                                  return const Center(child: CircularProgressIndicator());
+                                                },
                                               ),
                                               // Main image badge
                                               if (index == 0)
@@ -481,7 +531,10 @@ class _UploadItemPageState extends State<UploadItemPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: _pickImageSource,
+                            onPressed: () {
+                              print('🔘 Pick Images button pressed');
+                              _pickImageSource();
+                            },
                             icon: const Icon(Icons.add_photo_alternate),
                             label: Text(AppLocalizations.of(context).pickImages),
                             style: ElevatedButton.styleFrom(
@@ -545,8 +598,21 @@ class _UploadItemPageState extends State<UploadItemPage> {
                                         ),
                                       );
 
-                                      if (result == true) {
-                                        setState(() {});
+                                      if (result != null && result is String) {
+                                        // Successfully uploaded item, navigate to homepage then to item page
+                                        final itemId = result;
+                                        
+                                        // Clear the images since upload was successful
+                                        setState(() {
+                                          _images.clear();
+                                        });
+                                        
+                                        // Open the item page above the tab scaffold (no bottom nav)
+                                        Navigator.of(context, rootNavigator: true).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => ItemPage(itemId: itemId),
+                                          ),
+                                        );
                                       }
                                     } catch (e) {
                                       Navigator.of(context, rootNavigator: true)
@@ -678,191 +744,303 @@ class _StepTwoForm extends StatelessWidget {
               child: Column(
                 children: [
                   // Item Name (Text field)
-                  TextFormField(
-                    decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).itemName),
-                    maxLength: 50, // Character limit
-                    onChanged: (value) => formData['item_name'] = value,
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? AppLocalizations.of(context).itemNameRequired
-                        : null,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).itemName,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLength: 50, // Character limit
+                        onChanged: (value) => formData['item_name'] = value,
+                        validator: (value) => value == null || value.trim().isEmpty
+                            ? AppLocalizations.of(context).itemNameRequired
+                            : null,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Brand (Autocomplete)
-                  Autocomplete<String>(
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) {
-                        return const Iterable<String>.empty();
-                      }
-                      return brands.where((option) => option
-                          .toLowerCase()
-                          .contains(textEditingValue.text.toLowerCase()));
-                    },
-                    onSelected: (String selection) {
-                      formData['Brand'] = selection;
-                    },
-                    initialValue: TextEditingValue(
-                      text: formData['Brand'] ?? '',
-                    ),
-                    fieldViewBuilder: (BuildContext context,
-                        TextEditingController textEditingController,
-                        FocusNode focusNode,
-                        VoidCallback onFieldSubmitted) {
-                      return TextFormField(
-                        controller: textEditingController,
-                        focusNode: focusNode,
-                        decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context).brand),
-                        validator: (value) => value == null || value.isEmpty
-                            ? AppLocalizations.of(context).brandRequired
-                            : null,
-                        onChanged: (value) {
-                          formData['Brand'] =
-                              value; // Update formData on text change
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).brand,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Autocomplete<String>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<String>.empty();
+                          }
+                          return brands.where((option) => option
+                              .toLowerCase()
+                              .contains(textEditingValue.text.toLowerCase()));
                         },
-                        onFieldSubmitted: (value) {
-                          formData['Brand'] = value;
-                          onFieldSubmitted(); // Trigger any additional submission logic
+                        onSelected: (String selection) {
+                          formData['Brand'] = selection;
                         },
-                      );
-                    },
+                        initialValue: TextEditingValue(
+                          text: formData['Brand'] ?? '',
+                        ),
+                        fieldViewBuilder: (BuildContext context,
+                            TextEditingController textEditingController,
+                            FocusNode focusNode,
+                            VoidCallback onFieldSubmitted) {
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) => value == null || value.isEmpty
+                                ? AppLocalizations.of(context).brandRequired
+                                : null,
+                            onChanged: (value) {
+                              formData['Brand'] =
+                                  value; // Update formData on text change
+                            },
+                            onFieldSubmitted: (value) {
+                              formData['Brand'] = value;
+                              onFieldSubmitted(); // Trigger any additional submission logic
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Color (Autocomplete)
-                  Autocomplete<String>(
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) {
-                        return const Iterable<String>.empty();
-                      }
-                      final translatedColors = colors
-                          .map((color) =>
-                              TranslationUtils.getColor(color, context))
-                          .toList();
-                      return translatedColors.where((translatedColor) =>
-                          translatedColor
-                              .toLowerCase()
-                              .contains(textEditingValue.text.toLowerCase()));
-                    },
-                    onSelected: (String selection) {
-                      formData['Color'] = colors.firstWhere(
-                          (color) =>
-                              TranslationUtils.getColor(color, context) ==
-                              selection,
-                          orElse: () => selection);
-                    },
-                    initialValue: TextEditingValue(
-                      text: formData['Color'] != null
-                          ? TranslationUtils.getColor(
-                              formData['Color']!, context) // Show localized color
-                          : '',
-                    ),
-                    fieldViewBuilder: (BuildContext context,
-                        TextEditingController textEditingController,
-                        FocusNode focusNode,
-                        VoidCallback onFieldSubmitted) {
-                      return TextFormField(
-                        controller: textEditingController,
-                        focusNode: focusNode,
-                        decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context).color),
-                        validator: (value) => value == null || value.isEmpty
-                            ? AppLocalizations.of(context).colorRequired
-                            : null,
-                      );
-                    },
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).color,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Autocomplete<String>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<String>.empty();
+                          }
+                          final translatedColors = colors
+                              .map((color) =>
+                                  TranslationUtils.getColor(color, context))
+                              .toList();
+                          return translatedColors.where((translatedColor) =>
+                              translatedColor
+                                  .toLowerCase()
+                                  .contains(textEditingValue.text.toLowerCase()));
+                        },
+                        onSelected: (String selection) {
+                          formData['Color'] = colors.firstWhere(
+                              (color) =>
+                                  TranslationUtils.getColor(color, context) ==
+                                  selection,
+                              orElse: () => selection);
+                        },
+                        initialValue: TextEditingValue(
+                          text: formData['Color'] != null
+                              ? TranslationUtils.getColor(
+                                  formData['Color']!, context) // Show localized color
+                              : '',
+                        ),
+                        fieldViewBuilder: (BuildContext context,
+                            TextEditingController textEditingController,
+                            FocusNode focusNode,
+                            VoidCallback onFieldSubmitted) {
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) => value == null || value.isEmpty
+                                ? AppLocalizations.of(context).colorRequired
+                                : null,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Condition (Dropdown)
-                  DropdownButtonFormField<String>(
-                    items: conditions
-                        .map((condition) => DropdownMenuItem(
-                              value: condition,
-                              child: Text(TranslationUtils.getCondition(
-                                  condition, context)),
-                            ))
-                        .toList(),
-                    value: formData['Condition'],
-                    onChanged: (value) => formData['Condition'] = value,
-                    decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).condition),
-                    validator: (value) => value == null
-                        ? AppLocalizations.of(context).conditionRequired
-                        : null,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).condition,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        items: conditions
+                            .map((condition) => DropdownMenuItem(
+                                  value: condition,
+                                  child: Text(TranslationUtils.getCondition(
+                                      condition, context)),
+                                ))
+                            .toList(),
+                        value: formData['Condition'],
+                        onChanged: (value) => formData['Condition'] = value,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) => value == null
+                            ? AppLocalizations.of(context).conditionRequired
+                            : null,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Size (Dropdown)
-                  DropdownButtonFormField<String>(
-                    items: sizes
-                        .map((size) => DropdownMenuItem(
-                              value: size,
-                              child: Text(size),
-                            ))
-                        .toList(),
-                    value: formData['Size'],
-                    onChanged: (value) => formData['Size'] = value,
-                    decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).size),
-                    validator: (value) => value == null
-                        ? AppLocalizations.of(context).sizeRequired
-                        : null,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).size,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        items: sizes
+                            .map((size) => DropdownMenuItem(
+                                  value: size,
+                                  child: Text(size),
+                                ))
+                            .toList(),
+                        value: formData['Size'],
+                        onChanged: (value) => formData['Size'] = value,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) => value == null
+                            ? AppLocalizations.of(context).sizeRequired
+                            : null,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Type (Dropdown)
-                  DropdownButtonFormField<String>(
-                    items: types
-                        .map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(
-                                  TranslationUtils.getCategory(type, context)),
-                            ))
-                        .toList(),
-                    value: formData['Type'],
-                    onChanged: (value) => formData['Type'] = value,
-                    decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).type),
-                    validator: (value) => value == null
-                        ? AppLocalizations.of(context).typeRequired
-                        : null,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).type,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        items: types
+                            .map((type) => DropdownMenuItem(
+                                  value: type,
+                                  child: Text(
+                                      TranslationUtils.getCategory(type, context)),
+                                ))
+                            .toList(),
+                        value: formData['Type'],
+                        onChanged: (value) => formData['Type'] = value,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) => value == null
+                            ? AppLocalizations.of(context).typeRequired
+                            : null,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Description
-                  TextFormField(
-                    decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).description),
-                    maxLines: 3,
-                    initialValue: formData['Description'],
-                    onChanged: (value) => formData['Description'] = value,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 3,
+                        initialValue: formData['Description'],
+                        onChanged: (value) => formData['Description'] = value,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
                   // Price
-                  TextFormField(
-                    decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).price),
-                    keyboardType: TextInputType.number,
-                    initialValue: formData['Price'].toString(),
-                    onChanged: (value) {
-                      formData['Price'] = int.tryParse(value);
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return AppLocalizations.of(context).priceRequired;
-                      }
-                      final intValue = int.tryParse(value);
-                      if (intValue == null) {
-                        return AppLocalizations.of(context).priceValidInteger;
-                      }
-                      if (intValue <= 0) {
-                        return AppLocalizations.of(context).priceGreaterThanZero;
-                      }
-                      return null;
-                    },
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).price,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                        initialValue: formData['Price'].toString(),
+                        onChanged: (value) {
+                          formData['Price'] = int.tryParse(value);
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context).priceRequired;
+                          }
+                          final intValue = int.tryParse(value);
+                          if (intValue == null) {
+                            return AppLocalizations.of(context).priceValidInteger;
+                          }
+                          if (intValue <= 0) {
+                            return AppLocalizations.of(context).priceGreaterThanZero;
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
@@ -874,6 +1052,9 @@ class _StepTwoForm extends StatelessWidget {
                           formData['Brand'] ?? 'Unknown',
                           formData['Condition'] ?? 'New',
                           formData['Type'] ?? 'T-Shirts',
+                          size: formData['Size'],
+                          color: formData['Color'],
+                          description: formData['Description'],
                         );
                         final ratioPercent =
                             ((formData['Price'] / estimated) * 100).round();
@@ -887,7 +1068,7 @@ class _StepTwoForm extends StatelessWidget {
                               content: Text(
                                 AppLocalizations.of(context)
                                     .priceVerificationMessage(
-                                        ratioPercent, estimated),
+                                        estimated, ratioPercent),
                               ),
                               actions: [
                                 TextButton(
@@ -929,7 +1110,7 @@ class _StepTwoForm extends StatelessWidget {
                                         // Clear images only after successful upload
                                         images.clear();
                                         
-                                        // Show success message and navigate to item page
+                                        // Show success message and return itemId to parent
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           SnackBar(
@@ -938,12 +1119,8 @@ class _StepTwoForm extends StatelessWidget {
                                                       .itemUploadedSuccess)),
                                         );
                                         
-                                        // Navigate to the item page using root navigator
-                                        Navigator.of(context, rootNavigator: true).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => ItemPage(itemId: itemId),
-                                          ),
-                                        );
+                                        // Return the itemId to the calling page
+                                        Navigator.of(context).pop(itemId);
                                       }
                                     } catch (e) {
                                       // Dismiss dialog using stored context if available, fallback to rootNavigator
@@ -995,19 +1172,15 @@ class _StepTwoForm extends StatelessWidget {
                               // Clear images only after successful upload
                               images.clear();
                               
-                              // Show success message and navigate to item page
+                              // Show success message and return itemId to parent
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                     content: Text(AppLocalizations.of(context)
                                         .itemUploadedSuccess)),
                               );
                               
-                              // Navigate to the item page using root navigator
-                              Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (context) => ItemPage(itemId: itemId),
-                                ),
-                              );
+                              // Return the itemId to the calling page
+                              Navigator.of(context).pop(itemId);
                             }
                           } catch (e) {
                             // Dismiss dialog using stored context if available, fallback to rootNavigator
@@ -1038,3 +1211,5 @@ class _StepTwoForm extends StatelessWidget {
     );
   }
 }
+
+

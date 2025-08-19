@@ -49,5 +49,11 @@
 	<string>This app needs access to camera to take photos of items for upload.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to select images of items for upload.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access to help users find nearby items and facilitate local transactions.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app may use microphone for recording audio messages between buyers and sellers.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app may access contacts to help you share items with friends.</string>
 </dict>
 </plist>

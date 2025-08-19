@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -322,7 +322,8 @@ class _EditItemPageState extends State<EditItemPage> {
       for (XFile img in _newImages) {
         final fileName = 'items/${widget.itemId}/${DateTime.now().millisecondsSinceEpoch}_${img.name}';
         final ref = FirebaseStorage.instance.ref().child(fileName);
-        await ref.putFile(File(img.path));
+        final bytes = await img.readAsBytes();
+        await ref.putData(bytes);
         final downloadUrl = await ref.getDownloadURL();
         newlyUploadedUrls.add(downloadUrl);
       }
@@ -1151,6 +1152,9 @@ class _EditItemPageState extends State<EditItemPage> {
                                               child: CachedNetworkImage(
                                                 imageUrl: imageUrl,
                                                 fit: BoxFit.cover,
+                                                httpHeaders: kIsWeb ? const {
+                                                  'Access-Control-Allow-Origin': '*',
+                                                } : null,
                                                 placeholder: (ctx, url) => Container(
                                                   color: Theme.of(context)
                                                       .colorScheme
@@ -1266,9 +1270,17 @@ class _EditItemPageState extends State<EditItemPage> {
                                                 ),
                                               ),
                                               clipBehavior: Clip.antiAlias,
-                                              child: Image.file(
-                                                File(file.path),
-                                                fit: BoxFit.cover,
+                                              child: FutureBuilder<Uint8List>(
+                                                future: file.readAsBytes(),
+                                                builder: (context, snapshot) {
+                                                  if (snapshot.hasData) {
+                                                    return Image.memory(
+                                                      snapshot.data!,
+                                                      fit: BoxFit.cover,
+                                                    );
+                                                  }
+                                                  return const Center(child: CircularProgressIndicator());
+                                                },
                                               ),
                                             ),
                                             if (_remoteImages.isEmpty && index == 0)

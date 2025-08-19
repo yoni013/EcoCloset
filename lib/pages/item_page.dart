@@ -1,5 +1,6 @@
 /// item_page.dart
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:eco_closet/pages/edit_item_page.dart';
 import 'package:eco_closet/utils/translation_metadata.dart';
 import 'package:eco_closet/widgets/full_screen_image_viewer.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eco_closet/utils/image_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:eco_closet/services/order_notification_service.dart';
+import 'package:eco_closet/services/content_moderation_service.dart';
 
 class ItemPage extends StatefulWidget {
   final String itemId;
@@ -23,7 +25,6 @@ class ItemPage extends StatefulWidget {
 }
 
 class _ItemPageState extends State<ItemPage> {
-  int _currentImageIndex = 0;
   late Future<Map<String, dynamic>> _itemDataFuture;
   bool _isPurchaseRequestSent = false;
 
@@ -108,6 +109,32 @@ class _ItemPageState extends State<ItemPage> {
         },
       ),
     );
+  }
+
+  Future<void> _showPurchaseConfirmation(Map<String, dynamic> itemData) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Purchase'),
+          content: const Text('Are you sure? Seller will be notified'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      _createPurchaseRequest(itemData);
+    }
   }
 
   Future<void> _createPurchaseRequest(Map<String, dynamic> itemData) async {
@@ -282,6 +309,102 @@ class _ItemPageState extends State<ItemPage> {
     _checkItemStatus();
   }
 
+  /// Show report dialog for inappropriate content
+  Future<void> _showReportDialog() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final reasons = [
+      'Inappropriate content',
+      'Fake or counterfeit item',
+      'Misleading description',
+      'Offensive language',
+      'Spam or scam',
+      'Other'
+    ];
+
+    String? selectedReason;
+    final TextEditingController detailsController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Report Item'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Why are you reporting this item?'),
+                const SizedBox(height: 16),
+                ...reasons.map((reason) => RadioListTile<String>(
+                  title: Text(reason),
+                  value: reason,
+                  groupValue: selectedReason,
+                  onChanged: (value) => setState(() => selectedReason = value),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                )),
+                if (selectedReason == 'Other') ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: detailsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Please specify',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: selectedReason != null
+                  ? () => Navigator.of(context).pop(true)
+                  : null,
+              child: const Text('Report'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true && selectedReason != null) {
+      try {
+        await ContentModerationService().reportContent(
+          itemId: widget.itemId,
+          reporterId: currentUser.uid,
+          reason: selectedReason!,
+          additionalDetails: selectedReason == 'Other' 
+              ? detailsController.text.trim()
+              : null,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thank you for your report. We will review it shortly.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit report: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -295,26 +418,40 @@ class _ItemPageState extends State<ItemPage> {
           FutureBuilder<Map<String, dynamic>>(
             future: _itemDataFuture,
             builder: (context, snapshot) {
-              if (snapshot.hasData && 
-                  currentUserId != null && 
-                  snapshot.data!['seller_id'] == currentUserId) {
-                return IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditItemPage(
-                          itemId: widget.itemId,
-                        ),
+              if (snapshot.hasData && currentUserId != null) {
+                final isOwner = snapshot.data!['seller_id'] == currentUserId;
+                
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Show report button for non-owners
+                    if (!isOwner)
+                      IconButton(
+                        icon: const Icon(Icons.flag),
+                        onPressed: () => _showReportDialog(),
+                        tooltip: 'Report inappropriate content',
                       ),
-                    );
-                    
-                    // Refresh the item data if the edit was successful
-                    if (result != null && result['needsRefresh'] == true) {
-                      _refreshItemData();
-                    }
-                  },
+                    // Show edit button for owners
+                    if (isOwner)
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditItemPage(
+                                itemId: widget.itemId,
+                              ),
+                            ),
+                          );
+                          
+                          // Refresh the item data if the edit was successful
+                          if (result != null && result['needsRefresh'] == true) {
+                            _refreshItemData();
+                          }
+                        },
+                      ),
+                  ],
                 );
               }
               return const SizedBox.shrink();
@@ -361,9 +498,6 @@ class _ItemPageState extends State<ItemPage> {
                           children: [
                             PageView.builder(
                               itemCount: images.length,
-                              onPageChanged: (index) {
-                                _currentImageIndex = index;
-                              },
                               itemBuilder: (context, index) {
                                 return GestureDetector(
                                   onTap: () {
@@ -377,6 +511,9 @@ class _ItemPageState extends State<ItemPage> {
                                       child: CachedNetworkImage(
                                         imageUrl: images[index],
                                         fit: BoxFit.cover,
+                                        httpHeaders: kIsWeb ? const {
+                                          'Access-Control-Allow-Origin': '*',
+                                        } : null,
                                         placeholder: (context, url) => Container(
                                           color: Theme.of(context).colorScheme.surfaceVariant,
                                           child: const Center(child: CircularProgressIndicator()),
@@ -678,7 +815,7 @@ class _ItemPageState extends State<ItemPage> {
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: _isPurchaseRequestSent ? null : () {
-                            _createPurchaseRequest(itemData);
+                            _showPurchaseConfirmation(itemData);
                           },
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),

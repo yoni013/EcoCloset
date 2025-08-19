@@ -171,6 +171,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shopAll => 'קנה הכל';
 
   @override
+  String get categoryAccessories => 'אביזרים';
+
+  @override
   String get categoryActivewear => 'בגדי ספורט';
 
   @override

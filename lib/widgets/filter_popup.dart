@@ -42,7 +42,7 @@ class _FilterPopupState extends State<FilterPopup> {
       'color': List<String>.from(widget.currentFilters['color'] ?? []),
       'condition': List<String>.from(widget.currentFilters['condition'] ?? []),
       'priceRange':
-          widget.currentFilters['priceRange'] ?? const RangeValues(0, 500),
+          widget.currentFilters['priceRange'] ?? const RangeValues(0, 1000),
     };
   }
 

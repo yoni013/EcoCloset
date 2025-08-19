@@ -61,15 +61,16 @@ class MyApp extends StatelessWidget {
       title: 'Eco Closet',
       theme: FlexColorScheme.light(
         scheme: FlexScheme.aquaBlue,
+        useMaterial3: true,
         surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 7,
-        appBarStyle: FlexAppBarStyle.background,
+        blendLevel: 8,
+        appBarStyle: FlexAppBarStyle.material,
         appBarOpacity: 0.95,
         subThemesData: const FlexSubThemesData(
-          blendOnLevel: 10,
-          cardElevation: 0.5,
+          blendOnLevel: 12,
+          defaultRadius: 16,
+          thickBorderWidth: 1.0,
           thinBorderWidth: 0.5,
-          defaultRadius: 12,
           elevatedButtonSchemeColor: SchemeColor.primary,
           elevatedButtonSecondarySchemeColor: SchemeColor.onPrimary,
           outlinedButtonOutlineSchemeColor: SchemeColor.primary,
@@ -81,21 +82,24 @@ class MyApp extends StatelessWidget {
           navigationBarSelectedIconSchemeColor: SchemeColor.primary,
           navigationRailSelectedLabelSchemeColor: SchemeColor.primary,
           navigationRailSelectedIconSchemeColor: SchemeColor.primary,
+          inputDecoratorSchemeColor: SchemeColor.secondary,
+          cardElevation: 1,
         ),
         visualDensity: FlexColorScheme.comfortablePlatformDensity,
         fontFamily: 'Roboto',
       ).toTheme,
       darkTheme: FlexColorScheme.dark(
         scheme: FlexScheme.aquaBlue,
+        useMaterial3: true,
         surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-        blendLevel: 13,
-        appBarStyle: FlexAppBarStyle.background,
+        blendLevel: 20, // Increased for darker backgrounds
+        appBarStyle: FlexAppBarStyle.material,
         appBarOpacity: 0.90,
         subThemesData: const FlexSubThemesData(
-          blendOnLevel: 15,
-          cardElevation: 1,
+          blendOnLevel: 25, // Increased for better contrast
+          defaultRadius: 16,
+          thickBorderWidth: 1.0,
           thinBorderWidth: 0.5,
-          defaultRadius: 12,
           elevatedButtonSchemeColor: SchemeColor.primary,
           elevatedButtonSecondarySchemeColor: SchemeColor.onPrimary,
           outlinedButtonOutlineSchemeColor: SchemeColor.primary,
@@ -107,10 +111,35 @@ class MyApp extends StatelessWidget {
           navigationBarSelectedIconSchemeColor: SchemeColor.primary,
           navigationRailSelectedLabelSchemeColor: SchemeColor.primary,
           navigationRailSelectedIconSchemeColor: SchemeColor.primary,
+          inputDecoratorSchemeColor: SchemeColor.secondary,
+          cardElevation: 1,
+          // Fix floating label behavior
+          inputDecoratorIsFilled: true,
+          inputDecoratorFillColor: Colors.black12, // Darker background for text fields
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          inputDecoratorRadius: 12,
+          inputDecoratorUnfocusedHasBorder: true,
+          inputDecoratorFocusedHasBorder: true,
         ),
         visualDensity: FlexColorScheme.comfortablePlatformDensity,
         fontFamily: 'Roboto',
-      ).toTheme,
+      ).toTheme.copyWith(
+        // Additional customizations to disable floating labels
+        inputDecorationTheme: FlexColorScheme.dark(
+          scheme: FlexScheme.aquaBlue,
+          useMaterial3: true,
+          subThemesData: const FlexSubThemesData(
+            inputDecoratorIsFilled: true,
+            inputDecoratorFillColor: Colors.black12,
+            inputDecoratorBorderType: FlexInputBorderType.outline,
+            inputDecoratorRadius: 12,
+          ),
+        ).toTheme.inputDecorationTheme.copyWith(
+          floatingLabelBehavior: FloatingLabelBehavior.never, // Disable floating labels
+          fillColor: Colors.black26, // Even darker fill for better contrast
+          filled: true,
+        ),
+      ),
       themeMode: context.watch<ThemeProvider>().themeMode,
       home: AuthGate(),
     );

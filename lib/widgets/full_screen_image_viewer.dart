@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class FullScreenImageViewer extends StatefulWidget {
   final List<String> images;
@@ -121,6 +122,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                                   child: CachedNetworkImage(
                                     imageUrl: widget.images[index],
                                     fit: BoxFit.contain,
+                                    httpHeaders: kIsWeb ? const {
+                                      'Access-Control-Allow-Origin': '*',
+                                    } : null,
                                     placeholder: (context, url) => Container(
                                       color: Colors.grey[900],
                                       child: const Center(

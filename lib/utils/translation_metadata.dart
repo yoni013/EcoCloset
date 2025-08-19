@@ -5,6 +5,7 @@ class TranslationUtils {
   /// Translates a category/type name based on the app's locale.
   static String getCategory(String category, BuildContext context) {
     final categoryMap = {
+      'Accessories': AppLocalizations.of(context).categoryAccessories,
       'Activewear': AppLocalizations.of(context).categoryActivewear,
       'Belts': AppLocalizations.of(context).categoryBelts,
       'Coats': AppLocalizations.of(context).categoryCoats,

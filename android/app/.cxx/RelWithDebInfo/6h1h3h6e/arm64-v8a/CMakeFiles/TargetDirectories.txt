@@ -1,0 +1,2 @@
+/Users/arielporath/Documents/eco_closet/EcoCloset/android/app/.cxx/RelWithDebInfo/6h1h3h6e/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/arielporath/Documents/eco_closet/EcoCloset/android/app/.cxx/RelWithDebInfo/6h1h3h6e/arm64-v8a/CMakeFiles/rebuild_cache.dir
