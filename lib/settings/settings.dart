@@ -1,16 +1,17 @@
-import 'package:eco_closet/auth_onboarding/authentication.dart';
-import 'package:eco_closet/settings/change_password.dart';
-import 'package:eco_closet/settings/notifications_settings.dart';
-import 'package:eco_closet/settings/profile_settings_page.dart';
-import 'package:eco_closet/pages/personal_sizes_preferences.dart';
-import 'package:eco_closet/pages/archive_page.dart';
-import 'package:eco_closet/generated/l10n.dart';
-import 'package:eco_closet/main.dart';
-import 'package:eco_closet/providers/theme_provider.dart';
+import 'package:beged/auth_onboarding/authentication.dart';
+import 'package:beged/settings/change_password.dart';
+import 'package:beged/settings/notifications_settings.dart';
+import 'package:beged/settings/profile_settings_page.dart';
+import 'package:beged/pages/personal_sizes_preferences.dart';
+import 'package:beged/pages/archive_page.dart';
+import 'package:beged/generated/l10n.dart';
+import 'package:beged/main.dart';
+import 'package:beged/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -46,6 +47,61 @@ class SettingsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context).deleteAccount),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(AppLocalizations.of(context).deleteAccountConfirmation),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(AppLocalizations.of(context).cancel),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(AppLocalizations.of(context).delete),
+              onPressed: () async {
+                // Handle account deletion
+                try {
+                  User? user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    // Delete user's document from Firestore
+                    await FirebaseFirestore.instance.collection('Users').doc(user.uid).delete();
+                    
+                    // Delete the user from Firebase Authentication
+                    await user.delete();
+
+                    // Navigate to authentication gate
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => AuthGate()),
+                      (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  // Handle errors, e.g., re-authentication needed
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to delete account: $e')),
+                  );
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -243,6 +299,11 @@ class SettingsPage extends StatelessWidget {
                           },
                         );
                       },
+                    ),
+                    _CustomListTile(
+                      title: AppLocalizations.of(context).deleteAccount,
+                      icon: Icons.delete_forever_outlined,
+                      onTap: () => _showDeleteAccountDialog(context),
                     ),
                   ],
                 ),

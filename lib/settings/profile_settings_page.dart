@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart' show Uint8List;
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
 
-import 'package:eco_closet/utils/image_handler.dart';
+import 'package:beged/utils/image_handler.dart';
 
 
 class ProfileSettingsPage extends StatefulWidget {
@@ -173,6 +173,13 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         .toList();
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).profileSettings),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())

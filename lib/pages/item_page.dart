@@ -1,19 +1,19 @@
 /// item_page.dart
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:eco_closet/pages/edit_item_page.dart';
-import 'package:eco_closet/utils/translation_metadata.dart';
-import 'package:eco_closet/widgets/full_screen_image_viewer.dart';
+import 'package:beged/pages/edit_item_page.dart';
+import 'package:beged/utils/translation_metadata.dart';
+import 'package:beged/widgets/full_screen_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:eco_closet/pages/profile_page.dart';
+import 'package:beged/pages/profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:eco_closet/utils/image_handler.dart';
+import 'package:beged/utils/image_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:eco_closet/services/order_notification_service.dart';
-import 'package:eco_closet/services/content_moderation_service.dart';
+import 'package:beged/services/order_notification_service.dart';
+import 'package:beged/services/content_moderation_service.dart';
 
 class ItemPage extends StatefulWidget {
   final String itemId;
@@ -143,6 +143,19 @@ class _ItemPageState extends State<ItemPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).pleaseLoginToPurchase),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    // Check if the buyer is blocked by the seller
+    final sellerDoc = await FirebaseFirestore.instance.collection('Users').doc(itemData['seller_id']).get();
+    final sellerData = sellerDoc.data();
+    if (sellerData != null && (sellerData['blockedUsers'] as List?)?.contains(currentUser.uid) == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("You are blocked by the seller and cannot purchase this item."),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -420,18 +433,15 @@ class _ItemPageState extends State<ItemPage> {
             builder: (context, snapshot) {
               if (snapshot.hasData && currentUserId != null) {
                 final isOwner = snapshot.data!['seller_id'] == currentUserId;
-                
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Show report button for non-owners
                     if (!isOwner)
                       IconButton(
                         icon: const Icon(Icons.flag),
                         onPressed: () => _showReportDialog(),
                         tooltip: 'Report inappropriate content',
                       ),
-                    // Show edit button for owners
                     if (isOwner)
                       IconButton(
                         icon: const Icon(Icons.edit),
@@ -444,8 +454,6 @@ class _ItemPageState extends State<ItemPage> {
                               ),
                             ),
                           );
-                          
-                          // Refresh the item data if the edit was successful
                           if (result != null && result['needsRefresh'] == true) {
                             _refreshItemData();
                           }
@@ -862,9 +870,9 @@ class _ItemPageState extends State<ItemPage> {
       ),
     );
   }
-
-  Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
-    return Container(
+ 
+   Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
+     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.secondaryContainer,

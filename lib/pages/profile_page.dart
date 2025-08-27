@@ -6,15 +6,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
 
 
-import 'package:eco_closet/widgets/filter_popup.dart';
-import 'package:eco_closet/widgets/item_card.dart';
-import 'package:eco_closet/utils/image_handler.dart';
-import 'package:eco_closet/settings/settings.dart';
+import 'package:beged/widgets/filter_popup.dart';
+import 'package:beged/widgets/item_card.dart';
+import 'package:beged/utils/image_handler.dart';
+import 'package:beged/settings/settings.dart';
 
 class ProfilePage extends StatefulWidget {
   final String viewedUserId;
@@ -373,6 +373,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                 },
                               ),
                             ],
+                           if (!isOwnProfile)
+                            IconButton(
+                              icon: const Icon(Icons.block),
+                              onPressed: () => _showBlockDialog(context),
+                            ),
                           ],
                         ),
                       ),
@@ -494,8 +499,54 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _loadItems() async {
-    if (!mounted) return;
+  void _showBlockDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context).blockUser),
+          content: Text(AppLocalizations.of(context).blockUserConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            TextButton(
+              onPressed: () {
+                _blockUser();
+                Navigator.of(context).pop();
+              },
+              child: Text(AppLocalizations.of(context).block),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _blockUser() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.uid)
+          .update({
+        'blockedUsers': FieldValue.arrayUnion([widget.viewedUserId])
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).userBlockedSuccess)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to block user: $e')),
+      );
+    }
+  }
+ 
+   Future<void> _loadItems() async {
+     if (!mounted) return;
     setState(() {
       _isLoading = true;
     });

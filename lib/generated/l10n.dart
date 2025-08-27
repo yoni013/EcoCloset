@@ -98,13 +98,13 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Eco Closet'**
+  /// **'BeGeD'**
   String get appTitle;
 
   /// No description provided for @welcomeMessage.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Eco Closet!'**
+  /// **'Welcome to BeGeD!'**
   String get welcomeMessage;
 
   /// No description provided for @home.
@@ -2398,6 +2398,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cannot open phone dialer'**
   String get cannotOpenDialer;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete your account? This action is irreversible and will permanently delete all your data.'**
+  String get deleteAccountConfirmation;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @reportItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Item'**
+  String get reportItem;
+
+  /// No description provided for @reportItemConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to report this item? This action will flag the item for review by our team.'**
+  String get reportItemConfirmation;
+
+  /// No description provided for @report.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get report;
+
+  /// No description provided for @itemReportedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Item reported successfully. Our team will review it shortly.'**
+  String get itemReportedSuccess;
+
+  /// No description provided for @blockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Block User'**
+  String get blockUser;
+
+  /// No description provided for @blockUserConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to block this user? You will no longer see their items and they will not be able to interact with you.'**
+  String get blockUserConfirmation;
+
+  /// No description provided for @block.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get block;
+
+  /// No description provided for @userBlockedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'User blocked successfully.'**
+  String get userBlockedSuccess;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

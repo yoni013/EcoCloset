@@ -1,7 +1,7 @@
 {
   "@@locale": "he",
-  "appTitle": "EcoCloset",
-  "welcome": "ברוכים הבאים ל-EcoCloset",
+  "appTitle": "BeGeD",
+  "welcome": "ברוכים הבאים ל-BeGeD",
   "welcomeSubtitle": "שוק האופנה הקיימא שלך",
   "getStarted": "בואו נתחיל",
   "login": "התחברות",
@@ -276,7 +276,7 @@
   "failedToFetchDropdownData": "כשל בטעינת נתוני הרשימה",
   "errorProcessingImages": "שגיאה בעיבוד התמונות",
   "errorUploadingItem": "שגיאה בהעלאת הפריט",
-  "welcomeMessage": "ברוכים הבאים ל-EcoCloset!",
+  "welcomeMessage": "ברוכים הבאים ל-BeGeD!",
   "home": "בית",
   "explore": "גלה",
   "upload": "העלה",
@@ -652,5 +652,16 @@
   "whatsappMessageTemplate": "שלום! אני פונה אליך לגבי ההזמנה עבור: {itemName} - {brand} {type} בצבע {color}, מידה {size}",
   "phoneNotAvailable": "מספר טלפון לא זמין",
   "whatsappNotInstalled": "WhatsApp לא מותקן במכשיר זה",
-  "cannotOpenDialer": "לא ניתן לפתוח את החייגן"
+  "cannotOpenDialer": "לא ניתן לפתוח את החייגן",
+  "deleteAccount": "מחק חשבון",
+  "deleteAccountConfirmation": "האם אתה בטוח שברצונך למחוק את חשבונך? פעולה זו אינה הפיכה ותמחק לצמיתות את כל הנתונים שלך.",
+  "delete": "מחק",
+  "cancel": "בטל",
+  "reportItem": "דווח על פריט",
+  "reportItemConfirmation": "האם אתה בטוח שברצונך לדווח על פריט זה? פעולה זו תסמן את הפריט לבדיקה על ידי הצוות שלנו.",
+  "report": "דווח",
+  "itemReportedSuccess": "הפריט דווח בהצלחה. הצוות שלנו יבדוק אותו בקרוב.",
+  "blockUser": "חסום משתמש",
+  "blockUserConfirmation": "האם אתה בטוח שברצונך לחסום משתמש זה? לא תראה יותר את הפריטים שלו והוא לא יוכל לתקשר איתך.",
+  "userBlockedSuccess": "המשתמש נחסם בהצלחה."
 }

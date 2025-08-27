@@ -9,10 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Eco Closet';
+  String get appTitle => 'BeGeD';
 
   @override
-  String get welcomeMessage => 'Welcome to Eco Closet!';
+  String get welcomeMessage => 'Welcome to BeGeD!';
 
   @override
   String get home => 'Home';
@@ -1167,4 +1167,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cannotOpenDialer => 'Cannot open phone dialer';
+
+  @override
+  String get deleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountConfirmation => 'Are you sure you want to delete your account? This action is irreversible and will permanently delete all your data.';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get reportItem => 'Report Item';
+
+  @override
+  String get reportItemConfirmation => 'Are you sure you want to report this item? This action will flag the item for review by our team.';
+
+  @override
+  String get report => 'Report';
+
+  @override
+  String get itemReportedSuccess => 'Item reported successfully. Our team will review it shortly.';
+
+  @override
+  String get blockUser => 'Block User';
+
+  @override
+  String get blockUserConfirmation => 'Are you sure you want to block this user? You will no longer see their items and they will not be able to interact with you.';
+
+  @override
+  String get block => 'Block';
+
+  @override
+  String get userBlockedSuccess => 'User blocked successfully.';
 }

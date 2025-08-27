@@ -1,0 +1,25 @@
+EcoCloset Review Notes
+
+- Demo login (Phone Auth):
+  phone_number: +972 528781234
+  verification_code: 123123
+  Notes: If auto-fill does not arrive, enter the code manually.
+
+- Steps for review:
+  1) Launch app, tap Sign In, use credentials above
+  2) Browse items, open item details
+  3) Upload flow: tap Upload, choose Camera or Photos (grant or deny permissions; app handles deny gracefully)
+  4) Profile → Settings → Delete Account to test account deletion (Firebase Auth + Firestore purge)
+
+- Networking:
+  The app uses HTTPS endpoints (Firebase). No ATS exceptions.
+
+- Regions/Servers:
+  Firebase project: eco-closet-f0942 (global; default regions)
+
+- Feature flags:
+  None required for review
+
+- Tracking/IDFA:
+  Not used. Firebase Analytics configured without Ad ID support.
+

@@ -1,19 +1,19 @@
-import 'package:eco_closet/pages/explore_category_page.dart';
+import 'package:beged/pages/explore_category_page.dart';
 import 'package:flutter/material.dart';
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class ExplorePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final categories = [
-      {'name': AppLocalizations.of(context).categorySweaters, 'db_name': 'Sweaters', 'image': 'assets/images/sweaters.png'},
-      {'name': AppLocalizations.of(context).categoryCoats, 'db_name': 'Coats', 'image': 'assets/images/coats.png'},
-      {'name': AppLocalizations.of(context).categoryDresses, 'db_name': 'Dresses', 'image': 'assets/images/dresses.png'},
-      {'name': AppLocalizations.of(context).categoryShirts, 'db_name': 'T-Shirts', 'image': 'assets/images/shirts.png'},
-      {'name': AppLocalizations.of(context).categoryPants, 'db_name': 'Pants', 'image': 'assets/images/pants.png'},
-      {'name': AppLocalizations.of(context).categoryShoes, 'db_name': 'Shoes', 'image': 'assets/images/shoes.png'},
-      {'name': AppLocalizations.of(context).shopAll, 'db_name': '', 'image': 'assets/images/all.png'},
+    final List<Map<String, dynamic>> categories = [
+      {'name': AppLocalizations.of(context).categorySweaters, 'db_name': 'Sweaters', 'icon': Icons.interests},
+      {'name': AppLocalizations.of(context).categoryCoats, 'db_name': 'Coats', 'icon': Icons.dry_cleaning},
+      {'name': AppLocalizations.of(context).categoryDresses, 'db_name': 'Dresses', 'icon': Icons.female},
+      {'name': AppLocalizations.of(context).categoryShirts, 'db_name': 'T-Shirts', 'icon': Icons.checkroom},
+      {'name': AppLocalizations.of(context).categoryPants, 'db_name': 'Pants', 'icon': Icons.checkroom},
+      {'name': AppLocalizations.of(context).categoryShoes, 'db_name': 'Shoes', 'icon': Icons.directions_walk},
+      {'name': AppLocalizations.of(context).shopAll, 'db_name': '', 'icon': Icons.grid_view},
     ];
 
     return Scaffold(
@@ -36,7 +36,7 @@ class ExplorePage extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          CategoryItemsPage(category: cat['db_name']!),
+                          CategoryItemsPage(category: cat['db_name'] as String),
                     ),
                   );
                 },
@@ -52,7 +52,7 @@ class ExplorePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              CategoryItemsPage(category: cat['db_name']!),
+                              CategoryItemsPage(category: cat['db_name'] as String),
                         ),
                       );
                     },
@@ -64,9 +64,10 @@ class ExplorePage extends StatelessWidget {
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
-                            child: Image.asset(
-                              cat['image']!,
-                              fit: BoxFit.contain,
+                            child: Icon(
+                              cat['icon'] as IconData,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
@@ -80,8 +81,8 @@ class ExplorePage extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  (cat['name'] != null && cat['name']!.isNotEmpty)
-                                      ? cat['name']!
+                                  (cat['name'] != null && (cat['name'] as String).isNotEmpty)
+                                      ? cat['name'] as String
                                       : AppLocalizations.of(context).shopAll,
                                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                         fontWeight: FontWeight.bold,

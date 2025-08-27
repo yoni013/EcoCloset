@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 
 class PhoneAuthScreen extends StatefulWidget {
   final VoidCallback onSignedIn;
@@ -34,7 +34,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   bool _obscureConfirmPassword = true;
   
   String? _verificationId;
-  final String _countryCode = '+972'; // Fixed to Israel only
+  final String _countryCode = '+972'; // Default to Israel if no international format provided
   
   // For web reCAPTCHA
   ConfirmationResult? _confirmationResult;
@@ -55,15 +55,20 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
     setState(() => _isLoading = true);
 
-    String phoneInput = _phoneController.text.trim();
-    
-    // Handle Israeli phone numbers - remove leading 0 if present
-    if (phoneInput.startsWith('0')) {
-      phoneInput = phoneInput.substring(1);
-      debugPrint('Israeli number: Removed leading 0, formatted as: +972$phoneInput');
+    String raw = _phoneController.text.trim().replaceAll(RegExp(r'\s+'), '');
+    String phoneNumber;
+    if (raw.startsWith('+')) {
+      // Assume E.164 already provided (e.g., +11234568789)
+      phoneNumber = raw;
+    } else {
+      // Israeli formatting: remove leading 0 and prefix +972
+      String phoneInput = raw;
+      if (phoneInput.startsWith('0')) {
+        phoneInput = phoneInput.substring(1);
+        debugPrint('Israeli number: Removed leading 0, formatted as: +972$phoneInput');
+      }
+      phoneNumber = '$_countryCode$phoneInput';
     }
-    
-    final phoneNumber = '$_countryCode$phoneInput';
     debugPrint('Final phone number for Firebase: $phoneNumber');
 
     try {
@@ -280,13 +285,13 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 
   String _getFormattedPhoneNumber() {
-    String phoneInput = _phoneController.text.trim();
-    
-    // Handle Israeli phone numbers - remove leading 0 if present for display
+    String raw = _phoneController.text.trim();
+    if (raw.startsWith('+')) return raw;
+    // Israeli display fallback
+    String phoneInput = raw;
     if (phoneInput.startsWith('0')) {
       phoneInput = phoneInput.substring(1);
     }
-    
     return '$_countryCode$phoneInput';
   }
 
@@ -308,7 +313,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
               children: [
                 const SizedBox(height: 40),
                 Text(
-                  'Welcome to Eco Closet',
+                  'Welcome to BeGeD',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -422,7 +427,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))],
                       decoration: const InputDecoration(
                         labelText: 'Phone Number',
                         border: OutlineInputBorder(),
@@ -432,22 +437,26 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter your phone number';
                         }
-                        
-                        String phoneValue = value.trim();
-                        
-                        // Israeli phone number validation
-                        if (phoneValue.startsWith('0')) {
-                          phoneValue = phoneValue.substring(1); // Remove leading 0 for validation
+                        String raw = value.trim();
+                        // Accept full international numbers in E.164: + and 7-15 digits
+                        if (raw.startsWith('+')) {
+                          final e164 = RegExp(r'^\+[0-9]{7,15}$');
+                          if (!e164.hasMatch(raw)) {
+                            return 'Enter a valid international number (e.g., +11234567890)';
+                          }
+                          return null;
                         }
-                        
+                        // Israeli fallback validation
+                        String phoneValue = raw;
+                        if (phoneValue.startsWith('0')) {
+                          phoneValue = phoneValue.substring(1);
+                        }
                         if (phoneValue.length != 9) {
                           return 'Phone number should be 9 digits (e.g., 0501234567)';
                         }
-                        
                         if (!phoneValue.startsWith(RegExp(r'[5][0-9]'))) {
                           return 'Mobile numbers start with 05X';
                         }
-                        
                         return null;
                       },
                     ),

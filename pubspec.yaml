@@ -1,4 +1,4 @@
-name: eco_closet
+name: beged
 version: 1.0.0+1
 description: A fun and user-friendly marketplace app to connect buyers and sellers.
 
@@ -82,12 +82,7 @@ flutter:
     - assets/privacy_policy.txt
     - assets/terms_and_conditions.txt
     - lib/l10n/
-    - assets/images/shirts.png
-    - assets/images/pants.png
-    - assets/images/shoes.png
-    - assets/images/sweaters.png
-    - assets/images/coats.png
-    - assets/images/dresses.png
+
     - assets/images/all.png
     - assets/images/app_icon.png
     - assets/images/app_icon_foreground.png

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:eco_closet/utils/translation_metadata.dart';
+import 'package:beged/utils/translation_metadata.dart';
 
 class FilterPopup extends StatefulWidget {
   final Map<String, dynamic> currentFilters;

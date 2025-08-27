@@ -1,14 +1,14 @@
 /// main.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:eco_closet/auth_onboarding/authentication.dart';
-import 'package:eco_closet/firebase_options.dart';
-import 'package:eco_closet/generated/l10n.dart';
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:eco_closet/utils/firestore_cache_provider.dart';
-import 'package:eco_closet/services/order_notification_service.dart';
+import 'package:beged/auth_onboarding/authentication.dart';
+import 'package:beged/firebase_options.dart';
+import 'package:beged/generated/l10n.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
+import 'package:beged/utils/firestore_cache_provider.dart';
+import 'package:beged/services/order_notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:eco_closet/providers/theme_provider.dart';
+import 'package:beged/providers/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:provider/provider.dart';
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
       locale: localeProvider.locale, // Default language
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      title: 'Eco Closet',
+      title: 'BeGeD',
       theme: FlexColorScheme.light(
         scheme: FlexScheme.aquaBlue,
         useMaterial3: true,

@@ -4,9 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
 
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 
 class PersonalSizesPreferences extends StatefulWidget {
   const PersonalSizesPreferences({Key? key}) : super(key: key);
@@ -211,6 +211,13 @@ class _PersonalSizesPreferencesState extends State<PersonalSizesPreferences> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).sizePreferences),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(

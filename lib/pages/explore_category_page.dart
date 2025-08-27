@@ -1,13 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
 import 'package:provider/provider.dart';
-import 'package:eco_closet/utils/firestore_cache_provider.dart';
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/utils/firestore_cache_provider.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:eco_closet/widgets/filter_popup.dart';
-import 'package:eco_closet/widgets/item_card.dart';
+import 'package:beged/widgets/filter_popup.dart';
+import 'package:beged/widgets/item_card.dart';
 import '../services/tag_service.dart';
 
 class CategoryItemsPage extends StatefulWidget {

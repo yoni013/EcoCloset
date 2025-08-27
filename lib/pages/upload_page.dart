@@ -1,13 +1,13 @@
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:eco_closet/utils/get_recommended_price.dart';
-import 'package:eco_closet/utils/translation_metadata.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
+import 'package:beged/utils/get_recommended_price.dart';
+import 'package:beged/utils/translation_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../utils/upload_with_tags.dart';
 import '../pages/item_page.dart';

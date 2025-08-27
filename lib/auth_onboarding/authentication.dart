@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:eco_closet/bottom_navigation.dart';
-import 'package:eco_closet/auth_onboarding/onboarding_main.dart';
-import 'package:eco_closet/auth_onboarding/phone_auth_screen.dart';
+import 'package:beged/bottom_navigation.dart';
+import 'package:beged/auth_onboarding/onboarding_main.dart';
+import 'package:beged/auth_onboarding/phone_auth_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 

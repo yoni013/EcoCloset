@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart' show Uint8List;
 
-import 'package:eco_closet/bottom_navigation.dart';
-import 'package:eco_closet/utils/fetch_item_metadata.dart';
-import 'package:eco_closet/auth_onboarding/authentication.dart';
+import 'package:beged/bottom_navigation.dart';
+import 'package:beged/utils/fetch_item_metadata.dart';
+import 'package:beged/auth_onboarding/authentication.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -393,7 +393,7 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
         return AlertDialog(
           title: const Text('Age Restriction'),
           content: const Text(
-            'Sorry, you must be at least 16 years old to use EcoCloset. '
+            'Sorry, you must be at least 16 years old to use BeGeD. '
             'This is required by our terms of service and applicable laws.',
           ),
           actions: [
@@ -427,7 +427,7 @@ class _Step1PersonalInfoState extends State<_Step1PersonalInfo> {
             'We need access to your photos to:\n'
             '• Set your profile picture\n'
             '• Upload item photos for listing\n\n'
-            'Your photos will only be used for your EcoCloset profile and listings. '
+            'Your photos will only be used for your BeGeD profile and listings. '
             'We do not access or store other photos from your device.',
           ),
           actions: [

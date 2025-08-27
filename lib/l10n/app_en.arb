@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
-  "appTitle": "Eco Closet",
-  "welcomeMessage": "Welcome to Eco Closet!",
+  "appTitle": "BeGeD",
+  "welcomeMessage": "Welcome to BeGeD!",
   "home": "Home",
   "explore": "Explore",
   "upload": "Upload",
@@ -444,5 +444,17 @@
   "whatsappMessageTemplate": "Hi! I'm contacting you regarding the order for: {itemName} - {brand} {type} in {color}, size {size}.",
   "phoneNotAvailable": "Phone number not available",
   "whatsappNotInstalled": "WhatsApp is not installed on this device",
-  "cannotOpenDialer": "Cannot open phone dialer"
+  "cannotOpenDialer": "Cannot open phone dialer",
+  "deleteAccount": "Delete Account",
+  "deleteAccountConfirmation": "Are you sure you want to delete your account? This action is irreversible and will permanently delete all your data.",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "reportItem": "Report Item",
+  "reportItemConfirmation": "Are you sure you want to report this item? This action will flag the item for review by our team.",
+  "report": "Report",
+  "itemReportedSuccess": "Item reported successfully. Our team will review it shortly.",
+  "blockUser": "Block User",
+  "blockUserConfirmation": "Are you sure you want to block this user? You will no longer see their items and they will not be able to interact with you.",
+  "block": "Block",
+  "userBlockedSuccess": "User blocked successfully."
 }

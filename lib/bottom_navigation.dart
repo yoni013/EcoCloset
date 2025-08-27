@@ -1,12 +1,12 @@
-import 'package:eco_closet/generated/l10n.dart';
-import 'package:eco_closet/services/order_notification_service.dart';
-import 'package:eco_closet/widgets/notification_badge.dart';
+import 'package:beged/generated/l10n.dart';
+import 'package:beged/services/order_notification_service.dart';
+import 'package:beged/widgets/notification_badge.dart';
 import 'package:flutter/material.dart';
-import 'package:eco_closet/pages/homepage.dart';
-import 'package:eco_closet/pages/tag_based_explore_page.dart';
-import 'package:eco_closet/pages/my_shop_page.dart';
-import 'package:eco_closet/pages/profile_page.dart';
-import 'package:eco_closet/pages/upload_page.dart';
+import 'package:beged/pages/homepage.dart';
+import 'package:beged/pages/tag_based_explore_page.dart';
+import 'package:beged/pages/my_shop_page.dart';
+import 'package:beged/pages/profile_page.dart';
+import 'package:beged/pages/upload_page.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     hide EmailAuthProvider, PhoneAuthProvider;
 import 'package:provider/provider.dart';

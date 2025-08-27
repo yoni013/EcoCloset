@@ -9,10 +9,10 @@ class AppLocalizationsHe extends AppLocalizations {
   AppLocalizationsHe([String locale = 'he']) : super(locale);
 
   @override
-  String get appTitle => 'EcoCloset';
+  String get appTitle => 'BeGeD';
 
   @override
-  String get welcomeMessage => 'ברוכים הבאים ל-EcoCloset!';
+  String get welcomeMessage => 'ברוכים הבאים ל-BeGeD!';
 
   @override
   String get home => 'בית';
@@ -1167,4 +1167,37 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get cannotOpenDialer => 'לא ניתן לפתוח את החייגן';
+
+  @override
+  String get deleteAccount => 'מחק חשבון';
+
+  @override
+  String get deleteAccountConfirmation => 'האם אתה בטוח שברצונך למחוק את חשבונך? פעולה זו אינה הפיכה ותמחק לצמיתות את כל הנתונים שלך.';
+
+  @override
+  String get delete => 'מחק';
+
+  @override
+  String get reportItem => 'דווח על פריט';
+
+  @override
+  String get reportItemConfirmation => 'האם אתה בטוח שברצונך לדווח על פריט זה? פעולה זו תסמן את הפריט לבדיקה על ידי הצוות שלנו.';
+
+  @override
+  String get report => 'דווח';
+
+  @override
+  String get itemReportedSuccess => 'הפריט דווח בהצלחה. הצוות שלנו יבדוק אותו בקרוב.';
+
+  @override
+  String get blockUser => 'חסום משתמש';
+
+  @override
+  String get blockUserConfirmation => 'האם אתה בטוח שברצונך לחסום משתמש זה? לא תראה יותר את הפריטים שלו והוא לא יוכל לתקשר איתך.';
+
+  @override
+  String get block => 'חסום';
+
+  @override
+  String get userBlockedSuccess => 'המשתמש נחסם בהצלחה.';
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:eco_closet/pages/item_page.dart';
+import 'package:beged/pages/item_page.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ItemCard extends StatelessWidget {

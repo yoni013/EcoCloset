@@ -1,10 +1,10 @@
-import 'package:eco_closet/generated/l10n.dart';
+import 'package:beged/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:eco_closet/widgets/item_card.dart';
-import 'package:eco_closet/widgets/show_more_card.dart';
-import 'package:eco_closet/pages/explore_category_page.dart';
+import 'package:beged/widgets/item_card.dart';
+import 'package:beged/widgets/show_more_card.dart';
+import 'package:beged/pages/explore_category_page.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
