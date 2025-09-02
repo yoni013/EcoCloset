@@ -119,7 +119,12 @@ class _PersistentBottomBarScaffoldState
                   key: page.navigatorkey,
                   onGenerateInitialRoutes: (navigator, initialRoute) {
                     return [
-                      MaterialPageRoute(builder: (context) => page.tab())
+                      MaterialPageRoute(
+                        builder: (context) => PopScope(
+                          canPop: false, // Prevent back-swipe from popping root tab page
+                          child: page.tab(),
+                        ),
+                      )
                     ];
                   },
                 ))

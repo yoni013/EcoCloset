@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:46669496533:android:7660ec159a865d3ca2625c",
+        "android_client_info": {
+          "package_name": "com.arielyoni.beged"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:46669496533:android:76f045c2c9f95c6fa2625c",
         "android_client_info": {
           "package_name": "com.example.eco_closet"

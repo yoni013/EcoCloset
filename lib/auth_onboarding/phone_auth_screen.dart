@@ -24,7 +24,17 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   
-  final _formKey = GlobalKey<FormState>();
+  // Use distinct form keys for each UI mode to avoid GlobalKey collisions
+  final _formKeyPhone = GlobalKey<FormState>();
+  final _formKeyEmailSignIn = GlobalKey<FormState>();
+  final _formKeyEmailRegister = GlobalKey<FormState>();
+  final _formKeyCode = GlobalKey<FormState>();
+
+  GlobalKey<FormState> get _activeFormKey {
+    if (_codeSent) return _formKeyCode;
+    if (_isEmailMode) return _isRegistering ? _formKeyEmailRegister : _formKeyEmailSignIn;
+    return _formKeyPhone;
+  }
   
   bool _isLoading = false;
   bool _codeSent = false;
@@ -51,7 +61,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 
   Future<void> _sendOTP() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_activeFormKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
@@ -143,7 +153,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
   // Email Authentication Methods
   Future<void> _signInWithEmail() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_activeFormKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
@@ -186,7 +196,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 
   Future<void> _registerWithEmail() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_activeFormKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
@@ -306,9 +316,10 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
+          child: SingleChildScrollView(
+            child: Form(
+              key: _activeFormKey,
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
@@ -562,6 +573,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                   ),
                 ],
               ],
+              ),
             ),
           ),
         ),

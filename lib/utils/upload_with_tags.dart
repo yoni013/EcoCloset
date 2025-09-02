@@ -29,7 +29,7 @@ class UploadWithTags {
       final itemName = formData['item_name'] ?? '';
       final category = formData['Type'] ?? '';
       
-      final moderationResult = await _moderationService.aiContentModeration(
+      final moderationResult = await _moderationService.moderateContent(
         description: description,
         itemName: itemName,
         category: category,
