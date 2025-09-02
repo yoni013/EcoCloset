@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBA7hIJGBrRXLJog-UV-mjB_yV_Uf3JrnQ',
-    appId: '1:46669496533:android:baaebfb20974397fa2625c',
+    appId: '1:46669496533:android:7660ec159a865d3ca2625c',
     messagingSenderId: '46669496533',
     projectId: 'eco-closet-f0942',
     storageBucket: 'eco-closet-f0942.firebasestorage.app',
@@ -66,11 +66,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAFq76ukIh7HgIgDSnvN8aVWTvt7n6aBUk',
-    appId: '1:46669496533:ios:6bc27ba794531415a2625c',
+    appId: '1:46669496533:ios:727e13e17194dc7ba2625c',
     messagingSenderId: '46669496533',
     projectId: 'eco-closet-f0942',
     storageBucket: 'eco-closet-f0942.firebasestorage.app',
-    iosBundleId: 'com.test.ecoCloset',
+    iosBundleId: 'com.arielyoni.beged',
   );
 
 }

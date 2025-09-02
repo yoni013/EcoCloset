@@ -267,7 +267,6 @@ class _UploadItemPageState extends State<UploadItemPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('🏗️ Building UploadItemPage widget. Current images count: ${_images.length}');
     return Scaffold(
       body: SafeArea(
         child: Column(

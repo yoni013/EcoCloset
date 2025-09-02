@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_ai/firebase_ai.dart';
-import 'dart:convert';
+// Remove Firebase AI import since we're not using it anymore
+// import 'dart:convert';
 
 class ContentModerationService {
   static final ContentModerationService _instance = ContentModerationService._internal();
@@ -11,24 +11,42 @@ class ContentModerationService {
   static const List<String> _prohibitedWords = [
     // Add common inappropriate words
     'illegal', 'stolen', 'fake', 'replica', 'counterfeit',
+    // Hebrew equivalents
+    'לא חוקי', 'גנוב', 'מזויף', 'חיקוי', 'זיוף',
+    
     // Hate speech examples (add more as needed)
     'hate', 'discriminat', 'racist', 'sexist',
+    // Hebrew equivalents
+    'שנאה', 'אפליה', 'גזעני', 'מיזוגני',
+    
     // Adult content
     'adult', 'sexual', 'explicit', 'porn',
+    // Hebrew equivalents
+    'מבוגרים', 'מיני', 'מפורש', 'פורנוגרפיה',
+    
     // Violence
     'violence', 'weapon', 'dangerous',
+    // Hebrew equivalents
+    'אלימות', 'נשק', 'מסוכן',
+    
     // Scam related
     'scam', 'fraud', 'cheat', 'steal',
+    // Hebrew equivalents
+    'הונאה', 'רמאות', 'רמייה', 'גניבה',
+    
     // Personal info sharing
     'phone', 'email', 'address', 'contact me at',
+    // Hebrew equivalents
+    'טלפון', 'אימייל', 'כתובת', 'צור קשר',
   ];
 
   /// Basic keyword filtering for item descriptions
   ModerationResult basicTextModeration(String text) {
     if (text.trim().isEmpty) {
+      // Allow empty descriptions
       return ModerationResult(
-        isApproved: false,
-        reason: 'Description cannot be empty',
+        isApproved: true,
+        reason: null,
         flaggedContent: [],
       );
     }
@@ -60,104 +78,31 @@ class ContentModerationService {
     );
   }
 
-  /// AI-powered content moderation using Gemini
-  Future<ModerationResult> aiContentModeration({
+  /// Content moderation using basic filtering
+  Future<ModerationResult> moderateContent({
     required String description,
     required String itemName,
     String? category,
   }) async {
-    const int maxRetries = 2;
-    int retryCount = 0;
-    
-    // First do basic filtering
-    final basicResult = basicTextModeration(description);
-    if (!basicResult.isApproved) {
-      return basicResult;
+    // Validate inputs
+    if (itemName.trim().isEmpty) {
+      return ModerationResult(
+        isApproved: true,
+        reason: null,
+      );
     }
 
-    while (retryCount < maxRetries) {
-      try {
-        debugPrint('🛡️ AI moderation attempt ${retryCount + 1}/$maxRetries');
-        
-        // Validate inputs
-        if (description.trim().isEmpty || itemName.trim().isEmpty) {
-          return ModerationResult(
-            isApproved: false,
-            reason: 'Invalid input: empty description or item name',
-            flaggedContent: ['invalid_input'],
-          );
-        }
-
-        // Use Gemini AI for advanced moderation
-        final model = FirebaseAI.googleAI().generativeModel(
-          model: 'gemini-2.0-flash',
-          generationConfig: GenerationConfig(
-            responseMimeType: 'application/json',
-            maxOutputTokens: 1024,
-            temperature: 0.1, // Lower temperature for more consistent results
-          ),
-        );
-
-        final prompt = '''
-Analyze this clothing item listing for inappropriate content. Check for:
-1. Hate speech or discriminatory language
-2. Adult or explicit content
-3. Violence or dangerous items
-4. Scam or fraud indicators
-5. Fake or counterfeit items
-6. Personal information sharing (phone, email, address)
-7. Items that violate marketplace policies
-
-Item Name: $itemName
-Description: $description
-Category: ${category ?? 'clothing'}
-
-Return JSON with:
-{
-  "is_appropriate": boolean,
-  "confidence": number (0-1),
-  "reason": "explanation if inappropriate",
-  "flagged_categories": ["list", "of", "issues"]
-}
-''';
-
-        final response = await model.generateContent([Content.text(prompt)])
-            .timeout(const Duration(seconds: 15));
-        
-        if (response.text == null || response.text!.isEmpty) {
-          throw Exception('Empty response from AI moderation service');
-        }
-
-        final result = jsonDecode(response.text!);
-        
-        // Validate AI response structure
-        if (!result.containsKey('is_appropriate')) {
-          throw Exception('Invalid AI response format: missing is_appropriate field');
-        }
-        
-        final moderationResult = ModerationResult(
-          isApproved: result['is_appropriate'] ?? false,
-          reason: result['reason'],
-          flaggedContent: List<String>.from(result['flagged_categories'] ?? []),
-          confidence: (result['confidence'] ?? 0.0).toDouble(),
-        );
-        
-        debugPrint('✅ AI moderation successful: ${moderationResult.isApproved ? 'APPROVED' : 'REJECTED'}');
-        return moderationResult;
-
-      } catch (e) {
-        debugPrint('🚨 AI moderation error (attempt ${retryCount + 1}): $e');
-        
-        retryCount++;
-        if (retryCount < maxRetries) {
-          // Wait before retry with exponential backoff
-          await Future.delayed(Duration(seconds: retryCount * 2));
-        }
-      }
+    // If description is empty, approve without text checks
+    if (description.trim().isEmpty) {
+      debugPrint('✅ No description provided; skipping text moderation.');
+      return ModerationResult(isApproved: true, reason: null, flaggedContent: []);
     }
+
+    // Use basic filtering for fast moderation
+    final result = basicTextModeration(description);
     
-    debugPrint('❌ AI moderation failed after $maxRetries attempts. Using basic moderation result.');
-    return basicResult;
+    debugPrint('✅ Content moderation completed: ${result.isApproved ? 'APPROVED' : 'REJECTED'}');
+    return result;
   }
 
   /// Check if text contains personal information patterns

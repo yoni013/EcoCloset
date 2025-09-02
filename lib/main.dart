@@ -12,6 +12,8 @@ import 'package:beged/providers/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,12 @@ void main() async {
   // Initialize Firebase with persistence enabled
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+    await FirebaseAppCheck.instance.activate(
+    appleProvider: AppleProvider.appAttestWithDeviceCheckFallback,
+    // androidProvider: AndroidProvider.playIntegrity,
+    webProvider: ReCaptchaV3Provider('6LcRyborAAAAALIta9MlwzgO-Gf0neb_y_BZKGPs'),
   );
   
   // Enable offline persistence for Firestore
